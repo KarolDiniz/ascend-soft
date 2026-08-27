@@ -10,6 +10,7 @@ import {
 import { MATERIAL_LEDGE } from './platform/ledgeSizes';
 import { renderPixelPlatform } from './platform/PixelPlatformRenderer';
 import { hasCheeseMouse, isCheeseMouseFleeDone } from './platform/cheeseMouse';
+import { hasSpongeFlies, isSpongeFlyScatterDone } from './platform/spongeFlies';
 import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
 import { pickVariant } from './platform/PlatformVariant';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
@@ -80,6 +81,10 @@ export class Platform {
   cheeseMouseFleeT = 0;
   cheeseMouseFleeVy = 0;
   cheeseMouseFleeY = 0;
+  /** Mosquinhas na esponja: 0=orbitando, >0=dispersando, -1=foram embora */
+  spongeFlyScatterT = 0;
+  spongeFlyScatterVy = 0;
+  spongeFlyScatterY = 0;
   private wobble = Math.random() * Math.PI * 2;
   private events: PlatformEvent[] = [];
   private sandEmit = 0;
@@ -180,6 +185,11 @@ export class Platform {
           this.cheeseMouseFleeY = 0;
           this.emit({ type: 'mouseSqueak' });
         }
+        if (this.material === 'sponge' && hasSpongeFlies(this.seed) && this.spongeFlyScatterT === 0) {
+          this.spongeFlyScatterT = 0.001;
+          this.spongeFlyScatterVy = -7;
+          this.spongeFlyScatterY = 0;
+        }
         if (this.fading) {
           this.fadeArmed = true;
           this.fadeLife = Math.min(this.fadeLife, 1.8);
@@ -270,6 +280,15 @@ export class Platform {
       this.cheeseMouseFleeY += this.cheeseMouseFleeVy * dt;
       if (isCheeseMouseFleeDone(this.cheeseMouseFleeT, this.cheeseMouseFleeY, this.h)) {
         this.cheeseMouseFleeT = -1;
+      }
+    }
+
+    if (this.spongeFlyScatterT > 0) {
+      this.spongeFlyScatterT += dt;
+      this.spongeFlyScatterVy += 16 * dt;
+      this.spongeFlyScatterY += this.spongeFlyScatterVy * dt;
+      if (isSpongeFlyScatterDone(this.spongeFlyScatterT)) {
+        this.spongeFlyScatterT = -1;
       }
     }
 
@@ -499,6 +518,7 @@ export class Platform {
     };
 
     const fleeScreenY = this.cheeseMouseFleeY * (screenH / Math.max(1, this.h));
+    const flyScatterScreenY = -this.spongeFlyScatterY * (screenH / Math.max(1, this.h));
 
     renderPixelPlatform(ctx, this.material, this.variant, mat, state, {
       crackLevel: this.crackLevel,
@@ -512,6 +532,8 @@ export class Platform {
       personality: this.personality,
       cheeseMouseFleeT: this.cheeseMouseFleeT,
       cheeseMouseFleeY: fleeScreenY,
+      spongeFlyScatterT: this.spongeFlyScatterT,
+      spongeFlyScatterY: flyScatterScreenY,
     });
   }
 }

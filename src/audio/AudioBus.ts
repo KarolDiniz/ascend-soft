@@ -716,35 +716,122 @@ export class AudioBus {
     src.stop(t + dur + 0.02);
   }
 
+  /** Wobble gelatinoso — frequência oscila como gelatina/ameba */
+  private jellyWobble(
+    ctx: AudioContext,
+    sfx: GainNode,
+    f0: number,
+    f1: number,
+    dur: number,
+    vol: number,
+    t: number,
+    wobbleHz = 5.5,
+    wobbleDepth = 0.1,
+  ): void {
+    const osc = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lfoG = ctx.createGain();
+    const g = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(880, t);
+    filter.frequency.exponentialRampToValueAtTime(520, t + dur);
+    filter.Q.value = 0.55;
+    osc.type = 'sine';
+    const base = Math.max(40, f0);
+    osc.frequency.setValueAtTime(base, t);
+    if (Math.abs(f0 - f1) > 1) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur * 0.88);
+    }
+    lfo.type = 'sine';
+    lfo.frequency.value = wobbleHz;
+    lfoG.gain.value = base * wobbleDepth;
+    lfo.connect(lfoG);
+    lfoG.connect(osc.frequency);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.018);
+    g.gain.exponentialRampToValueAtTime(vol * 0.5, t + dur * 0.38);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    osc.start(t);
+    lfo.start(t);
+    osc.stop(t + dur + 0.03);
+    lfo.stop(t + dur + 0.03);
+  }
+
+  /** Squish viscoso — ruído úmido com filtro escorregando (ameba) */
+  private viscousSquish(
+    ctx: AudioContext,
+    sfx: GainNode,
+    dur: number,
+    vol: number,
+    t: number,
+    pitch: number,
+  ): void {
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx, Math.max(0.08, dur), true);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(820 * pitch, t);
+    filter.frequency.exponentialRampToValueAtTime(160 * pitch, t + dur * 0.92);
+    filter.Q.setValueAtTime(2.4, t);
+    filter.Q.exponentialRampToValueAtTime(0.7, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(vol * 0.55, t + dur * 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
   private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
     const v = this.impactVol(0.14, impact);
 
-    // Corpo gelatinoso — bloop profundo com wobble de retorno
-    this.warmLandTone(ctx, sfx, 'sine', 132 * pitch, 44 * pitch, 0.34, v * 1.05, t, 820);
-    this.warmLandTone(ctx, sfx, 'triangle', 208 * pitch, 158 * pitch, 0.3, v * 0.48, t + 0.045, 1250);
-    this.warmLandTone(ctx, sfx, 'sine', 158 * pitch, 124 * pitch, 0.24, v * 0.32, t + 0.13, 980);
+    // Tab squish — impacto mole instantâneo
+    this.softNoise(ctx, sfx, 0.09, 720, v * 0.62, t, 'bandpass', 1.6);
+    this.softNoise(ctx, sfx, 0.06, 1050, v * 0.32, t + 0.004, 'highpass');
+    this.warmLandTone(ctx, sfx, 'sine', 168 * pitch, 48 * pitch, 0.14, v * 0.75, t, 950);
 
-    // Camada úmida sedosa
-    this.softNoise(ctx, sfx, 0.15, 480, v * 0.4, t, 'bandpass', 1.1);
-    this.softNoise(ctx, sfx, 0.11, 300, v * 0.26, t + 0.028, 'lowpass');
+    // Corpo ameba — bloop grave com wobble
+    this.jellyWobble(ctx, sfx, 88 * pitch, 34 * pitch, 0.44, v * 1.0, t + 0.006, 5.8, 0.12);
+    this.jellyWobble(ctx, sfx, 118 * pitch, 72 * pitch, 0.32, v * 0.48, t + 0.04, 6.5, 0.09);
 
-    // Brilho leve no topo
-    this.warmLandTone(ctx, sfx, 'sine', 460 * pitch, 360 * pitch, 0.13, v * 0.16, t + 0.022, 1900);
+    // Rebotes jello — ameba assentando
+    this.jellyWobble(ctx, sfx, 68 * pitch, 54 * pitch, 0.3, v * 0.38, t + 0.1, 4.5, 0.11);
+    this.jellyWobble(ctx, sfx, 58 * pitch, 46 * pitch, 0.24, v * 0.2, t + 0.19, 3.8, 0.08);
 
-    // Gotinhas prazerosas caindo em sequência
-    for (let i = 0; i < 5; i++) {
-      const delay = 0.072 + i * 0.048;
-      this.warmLandTone(
+    // Camadas squish úmidas viscosas
+    this.viscousSquish(ctx, sfx, 0.24, v * 0.58, t, pitch);
+    this.viscousSquish(ctx, sfx, 0.16, v * 0.32, t + 0.025, pitch * 0.92);
+    this.softNoise(ctx, sfx, 0.18, 280, v * 0.42, t + 0.015, 'lowpass');
+    this.softNoise(ctx, sfx, 0.12, 440, v * 0.28, t + 0.05, 'bandpass', 1.0);
+
+    // Squelch mole tipo slime/amoeba
+    this.warmLandTone(ctx, sfx, 'sine', 142 * pitch, 44 * pitch, 0.22, v * 0.72, t + 0.01, 680);
+    this.softNoise(ctx, sfx, 0.13, 360, v * 0.55, t + 0.012, 'bandpass', 1.35);
+    this.softNoise(ctx, sfx, 0.09, 240, v * 0.32, t + 0.038, 'lowpass');
+
+    // Escorregadas viscosas pós-impacto
+    for (let i = 0; i < 4; i++) {
+      const delay = 0.055 + i * 0.052;
+      this.softNoise(ctx, sfx, 0.07, 320 - i * 35, v * 0.22, t + delay, 'bandpass', 1.15);
+      this.jellyWobble(
         ctx,
         sfx,
-        'sine',
-        (400 - i * 26) * pitch,
-        185 * pitch,
-        0.075,
-        v * 0.15,
+        (95 - i * 12) * pitch,
+        42 * pitch,
+        0.08,
+        v * 0.14,
         t + delay,
-        1500,
+        7 + i * 0.8,
+        0.07,
       );
     }
   }
@@ -782,11 +869,15 @@ export class AudioBus {
 
   private marshmallowPuff(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    const v = this.impactVol(0.11, impact);
-    this.noiseBurst(ctx, sfx, 0.16, 1100 * pitch, v * 0.75, t, 'bandpass');
-    this.noiseBurst(ctx, sfx, 0.12, 600, v * 0.45, t + 0.02);
-    this.tone(ctx, sfx, 'sine', 320 * pitch, 180 * pitch, 0.18, v * 0.55, t);
-    this.tone(ctx, sfx, 'triangle', 240 * pitch, 120 * pitch, 0.14, v * 0.35, t + 0.03);
+    const v = this.impactVol(0.12, impact);
+
+    // Nuvem macia — puff aéreo e reconfortante
+    this.warmLandTone(ctx, sfx, 'sine', 260 * pitch, 155 * pitch, 0.3, v * 0.92, t, 1700);
+    this.warmLandTone(ctx, sfx, 'sine', 210 * pitch, 175 * pitch, 0.34, v * 0.5, t + 0.055, 1500);
+    this.softNoise(ctx, sfx, 0.2, 680, v * 0.3, t, 'bandpass', 0.85);
+    this.softNoise(ctx, sfx, 0.15, 380, v * 0.2, t + 0.028, 'lowpass');
+    this.warmLandTone(ctx, sfx, 'triangle', 360 * pitch, 240 * pitch, 0.14, v * 0.18, t + 0.032, 2100);
+    this.warmLandTone(ctx, sfx, 'sine', 420 * pitch, 320 * pitch, 0.1, v * 0.12, t + 0.07, 2400);
   }
 
   private chocolateRipple(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
@@ -801,10 +892,15 @@ export class AudioBus {
   private spongeSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
     const v = this.impactVol(0.12, impact);
-    this.noiseBurst(ctx, sfx, 0.14, 820, v * 0.7, t, 'bandpass');
-    this.tone(ctx, sfx, 'sine', 260 * pitch, 110 * pitch, 0.16, v * 0.6, t);
-    this.tone(ctx, sfx, 'triangle', 180 * pitch, 70 * pitch, 0.12, v * 0.4, t + 0.02);
-    this.noiseBurst(ctx, sfx, 0.08, 400, v * 0.45, t + 0.05);
+
+    this.warmLandTone(ctx, sfx, 'sine', 240 * pitch, 105 * pitch, 0.18, v * 0.55, t, 1200);
+    this.softNoise(ctx, sfx, 0.1, 620, v * 0.38, t, 'bandpass', 0.9);
+
+    // Esguicho úmido
+    this.softNoise(ctx, sfx, 0.12, 1400, v * 0.42, t + 0.012, 'bandpass', 1.1);
+    this.softNoise(ctx, sfx, 0.08, 900, v * 0.28, t + 0.025, 'highpass');
+    this.warmLandTone(ctx, sfx, 'sine', 520 * pitch, 280 * pitch, 0.08, v * 0.22, t + 0.018, 2200);
+    this.warmLandTone(ctx, sfx, 'triangle', 180 * pitch, 75 * pitch, 0.14, v * 0.35, t + 0.03, 950);
   }
 
   private citrusZest(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

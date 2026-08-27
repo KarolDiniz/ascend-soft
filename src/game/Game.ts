@@ -508,7 +508,7 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
           break;
         case 'sponge':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          this.particles.waterSquirt(this.player.x, platformTop, p.w, impact);
           break;
         case 'keyboard':
           this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);

@@ -502,13 +502,6 @@ export class Particles {
       this.drip(x + (Math.random() - 0.5) * 20, surfaceY, color, 1);
     } else if (materialId === 'kinetic' && Math.random() < dt * 6 * rateBoost) {
       this.sandFall(x + (Math.random() - 0.5) * 28, surfaceY, color, 8);
-    } else if (materialId === 'marshmallow' && Math.random() < dt * 5 * rateBoost) {
-      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, '#ffffff', 'foam', {
-        vx: (Math.random() - 0.5) * 14,
-        vy: 12 + Math.random() * 22,
-        life: 0.4,
-        size: 2 + Math.random() * 2,
-      });
     } else if (materialId === 'sponge' && Math.random() < dt * 4.5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, color, 'foam', {
         vx: (Math.random() - 0.5) * 16,
@@ -567,7 +560,7 @@ export class Particles {
     materialId: MaterialId,
   ): void {
     if (!this.allowContinuous) return;
-    if (materialId === 'jelly') return;
+    if (materialId === 'jelly' || materialId === 'marshmallow') return;
     const rates: Partial<Record<MaterialId, number>> = {
       jelly: 2.8,
       butter: 1.8,
@@ -773,6 +766,45 @@ export class Particles {
         vy: -35 - Math.random() * 55,
         life: 0.85 + Math.random() * 0.55,
         size: 4 + Math.random() * 3.5,
+      });
+    }
+  }
+
+  /** Esguicho de água ao espremer esponja */
+  waterSquirt(x: number, y: number, platformW: number, impact = 1): void {
+    const spread = Math.max(32, platformW * 0.95);
+    const water = PASTEL.sky;
+    const mist = '#E8F4FC';
+    const count = this.cap(14 + Math.floor(impact * 12));
+
+    for (let i = 0; i < count; i++) {
+      const t = count > 1 ? i / (count - 1) - 0.5 : 0;
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.35;
+      const sp = 95 + Math.random() * 110 * impact;
+      this.spawn(x + t * spread + (Math.random() - 0.5) * 12, y, i % 3 === 0 ? mist : water, 'juice', {
+        vx: Math.cos(a) * sp + t * 35,
+        vy: Math.sin(a) * sp - 25,
+        life: 0.38 + Math.random() * 0.32,
+        size: 2.5 + Math.random() * 3,
+      });
+    }
+
+    for (let i = 0; i < this.cap(8); i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      this.spawn(x + side * spread * 0.38, y, water, 'drip', {
+        vx: side * (35 + Math.random() * 45),
+        vy: -55 - Math.random() * 70 * impact,
+        life: 0.45 + Math.random() * 0.35,
+        size: 3 + Math.random() * 2.5,
+      });
+    }
+
+    for (let i = 0; i < this.cap(6); i++) {
+      this.spawn(x + (Math.random() - 0.5) * spread * 0.6, y, '#ffffff', 'foam', {
+        vx: (Math.random() - 0.5) * 50,
+        vy: -30 - Math.random() * 55,
+        life: 0.3 + Math.random() * 0.25,
+        size: 2 + Math.random() * 2,
       });
     }
   }

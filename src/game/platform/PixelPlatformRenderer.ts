@@ -6,6 +6,7 @@ import type { PlatformBehavior } from './behaviors';
 import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
+import { drawSpongeFlies } from './spongeFlies';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -20,6 +21,8 @@ export interface PixelPlatformOverlay {
   personality?: PlatformPersonality;
   cheeseMouseFleeT?: number;
   cheeseMouseFleeY?: number;
+  spongeFlyScatterT?: number;
+  spongeFlyScatterY?: number;
 }
 
 function parseTone(c: string): [number, number, number] {
@@ -188,7 +191,7 @@ export function renderPixelPlatform(
   drawPersonalityTopProfile(args);
 
   drawShelfFrontFace(args);
-  if (material !== 'mochi' && material !== 'jelly') drawHangingDetails(args);
+  if (material !== 'mochi' && material !== 'jelly' && material !== 'marshmallow') drawHangingDetails(args);
   drawRelaxSparkles(args);
 
   // Shared crack overlay for shatter materials
@@ -1135,42 +1138,40 @@ function drawDough(a: DrawArgs): void {
   drawAmbientSpecks(a, 6, mat.particle);
 }
 
-/** Marshmallow — cubo fofo branco-blush */
+/** Marshmallow — cubo fofo com listras pastel */
 function drawMarshmallow(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
+  const { ctx, cx, sy, w, h, mat, u, wobble, time } = a;
   const x = cx - w / 2;
   const squash = (a.overlay?.pressAmount ?? 0) * u;
-  fillPx(ctx, x + u, sy + squash, w - u * 2, h - squash, mat.fill);
-  fillPx(ctx, x, sy + u + squash, w, h - u * 2 - squash, mat.fill);
-  fillPx(ctx, x + u * 2, sy + squash, w - u * 4, u, rgba(PASTEL.white, 0.7));
-  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, mat.stroke);
-  // Soft toasted edge flecks
-  for (let i = 0; i < 8; i++) {
-    fillPx(
-      ctx,
-      x + u * 2 + seeded(seed, i) * (w - u * 6),
-      sy + u * 2 + seeded(seed, i + 5) * (h - u * 4) + squash,
-      u,
-      u,
-      i % 2 ? PASTEL.blush : rgba(mat.stroke, 0.35),
-    );
+  const bodyH = h - squash;
+  const stripeA = mat.particle;
+  const stripeB = mat.stroke;
+  const stripeH = u * 2;
+
+  for (let row = 0; row < bodyH; row += stripeH) {
+    const t = row / Math.max(1, bodyH);
+    const ww = w * (0.86 + Math.sin(t * Math.PI) * 0.14);
+    const color = Math.floor(row / stripeH) % 2 === 0 ? stripeA : stripeB;
+    fillPx(ctx, cx - ww / 2, sy + squash + row, ww, Math.min(stripeH, bodyH - row), color);
   }
-  // Bounce puff
+
+  fillPx(ctx, x + u, sy + squash, w - u * 2, bodyH, rgba(mat.fill, 0.12));
+  fillPx(ctx, x + u * 2, sy + squash, w - u * 4, u, rgba(PASTEL.white, 0.78));
+  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, rgba(stripeB, 0.55));
+
   for (let i = 0; i < 5; i++) {
     if (Math.sin(time * 2.5 + i + wobble) > 0.2) {
-      fillPx(ctx, cx + (i - 2) * u * 2, sy - u + Math.sin(time + i) * u * 0.5, u, u, mat.particle);
+      fillPx(ctx, cx + (i - 2) * u * 2, sy - u + Math.sin(time + i) * u * 0.5, u, u, PASTEL.white);
     }
   }
   drawShimmerBand(a, 1);
   drawPressIndent(a);
-  drawEdgeFlecks(a, 4, mat.particle);
-  drawDebris(a, 4, PASTEL.white);
-  drawAmbientSpecks(a, 6, mat.particle);
+  drawAmbientSpecks(a, 5, mat.fill);
 }
 
 /** Esponja — bloco amarelo com poros */
 function drawSponge(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
   const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
   fillPx(ctx, x, sy, w, h, mat.fill);
@@ -1178,7 +1179,6 @@ function drawSponge(a: DrawArgs): void {
   fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
   fillPx(ctx, x, sy, u, h, mat.stroke);
   fillPx(ctx, x + w - u, sy, u, h, mat.stroke);
-  // Pore grid
   for (let i = 0; i < 20; i++) {
     const px0 = x + u * 2 + (i % 5) * (w / 5.2);
     const py = sy + u * 2 + Math.floor(i / 5) * (h / 4.5);
@@ -1190,6 +1190,18 @@ function drawSponge(a: DrawArgs): void {
       fillPx(ctx, cx + (seeded(seed, i + 40) - 0.5) * w * 0.5, sy - u, u, u, mat.particle);
     }
   }
+  drawSpongeFlies(
+    ctx,
+    u,
+    seed,
+    time,
+    wobble,
+    cx,
+    sy,
+    w,
+    a.overlay?.spongeFlyScatterT ?? 0,
+    a.overlay?.spongeFlyScatterY ?? 0,
+  );
   drawPressIndent(a);
   drawSurfaceGrain(a, 6, mat.particle, 0.3);
   drawEdgeFlecks(a, 5, mat.particle);
