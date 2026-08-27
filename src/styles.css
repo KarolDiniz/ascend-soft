@@ -167,32 +167,111 @@ body {
 }
 
 .title-screen {
-  justify-content: space-between;
-  padding: calc(8vh + var(--safe-top)) 18px calc(28px + var(--safe-bottom));
+  justify-content: center;
+  padding: calc(20px + var(--safe-top)) 18px calc(24px + var(--safe-bottom));
 }
 
 .title-veil {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(247, 241, 234, 0.22) 0%,
-    rgba(247, 241, 234, 0) 26%,
-    rgba(247, 241, 234, 0) 52%,
-    rgba(240, 201, 176, 0.42) 78%,
-    rgba(232, 180, 160, 0.58) 100%
-  );
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 48%, rgba(255, 252, 248, 0.28) 0%, transparent 70%),
+    linear-gradient(
+      180deg,
+      rgba(201, 228, 222, 0.42) 0%,
+      rgba(247, 241, 234, 0.55) 42%,
+      rgba(240, 201, 176, 0.5) 100%
+    );
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  backdrop-filter: blur(10px) saturate(1.05);
 }
 
-.title-hero {
+.title-floaters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floater {
+  position: absolute;
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(90, 97, 108, 0.35);
+  background: var(--mint);
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.18);
+  animation: floater-drift 4.2s steps(8) infinite;
+  opacity: 0.72;
+}
+
+.floater--a {
+  top: 18%;
+  left: 14%;
+  background: var(--blush);
+  animation-duration: 5.2s;
+}
+
+.floater--b {
+  top: 22%;
+  right: 16%;
+  width: 8px;
+  height: 8px;
+  background: var(--butter);
+  animation-duration: 4.6s;
+  animation-delay: -1.2s;
+}
+
+.floater--c {
+  bottom: 24%;
+  left: 18%;
+  width: 12px;
+  height: 12px;
+  background: var(--sky);
+  animation-duration: 5.8s;
+  animation-delay: -2.4s;
+}
+
+.floater--d {
+  bottom: 28%;
+  right: 14%;
+  width: 7px;
+  height: 7px;
+  background: var(--coral);
+  animation-duration: 3.8s;
+  animation-delay: -0.8s;
+}
+
+.floater--e {
+  top: 48%;
+  left: 8%;
+  width: 6px;
+  height: 6px;
+  background: var(--butter);
+  animation-duration: 6.4s;
+  animation-delay: -3.1s;
+}
+
+.title-stack {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1.35rem;
+  width: min(92vw, 340px);
+  animation: stack-float 5.5s steps(10) infinite;
+}
+
+.title-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 22rem;
-  animation: panel-pop 0.45s steps(7) both;
+  animation: panel-pop 0.5s steps(7) both;
 }
 
 .eyebrow {
@@ -204,6 +283,8 @@ body {
   margin-bottom: 14px;
   line-height: 1.6;
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.75);
+  animation: soft-fade 0.55s steps(5) both, soft-twinkle 2.4s steps(4) infinite;
+  animation-delay: 0.05s, 0.7s;
 }
 
 .brand {
@@ -213,8 +294,11 @@ body {
   line-height: 1.32;
   color: var(--ink);
   margin-bottom: 14px;
-  text-shadow: 4px 4px 0 rgba(255, 255, 255, 0.75);
-  animation: brand-bob 2.8s steps(6) infinite;
+  text-shadow:
+    3px 3px 0 rgba(255, 255, 255, 0.85),
+    0 0 0 transparent;
+  animation: brand-enter 0.55s steps(6) both, brand-bob 2.8s steps(6) infinite;
+  animation-delay: 0.12s, 0.7s;
 }
 
 .tagline {
@@ -225,6 +309,8 @@ body {
   color: var(--ink);
   max-width: 15rem;
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.85);
+  animation: soft-fade 0.5s steps(5) both, tagline-breathe 3.6s steps(6) infinite;
+  animation-delay: 0.22s, 0.8s;
 }
 
 .title-best {
@@ -237,24 +323,30 @@ body {
   border: 3px solid var(--ink);
   padding: 0.5rem 0.75rem;
   box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.28);
+  animation: badge-wiggle 2.8s steps(6) infinite;
 }
 
 .title-panel {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(92vw, 360px);
-  padding: 1.15rem 1rem 1rem;
-  background: rgba(255, 252, 248, 0.88);
+  width: min(92vw, 340px);
+  padding: 1.1rem 1rem 0.95rem;
+  background: rgba(255, 252, 248, 0.72);
   border: 4px solid var(--ink);
   box-shadow:
-    6px 6px 0 rgba(90, 97, 108, 0.32),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.55);
-  animation: panel-pop 0.5s steps(7) both;
-  animation-delay: 0.06s;
-  animation-fill-mode: both;
+    6px 6px 0 rgba(90, 97, 108, 0.28),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: panel-pop 0.55s steps(7) both, panel-glow 3.2s steps(5) infinite;
+  animation-delay: 0.28s, 0.9s;
+  animation-fill-mode: both, none;
+}
+
+.title-stack .title-panel {
+  width: 100%;
 }
 
 .btn {
@@ -296,7 +388,7 @@ body {
 
 .btn-start {
   min-width: 11.5rem;
-  animation: cta-pulse 1.6s steps(4) infinite;
+  animation: cta-pulse 1.6s steps(4) infinite, cta-shine 2.8s steps(6) infinite;
 }
 
 .btn-ghost {

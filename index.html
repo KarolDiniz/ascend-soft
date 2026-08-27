@@ -42,29 +42,38 @@
 
         <section id="title-screen" class="overlay title-screen">
           <div class="title-veil" aria-hidden="true"></div>
-
-          <div class="title-hero">
-            <p class="eyebrow">torre sensorial</p>
-            <h1 class="brand">Ascend<br />Soft</h1>
-            <p class="tagline">Pouse. Ouça. Suba de novo.</p>
-            <p id="title-best" class="title-best hidden" aria-live="polite"></p>
+          <div class="title-floaters" aria-hidden="true">
+            <span class="floater floater--a"></span>
+            <span class="floater floater--b"></span>
+            <span class="floater floater--c"></span>
+            <span class="floater floater--d"></span>
+            <span class="floater floater--e"></span>
           </div>
 
-          <div class="title-panel">
-            <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
-              Subir
-            </button>
-            <p class="press-blink" aria-hidden="true">aperte subir</p>
-            <div class="audio-row">
-              <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
-                Som
-              </button>
-              <label class="volume">
-                <span class="sr-only">Volume</span>
-                <input id="volume" type="range" min="0" max="100" value="55" />
-              </label>
+          <div class="title-stack">
+            <div class="title-hero">
+              <p class="eyebrow">torre sensorial</p>
+              <h1 class="brand">Ascend<br />Soft</h1>
+              <p class="tagline">Pouse. Ouça. Suba de novo.</p>
+              <p id="title-best" class="title-best hidden" aria-live="polite"></p>
             </div>
-            <p class="hint">← → mover · espaço pular</p>
+
+            <div class="title-panel">
+              <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
+                Subir
+              </button>
+              <p class="press-blink" aria-hidden="true">aperte subir</p>
+              <div class="audio-row">
+                <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
+                  Som
+                </button>
+                <label class="volume">
+                  <span class="sr-only">Volume</span>
+                  <input id="volume" type="range" min="0" max="100" value="55" />
+                </label>
+              </div>
+              <p class="hint">← → mover · espaço pular</p>
+            </div>
           </div>
         </section>
 
