@@ -473,6 +473,9 @@ export class Platform {
       flash: this.flash,
       integrity: this.integrity,
       behavior: this.behavior,
+      pressAmount: Math.max(0, this.pressAmount),
+      squashX,
+      squashY,
     });
   }
 }
