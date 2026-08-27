@@ -41,7 +41,23 @@ export type PlatformVariant =
   | 'slime_puddle'
   | 'slime_blob'
   | 'butterSlime_fold'
-  | 'butterSlime_scoop';
+  | 'butterSlime_scoop'
+  | 'marshmallow_puff'
+  | 'marshmallow_cube'
+  | 'sponge_block'
+  | 'sponge_soft'
+  | 'soapBubble_orb'
+  | 'soapBubble_cluster'
+  | 'bathFoam_cloud'
+  | 'bathFoam_swirl'
+  | 'lavenderSoap_bar'
+  | 'lavenderSoap_gem'
+  | 'creamSoap_bar'
+  | 'creamSoap_oval'
+  | 'keyboard_row'
+  | 'keyboard_pad'
+  | 'bubbleWrap_sheet'
+  | 'bubbleWrap_pack';
 
 export interface VariantDef {
   id: PlatformVariant;

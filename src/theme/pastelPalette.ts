@@ -137,6 +137,62 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     particle: '#FFD0B8',
     spriteWash: rgba(PASTEL.peach, 0.3),
   },
+  marshmallow: {
+    fill: '#FFF5F0',
+    stroke: '#E8C8C0',
+    glow: rgba(PASTEL.blush, 0.45),
+    particle: '#FFFFFF',
+    spriteWash: rgba(PASTEL.white, 0.28),
+  },
+  sponge: {
+    fill: '#F2C878',
+    stroke: '#C89840',
+    glow: rgba(PASTEL.butter, 0.4),
+    particle: '#FFE8A8',
+    spriteWash: rgba(PASTEL.butter, 0.3),
+  },
+  soapBubble: {
+    fill: '#C8E8F8',
+    stroke: '#78B0D0',
+    glow: rgba(PASTEL.sky, 0.55),
+    particle: '#E8F8FF',
+    spriteWash: rgba(PASTEL.sky, 0.28),
+  },
+  bathFoam: {
+    fill: '#F8F0F8',
+    stroke: '#D0B8D8',
+    glow: rgba(PASTEL.lilac, 0.5),
+    particle: '#FFFFFF',
+    spriteWash: rgba(PASTEL.lilac, 0.26),
+  },
+  lavenderSoap: {
+    fill: '#D0B8E8',
+    stroke: '#9870B8',
+    glow: rgba(PASTEL.lilac, 0.55),
+    particle: '#F0E0FF',
+    spriteWash: rgba(PASTEL.lilac, 0.32),
+  },
+  creamSoap: {
+    fill: '#F8E8D0',
+    stroke: '#D0B088',
+    glow: rgba(PASTEL.cream, 0.5),
+    particle: '#FFF8EC',
+    spriteWash: rgba(PASTEL.cream, 0.3),
+  },
+  keyboard: {
+    fill: '#D8DEE8',
+    stroke: '#8890A0',
+    glow: rgba(PASTEL.mist, 0.4),
+    particle: '#F0F4F8',
+    spriteWash: rgba(PASTEL.mist, 0.28),
+  },
+  bubbleWrap: {
+    fill: '#E0F0F0',
+    stroke: '#90B8B8',
+    glow: rgba(PASTEL.seafoam, 0.45),
+    particle: '#F0FFFF',
+    spriteWash: rgba(PASTEL.mint, 0.26),
+  },
 };
 
 export interface BiomePastelPalette {

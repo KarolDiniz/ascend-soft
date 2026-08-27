@@ -55,7 +55,12 @@ const WAVE_SLOTS = 24;
 const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   jelly: 'foam',
   mochi: 'foam',
+  marshmallow: 'foam',
+  sponge: 'foam',
   whipped: 'foamBurst',
+  soapBubble: 'bubble',
+  bathFoam: 'foamBurst',
+  bubbleWrap: 'foamBurst',
   clearSlime: 'foam',
   butterSlime: 'foam',
   butter: 'drip',
@@ -64,7 +69,10 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   kinetic: 'sand',
   iceSoap: 'bubble',
   glycerin: 'bubble',
+  lavenderSoap: 'glitter',
+  creamSoap: 'bubble',
   citrus: 'zest',
+  keyboard: 'crumb',
 };
 
 export class Particles {
@@ -503,6 +511,58 @@ export class Particles {
       this.drip(x + (Math.random() - 0.5) * 20, surfaceY, color, 1);
     } else if (materialId === 'kinetic' && Math.random() < dt * 6 * rateBoost) {
       this.sandFall(x + (Math.random() - 0.5) * 28, surfaceY, color, 8);
+    } else if (materialId === 'marshmallow' && Math.random() < dt * 5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, '#ffffff', 'foam', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 12 + Math.random() * 22,
+        life: 0.4,
+        size: 2 + Math.random() * 2,
+      });
+    } else if (materialId === 'sponge' && Math.random() < dt * 4.5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, color, 'foam', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: 8 + Math.random() * 18,
+        life: 0.35,
+        size: 1.5 + Math.random() * 2,
+      });
+    } else if (materialId === 'soapBubble' && Math.random() < dt * 6 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 18, surfaceY, accent, 'bubble', {
+        vx: (Math.random() - 0.5) * 12,
+        vy: 22 + Math.random() * 40,
+        life: 0.6,
+        size: 2 + Math.random() * 3,
+      });
+    } else if (materialId === 'bathFoam' && Math.random() < dt * 6 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 24, surfaceY, '#ffffff', 'foam', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 16 + Math.random() * 28,
+        life: 0.45,
+        size: 2 + Math.random() * 3,
+      });
+    } else if (
+      (materialId === 'lavenderSoap' || materialId === 'creamSoap') &&
+      Math.random() < dt * 4.5 * rateBoost
+    ) {
+      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 12 + Math.random() * 24,
+        life: 0.4,
+        size: 1.5 + Math.random() * 2,
+      });
+    } else if (materialId === 'keyboard' && Math.random() < dt * 3.5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 30, surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 20,
+        vy: 6 + Math.random() * 14,
+        life: 0.3,
+        size: 1.5 + Math.random(),
+      });
+    } else if (materialId === 'bubbleWrap' && Math.random() < dt * 5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, accent, 'bubble', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: 14 + Math.random() * 26,
+        life: 0.4,
+        size: 2 + Math.random() * 2,
+      });
     }
   }
 
@@ -520,11 +580,19 @@ export class Particles {
       jelly: 2.8,
       butter: 1.8,
       mochi: 2.2,
+      marshmallow: 2.4,
       chocolate: 1.6,
+      sponge: 2.0,
       citrus: 2.4,
       honeycomb: 2.6,
       glycerin: 2.0,
       whipped: 2.5,
+      soapBubble: 3.0,
+      bathFoam: 2.6,
+      lavenderSoap: 2.2,
+      creamSoap: 2.0,
+      keyboard: 1.4,
+      bubbleWrap: 2.4,
       kinetic: 2.2,
       iceSoap: 2.8,
       clearSlime: 2.4,

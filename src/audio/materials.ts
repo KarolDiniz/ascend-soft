@@ -12,7 +12,15 @@ export type MaterialId =
   | 'kinetic'
   | 'iceSoap'
   | 'clearSlime'
-  | 'butterSlime';
+  | 'butterSlime'
+  | 'marshmallow'
+  | 'sponge'
+  | 'soapBubble'
+  | 'bathFoam'
+  | 'lavenderSoap'
+  | 'creamSoap'
+  | 'keyboard'
+  | 'bubbleWrap';
 
 export type ParticleStyle =
   | 'drip'
@@ -71,14 +79,22 @@ export const MATERIALS: Record<MaterialId, MaterialDef> = {
   jelly: mat('jelly', 'gelatina', 'drip', 1.35, 1, 0),
   butter: mat('butter', 'manteiga', 'crumb', 1.2, 1, 0),
   mochi: mat('mochi', 'queijo', 'foam', 1.25, 1.1, 80),
+  marshmallow: mat('marshmallow', 'marshmallow', 'foam', 1.45, 1.1, 100),
   chocolate: mat('chocolate', 'chocolate', 'drip', 0.95, 1.15, 160),
-  citrus: mat('citrus', 'cítrico', 'zest', 0.75, 1.2, 250),
-  honeycomb: mat('honeycomb', 'mel', 'drip', 0.85, 1.25, 350),
+  sponge: mat('sponge', 'esponja', 'foam', 1.3, 1.15, 180),
   glycerin: mat('glycerin', 'sabonete', 'bubble', 0.9, 1.2, 200),
+  citrus: mat('citrus', 'cítrico', 'zest', 0.75, 1.2, 250),
+  clearSlime: mat('clearSlime', 'chiclete', 'foam', 1.35, 1.3, 280),
   whipped: mat('whipped', 'espuma', 'foamBurst', 1.4, 1.25, 320),
+  honeycomb: mat('honeycomb', 'mel', 'drip', 0.85, 1.25, 350),
+  soapBubble: mat('soapBubble', 'bolha', 'bubble', 1.15, 1.25, 380),
+  bathFoam: mat('bathFoam', 'espuma banho', 'foamBurst', 1.35, 1.3, 420),
+  lavenderSoap: mat('lavenderSoap', 'sabonete lavanda', 'glitter', 0.75, 1.3, 480),
+  creamSoap: mat('creamSoap', 'sabonete creme', 'bubble', 0.85, 1.35, 540),
+  keyboard: mat('keyboard', 'teclado', 'crumb', 0.7, 1.35, 600),
+  bubbleWrap: mat('bubbleWrap', 'plástico bolha', 'foamBurst', 0.95, 1.4, 680),
   kinetic: mat('kinetic', 'areia', 'sand', 1.1, 1.2, 700),
   iceSoap: mat('iceSoap', 'sabonete gelo', 'glitter', 0.5, 1.4, 850),
-  clearSlime: mat('clearSlime', 'chiclete', 'foam', 1.35, 1.3, 280),
   butterSlime: mat('butterSlime', 'massa', 'foam', 1.5, 1.5, 1200),
 };
 
@@ -86,14 +102,22 @@ export const MATERIAL_ORDER: MaterialId[] = [
   'jelly',
   'butter',
   'mochi',
+  'marshmallow',
   'chocolate',
-  'citrus',
-  'honeycomb',
+  'sponge',
   'glycerin',
+  'citrus',
+  'clearSlime',
   'whipped',
+  'honeycomb',
+  'soapBubble',
+  'bathFoam',
+  'lavenderSoap',
+  'creamSoap',
+  'keyboard',
+  'bubbleWrap',
   'kinetic',
   'iceSoap',
-  'clearSlime',
   'butterSlime',
 ];
 

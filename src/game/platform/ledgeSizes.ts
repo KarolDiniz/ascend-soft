@@ -33,6 +33,22 @@ export const MATERIAL_LEDGE: Record<
   clearSlime: { minW: 42, maxW: 50, visualDepth: 0.82, visualSpread: 1.02 },
   /** massa — média */
   butterSlime: { minW: 48, maxW: 58, visualDepth: 0.98, visualSpread: 1.02 },
+  /** marshmallow — alta e fofa */
+  marshmallow: { minW: 44, maxW: 54, visualDepth: 1.25, visualSpread: 1.0 },
+  /** esponja — retangular porosa */
+  sponge: { minW: 50, maxW: 62, visualDepth: 0.9, visualSpread: 1.04 },
+  /** bolha de sabão — redonda */
+  soapBubble: { minW: 40, maxW: 50, visualDepth: 1.15, visualSpread: 1.0 },
+  /** espuma de banho — nuvem */
+  bathFoam: { minW: 52, maxW: 66, visualDepth: 1.2, visualSpread: 1.08 },
+  /** sabonete lavanda — barra */
+  lavenderSoap: { minW: 42, maxW: 52, visualDepth: 0.78, visualSpread: 0.98 },
+  /** sabonete creme — barra oval */
+  creamSoap: { minW: 44, maxW: 54, visualDepth: 0.82, visualSpread: 1.0 },
+  /** teclado — largo e baixo */
+  keyboard: { minW: 58, maxW: 72, visualDepth: 0.62, visualSpread: 1.06 },
+  /** plástico bolha — laje com bolhas */
+  bubbleWrap: { minW: 52, maxW: 64, visualDepth: 0.72, visualSpread: 1.04 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {

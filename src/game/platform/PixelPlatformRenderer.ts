@@ -96,13 +96,44 @@ export function renderPixelPlatform(
     case 'butterSlime':
       drawDough(args);
       break;
+    case 'marshmallow':
+      drawMarshmallow(args);
+      break;
+    case 'sponge':
+      drawSponge(args);
+      break;
+    case 'soapBubble':
+      drawSoapBubble(args);
+      break;
+    case 'bathFoam':
+      drawBathFoam(args);
+      break;
+    case 'lavenderSoap':
+      drawLavenderSoap(args);
+      break;
+    case 'creamSoap':
+      drawCreamSoap(args);
+      break;
+    case 'keyboard':
+      drawKeyboard(args);
+      break;
+    case 'bubbleWrap':
+      drawBubbleWrap(args);
+      break;
     default:
       drawButter(args);
   }
 
   // Shared crack overlay for shatter materials
   const crack = overlay?.crackLevel ?? 0;
-  if (crack > 0.05 && (material === 'glycerin' || material === 'iceSoap' || material === 'chocolate')) {
+  if (
+    crack > 0.05 &&
+    (material === 'glycerin' ||
+      material === 'iceSoap' ||
+      material === 'chocolate' ||
+      material === 'lavenderSoap' ||
+      material === 'creamSoap')
+  ) {
     ctx.globalAlpha = s.opacity * Math.min(1, crack * 1.3);
     for (let i = 0; i < 4 + Math.floor(crack * 4); i++) {
       fillPx(
@@ -854,4 +885,246 @@ function drawDough(a: DrawArgs): void {
   drawEdgeFlecks(a, 5, mat.particle);
   drawDebris(a, 6, mat.particle);
   drawAmbientSpecks(a, 6, mat.particle);
+}
+
+/** Marshmallow — cubo fofo branco-blush */
+function drawMarshmallow(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
+  const x = cx - w / 2;
+  const squash = (a.overlay?.pressAmount ?? 0) * u;
+  fillPx(ctx, x + u, sy + squash, w - u * 2, h - squash, mat.fill);
+  fillPx(ctx, x, sy + u + squash, w, h - u * 2 - squash, mat.fill);
+  fillPx(ctx, x + u * 2, sy + squash, w - u * 4, u, rgba(PASTEL.white, 0.7));
+  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, mat.stroke);
+  // Soft toasted edge flecks
+  for (let i = 0; i < 8; i++) {
+    fillPx(
+      ctx,
+      x + u * 2 + seeded(seed, i) * (w - u * 6),
+      sy + u * 2 + seeded(seed, i + 5) * (h - u * 4) + squash,
+      u,
+      u,
+      i % 2 ? PASTEL.blush : rgba(mat.stroke, 0.35),
+    );
+  }
+  // Bounce puff
+  for (let i = 0; i < 5; i++) {
+    if (Math.sin(time * 2.5 + i + wobble) > 0.2) {
+      fillPx(ctx, cx + (i - 2) * u * 2, sy - u + Math.sin(time + i) * u * 0.5, u, u, mat.particle);
+    }
+  }
+  drawShimmerBand(a, 1);
+  drawPressIndent(a);
+  drawEdgeFlecks(a, 4, mat.particle);
+  drawDebris(a, 4, PASTEL.white);
+  drawAmbientSpecks(a, 6, mat.particle);
+}
+
+/** Esponja — bloco amarelo com poros */
+function drawSponge(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x, sy, w, h, mat.fill);
+  fillPx(ctx, x, sy, w, u, rgba(PASTEL.white, 0.4));
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+  fillPx(ctx, x, sy, u, h, mat.stroke);
+  fillPx(ctx, x + w - u, sy, u, h, mat.stroke);
+  // Pore grid
+  for (let i = 0; i < 20; i++) {
+    const px0 = x + u * 2 + (i % 5) * (w / 5.2);
+    const py = sy + u * 2 + Math.floor(i / 5) * (h / 4.5);
+    fillPx(ctx, px0, py, u * (1 + (i % 2)), u * (1 + (i % 2)), rgba(mat.stroke, 0.45));
+    if (seeded(seed, i) > 0.55) fillPx(ctx, px0 + u, py + u, u, u, rgba(PASTEL.white, 0.25));
+  }
+  if (press > 0.15) {
+    for (let i = 0; i < 4; i++) {
+      fillPx(ctx, cx + (seeded(seed, i + 40) - 0.5) * w * 0.5, sy - u, u, u, mat.particle);
+    }
+  }
+  drawPressIndent(a);
+  drawSurfaceGrain(a, 6, mat.particle, 0.3);
+  drawEdgeFlecks(a, 5, mat.particle);
+  drawDebris(a, 5, mat.particle);
+  drawAmbientSpecks(a, 4, mat.particle);
+}
+
+/** Bolha de sabão — orbe translúcida irisada */
+function drawSoapBubble(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed } = a;
+  const r = Math.min(w, h) * 0.55;
+  // Stepped circle body
+  for (let row = 0; row < h; row += u) {
+    const t = (row - h / 2) / (h / 2);
+    const ww = w * Math.max(0.25, Math.sqrt(Math.max(0, 1 - t * t)) * 0.95);
+    fillPx(ctx, cx - ww / 2, sy + row, ww, u, rgba(mat.fill, 0.55));
+  }
+  // Rainbow shimmer rim
+  const slide = Math.sin(time * 3 + wobble) * u * 2;
+  fillPx(ctx, cx - r * 0.4 + slide, sy + u * 2, u * 3, u, rgba(PASTEL.white, 0.7));
+  fillPx(ctx, cx + r * 0.2, sy + h * 0.35, u * 2, u, rgba(PASTEL.lilac, 0.5));
+  fillPx(ctx, cx - r * 0.15, sy + h * 0.55, u, u, rgba(PASTEL.mint, 0.45));
+  // Satellite bubbles
+  for (let i = 0; i < 4; i++) {
+    const bx = cx + (seeded(seed, i) - 0.5) * w * 0.9;
+    const by = sy + h + Math.sin(time * 2 + i) * u;
+    drawBubbleRing(ctx, bx, by, u * 2, u, rgba(mat.particle, 0.6));
+  }
+  drawAmbientSpecks(a, 8, mat.particle);
+  drawDebris(a, 3, mat.particle);
+}
+
+/** Espuma de banho — nuvem lilac fofa */
+function drawBathFoam(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x + u, sy + h * 0.35, w - u * 2, h * 0.65, mat.fill);
+  fillPx(ctx, x, sy + h * 0.5, w, h * 0.5, mat.fill);
+  for (let i = 0; i < 7; i++) {
+    const px0 = x + u * 2 + (i / 6) * (w - u * 4);
+    const ph = h * (0.4 + seeded(seed, i) * 0.45) * (1 - press * 0.4) + Math.sin(wobble + i) * u;
+    for (let row = 0; row < ph; row += u) {
+      const tw = u * 3 + (row / Math.max(1, ph)) * u * 4;
+      fillPx(ctx, px0 - tw / 2, sy + h * 0.45 - row, tw, u, i % 3 === 1 ? PASTEL.lilac : mat.fill);
+    }
+    fillPx(ctx, px0 - u, sy + h * 0.45 - ph, u * 2, u, PASTEL.white);
+  }
+  for (let i = 0; i < 8; i++) {
+    if (Math.sin(time * 3 + i) > 0) {
+      drawBubbleRing(
+        ctx,
+        cx + (seeded(seed, i + 20) - 0.5) * w * 0.8,
+        sy + seeded(seed, i + 25) * h * 0.5,
+        u * 2,
+        u,
+        rgba(mat.particle, 0.5),
+      );
+    }
+  }
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+  drawDebris(a, 6, PASTEL.white);
+  drawAmbientSpecks(a, 8, mat.particle);
+}
+
+/** Sabonete lavanda — barra lilás com glitter */
+function drawLavenderSoap(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x + u * 2, sy, w - u * 4, h, mat.fill);
+  fillPx(ctx, x + u, sy + u, w - u * 2, h - u * 2, mat.fill);
+  fillPx(ctx, x, sy + u * 2, w, h - u * 4, mat.fill);
+  fillPx(ctx, x + u * 3, sy, w - u * 6, u, rgba(PASTEL.white, 0.6));
+  fillPx(ctx, x + u * 2, sy + h - u, w - u * 4, u, mat.stroke);
+  fillPx(ctx, x + u * 4, sy + h * 0.45, w - u * 8, u, rgba(PASTEL.white, 0.35));
+  for (let i = 0; i < 14; i++) {
+    if (Math.sin(time * 4 + i + wobble) < -0.3) continue;
+    fillPx(
+      ctx,
+      x + u * 3 + seeded(seed, i) * (w - u * 8),
+      sy + u * 2 + seeded(seed, i + 4) * (h * 0.55),
+      u,
+      u,
+      i % 2 ? PASTEL.white : mat.particle,
+    );
+  }
+  drawShimmerBand(a, 0);
+  drawPressIndent(a);
+  drawEdgeFlecks(a, 4, mat.particle);
+  drawDebris(a, 4, mat.particle);
+  drawAmbientSpecks(a, 7, mat.particle);
+}
+
+/** Sabonete creme — barra creme oval */
+function drawCreamSoap(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time } = a;
+  const x = cx - w / 2;
+  for (let row = 0; row < h; row += u) {
+    const t = row / Math.max(1, h - u);
+    const ww = w * (0.85 + Math.sin(t * Math.PI) * 0.15);
+    fillPx(ctx, cx - ww / 2, sy + row, ww, u, mat.fill);
+  }
+  fillPx(ctx, x + u * 3, sy, w - u * 6, u, rgba(PASTEL.white, 0.65));
+  fillPx(ctx, x + u * 2, sy + h - u, w - u * 4, u, mat.stroke);
+  fillPx(ctx, x + u * 4, sy + h * 0.4, w - u * 8, u, rgba(PASTEL.white, 0.35));
+  for (let i = 0; i < 8; i++) {
+    if (Math.sin(time * 3 + i) > 0) {
+      fillPx(
+        ctx,
+        x + u * 4 + seeded(seed, i) * (w - u * 10),
+        sy + u * 3 + seeded(seed, i + 6) * (h * 0.4),
+        u,
+        u,
+        mat.particle,
+      );
+    }
+  }
+  for (let i = 0; i < 3; i++) {
+    drawBubbleRing(ctx, x + u * 5 + i * u * 5, sy + h * 0.55, u * 2, u, rgba(mat.particle, 0.45));
+  }
+  drawPressIndent(a);
+  drawDebris(a, 4, mat.particle);
+  drawAmbientSpecks(a, 5, mat.particle);
+}
+
+/** Teclado — fileira de teclas cinza pastel */
+function drawKeyboard(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x, sy + u, w, h - u, mat.stroke);
+  fillPx(ctx, x + u, sy + u * 2, w - u * 2, h - u * 3, rgba(mat.fill, 0.85));
+  const cols = 6;
+  const rows = 2;
+  const kw = (w - u * 4) / cols;
+  const kh = (h - u * 4) / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const kx = x + u * 2 + c * kw;
+      const ky = sy + u * 2 + r * kh;
+      const sunk = press > 0.35 && seeded(seed, r * 10 + c) > 0.7 ? u : 0;
+      fillPx(ctx, kx + u * 0.3, ky + sunk, kw - u * 0.6, kh - u * 0.6, mat.fill);
+      fillPx(ctx, kx + u * 0.5, ky + u * 0.3 + sunk, kw - u, u, rgba(PASTEL.white, 0.45));
+      fillPx(ctx, kx + u, ky + kh - u * 1.2 + sunk, kw - u * 2, u, rgba(mat.stroke, 0.4));
+      // Letter speck
+      if (seeded(seed, c + r * 7) > 0.4) {
+        fillPx(ctx, kx + kw * 0.35, ky + kh * 0.35 + sunk, u, u, rgba(mat.stroke, 0.5));
+      }
+    }
+  }
+  drawPressIndent(a);
+  drawDebris(a, 3, mat.particle);
+  drawAmbientSpecks(a, 3, mat.particle);
+}
+
+/** Plástico bolha — laje com grade de bolhas */
+function drawBubbleWrap(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x, sy, w, h, mat.fill);
+  fillPx(ctx, x, sy, w, u, rgba(PASTEL.white, 0.45));
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+  const cols = 5;
+  const rows = 2;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const bx = x + u * 2 + c * ((w - u * 4) / cols);
+      const by = sy + u * 2 + r * ((h - u * 4) / rows);
+      const popped = press > 0.4 && seeded(seed, c + r * 9) > 0.55;
+      if (popped) {
+        fillPx(ctx, bx + u, by + u, u * 2, u, rgba(mat.stroke, 0.35));
+      } else {
+        drawBubbleRing(ctx, bx, by, u * 3, u, rgba(mat.particle, 0.65));
+        fillPx(ctx, bx + u, by + u, u, u, rgba(PASTEL.white, 0.55));
+        if (Math.sin(time * 2.5 + c + r) > 0.4) {
+          fillPx(ctx, bx + u * 2, by, u, u, rgba(PASTEL.sky, 0.4));
+        }
+      }
+    }
+  }
+  drawPressIndent(a);
+  drawEdgeFlecks(a, 4, mat.particle);
+  drawDebris(a, 4, mat.particle);
+  drawAmbientSpecks(a, 5, mat.particle);
 }

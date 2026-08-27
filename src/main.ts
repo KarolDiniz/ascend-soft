@@ -1,5 +1,6 @@
 import { AudioBus } from './audio/AudioBus';
 import { spriteAtlas } from './assets/platforms/SpriteAtlas';
+import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
 
@@ -10,7 +11,7 @@ const game = new Game(canvas, audio, hud);
 
 void spriteAtlas.init().then(() => {
   console.info(
-    `[Ascend Soft] sprites: ${spriteAtlas.aiCount()}/12 IA, resto placeholder`,
+    `[Ascend Soft] sprites: ${spriteAtlas.aiCount()}/${ALL_SPRITE_MATERIALS.length} IA, resto placeholder`,
   );
 });
 

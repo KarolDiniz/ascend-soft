@@ -445,13 +445,21 @@ export class Game {
       switch (p.material) {
         case 'glycerin':
         case 'iceSoap':
+        case 'lavenderSoap':
+        case 'creamSoap':
         case 'whipped':
+        case 'bathFoam':
           this.particles.risingBubbles(
             this.player.x,
             platformTop,
             mat.particle,
-            p.material === 'whipped' ? 28 : 20,
+            p.material === 'whipped' || p.material === 'bathFoam' ? 28 : 20,
           );
+          break;
+        case 'soapBubble':
+        case 'bubbleWrap':
+          this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 22);
+          this.particles.foamPopStorm(this.player.x, platformTop, mat.particle);
           break;
         case 'clearSlime':
           this.particles.gumStretch(this.player.x, platformTop, mat.particle);
@@ -459,8 +467,15 @@ export class Game {
           this.addFloater(this.player.x, platformTop + 16, 'gruda!', mat.particle);
           break;
         case 'mochi':
+        case 'marshmallow':
           this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
           this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
+          break;
+        case 'sponge':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          break;
+        case 'keyboard':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);
           break;
         case 'butter':
         case 'chocolate':

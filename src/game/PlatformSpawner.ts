@@ -232,9 +232,9 @@ export class PlatformSpawner {
   /** Never 2+ mortals in a row; bias toward elastic early. */
   private pickFairMaterial(height: number): MaterialId {
     let material = pickMaterial(height, this.rand);
-    const elasticPool = (['jelly', 'mochi', 'butterSlime', 'clearSlime'] as MaterialId[]).filter(
-      (id) => MATERIALS[id].unlockAt <= height,
-    );
+    const elasticPool = (
+      ['jelly', 'mochi', 'marshmallow', 'sponge', 'butterSlime', 'clearSlime', 'keyboard'] as MaterialId[]
+    ).filter((id) => MATERIALS[id].unlockAt <= height);
 
     if (this.mortalStreak >= 1 && elasticPool.length) {
       return elasticPool[Math.floor(this.rand() * elasticPool.length)];

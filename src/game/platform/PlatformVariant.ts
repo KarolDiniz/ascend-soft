@@ -51,6 +51,38 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'butterSlime_fold', visualDepth: 1.45, visualSpread: 1.15 },
     { id: 'butterSlime_scoop', visualDepth: 1.6, visualSpread: 1.12 },
   ],
+  marshmallow: [
+    { id: 'marshmallow_puff', visualDepth: 1.55, visualSpread: 1.1 },
+    { id: 'marshmallow_cube', visualDepth: 1.4, visualSpread: 1.05 },
+  ],
+  sponge: [
+    { id: 'sponge_block', visualDepth: 1.25, visualSpread: 1.08 },
+    { id: 'sponge_soft', visualDepth: 1.15, visualSpread: 1.12 },
+  ],
+  soapBubble: [
+    { id: 'soapBubble_orb', visualDepth: 1.5, visualSpread: 1.05 },
+    { id: 'soapBubble_cluster', visualDepth: 1.35, visualSpread: 1.15 },
+  ],
+  bathFoam: [
+    { id: 'bathFoam_cloud', visualDepth: 1.7, visualSpread: 1.18 },
+    { id: 'bathFoam_swirl', visualDepth: 1.55, visualSpread: 1.2 },
+  ],
+  lavenderSoap: [
+    { id: 'lavenderSoap_bar', visualDepth: 1.3, visualSpread: 1.0 },
+    { id: 'lavenderSoap_gem', visualDepth: 1.4, visualSpread: 1.05 },
+  ],
+  creamSoap: [
+    { id: 'creamSoap_bar', visualDepth: 1.3, visualSpread: 1.0 },
+    { id: 'creamSoap_oval', visualDepth: 1.35, visualSpread: 1.08 },
+  ],
+  keyboard: [
+    { id: 'keyboard_row', visualDepth: 1.05, visualSpread: 1.12 },
+    { id: 'keyboard_pad', visualDepth: 1.1, visualSpread: 1.08 },
+  ],
+  bubbleWrap: [
+    { id: 'bubbleWrap_sheet', visualDepth: 1.15, visualSpread: 1.1 },
+    { id: 'bubbleWrap_pack', visualDepth: 1.25, visualSpread: 1.08 },
+  ],
 };
 
 export function pickVariant(material: MaterialId, rand: () => number): VariantDef {
