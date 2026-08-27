@@ -32,6 +32,7 @@ export class Hud {
     this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
+    document.getElementById('app')?.classList.add('is-title');
     this.setTitleBest(best);
   }
 
@@ -47,6 +48,7 @@ export class Hud {
     this.leaveTimer = window.setTimeout(() => {
       this.titleScreen.classList.add('hidden');
       this.titleScreen.classList.remove('is-leaving');
+      document.getElementById('app')?.classList.remove('is-title');
       onDone();
     }, 280);
   }
@@ -72,6 +74,7 @@ export class Hud {
     window.clearTimeout(this.leaveTimer);
     this.titleScreen.classList.add('hidden');
     this.titleScreen.classList.remove('is-leaving');
+    document.getElementById('app')?.classList.remove('is-title');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
     this.bestEl.textContent = String(best);

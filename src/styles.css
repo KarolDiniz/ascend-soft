@@ -53,6 +53,13 @@ body {
   image-rendering: crisp-edges;
 }
 
+/* Título: sem filter no canvas ao vivo (blur a cada frame trava o jogo).
+   O desfoque visual vem do véu fosco em .title-veil. */
+#app.is-title #game {
+  transform: scale(1.02);
+  transform-origin: center center;
+}
+
 .ui {
   position: absolute;
   inset: 0;
@@ -175,30 +182,33 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Laterais: pouco blur, fundo mais legível */
-  background: linear-gradient(
-    180deg,
-    rgba(201, 228, 222, 0.22) 0%,
-    rgba(247, 241, 234, 0.18) 45%,
-    rgba(240, 201, 176, 0.28) 100%
-  );
-  -webkit-backdrop-filter: blur(5px) saturate(1.02);
-  backdrop-filter: blur(5px) saturate(1.02);
+  /* Fosco barato (sem filter no canvas — blur ao vivo travava o jogo) */
+  background:
+    radial-gradient(
+      ellipse 60% 55% at 50% 48%,
+      rgba(255, 252, 248, 0.55) 0%,
+      rgba(247, 241, 234, 0.38) 48%,
+      rgba(232, 210, 196, 0.22) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(201, 228, 222, 0.45) 0%,
+      rgba(247, 241, 234, 0.4) 45%,
+      rgba(240, 201, 176, 0.48) 100%
+    );
 }
 
-/* Centro: blur forte só na elipse do menu */
+/* Centro: froste extra atrás do menu */
 .title-veil::after {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
     ellipse 56% 52% at 50% 48%,
-    rgba(255, 252, 248, 0.42) 0%,
-    rgba(247, 241, 234, 0.22) 45%,
+    rgba(255, 252, 248, 0.35) 0%,
+    rgba(247, 241, 234, 0.14) 45%,
     transparent 72%
   );
-  -webkit-backdrop-filter: blur(34px) saturate(0.9);
-  backdrop-filter: blur(34px) saturate(0.9);
   -webkit-mask-image: radial-gradient(
     ellipse 62% 58% at 50% 48%,
     #000 0%,

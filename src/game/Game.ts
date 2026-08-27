@@ -3,6 +3,7 @@ import { MATERIALS, type MaterialId } from '../audio/materials';
 import { AmbientParticles } from './atmosphere/AmbientParticles';
 import { Atmosphere } from './atmosphere/Atmosphere';
 import { SceneryLayer } from './atmosphere/SceneryLayer';
+import { SoftPass } from './atmosphere/SoftPass';
 import { Background } from './Background';
 import { BreathSpawner } from './Breaths';
 import { Camera } from './Camera';
@@ -43,6 +44,8 @@ export class Game {
   private ambient = new AmbientParticles();
   private atmosphere = new Atmosphere();
   private scenery = new SceneryLayer();
+  /** Low-res upscale soft-focus for scenery (cheap fake blur). */
+  private softScenery = new SoftPass(0.38);
   private shards = new ShardField();
   private breaths = new BreathSpawner();
   private background = new Background();
@@ -635,12 +638,18 @@ export class Game {
     enablePixelMode(ctx);
 
     this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
-    this.scenery.drawFar(ctx, this.W, this.H, this.camera.y, this.atmosphere);
-    this.ambient.drawFar(ctx, this.toScreen);
-    this.scenery.drawMid(ctx, this.W, this.H, this.camera.y, this.atmosphere);
 
-    this.ambient.drawMid(ctx, this.toScreen);
+    // Soft scenery: paint at ~38% res + smooth upscale (title + play).
+    // Avoids ctx.filter blur which tanks FPS.
+    this.softScenery.paint(ctx, this.W, this.H, (s) => {
+      this.scenery.drawFar(s, this.W, this.H, this.camera.y, this.atmosphere);
+      this.ambient.drawFar(s, this.toScreen);
+      this.scenery.drawMid(s, this.W, this.H, this.camera.y, this.atmosphere);
+      this.ambient.drawMid(s, this.toScreen);
+    });
+
     this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
+    enablePixelMode(ctx);
 
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);
