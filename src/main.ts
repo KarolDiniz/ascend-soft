@@ -1,4 +1,5 @@
 import { AudioBus } from './audio/AudioBus';
+import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
 
@@ -6,6 +7,12 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
 const hud = new Hud();
 const game = new Game(canvas, audio, hud);
+
+void spriteAtlas.init().then(() => {
+  console.info(
+    `[Ascend Soft] sprites: ${spriteAtlas.aiCount()}/12 IA, resto placeholder`,
+  );
+});
 
 const btnStart = document.getElementById('btn-start')!;
 const btnRetry = document.getElementById('btn-retry')!;
