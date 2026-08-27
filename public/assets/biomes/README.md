@@ -4,27 +4,24 @@ Place transparent PNGs here to replace/augment procedural silhouettes.
 
 ```
 public/assets/biomes/
-  garden/
-    far.png      # wide backdrop silhouettes (leaves, citrus) — 768–1024px wide
-    mid.png      # mid props
-    accent.png   # sparse accent layer
-  bakery/
-    far.png
-    mid.png
-    accent.png
-  spa/
-    …
-  frost/
-    …
-  ether/
-    …
+  garden/   far.png  mid.png  accent.png
+  bakery/   far.png  mid.png  accent.png
+  spa/      far.png  mid.png  accent.png
+  frost/    far.png  mid.png  accent.png
+  ether/    far.png  mid.png  accent.png
 ```
 
 ## Guidelines
-- Transparent background (PNG)
-- Soft pastel / ASMR palette matching the zone
+- Transparent PNG, soft pastel / ASMR palette
+- Size: **768–1024** wide
 - Avoid busy details that compete with platforms
-- Suggested size: **768–1024** wide, height as needed
-- If a file is missing, the game uses procedural canvas props only
+- Missing files → procedural props only
+
+## Quick AI prompts
+- **garden far**: soft mint cream sky silhouettes of oversized citrus slices and hibiscus leaves, translucent pastel, no text, transparent PNG
+- **bakery mid**: soft whipped cream clouds and cake layers silhouette, peach pink, ASMR food, transparent
+- **spa far**: giant soap bubbles and smooth stone silhouettes, aqua lavender very soft, transparent
+- **frost mid**: soft ice crystals and frosted glass shards, pale blue white, transparent
+- **ether accent**: glowing soft orbs and light rings, cream gold dreamy, transparent
 
 Procedural props always draw; sprites layer on top when loaded.

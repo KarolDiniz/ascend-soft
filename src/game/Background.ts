@@ -151,7 +151,7 @@ export class Background {
           const y = ((i * 89 + Math.sin(this.time * 0.3 + i) * 40) % h);
           const r = 40 + (i % 4) * 18;
           const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-          g.addColorStop(0, 'rgba(255,255,240,0.1)');
+          g.addColorStop(0, 'rgba(255,255,240,0.14)');
           g.addColorStop(1, 'rgba(255,255,255,0)');
           ctx.fillStyle = g;
           ctx.beginPath();
@@ -161,16 +161,16 @@ export class Background {
         break;
       }
       case 'sugarVeil': {
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        for (let i = 0; i < 40; i++) {
-          const x = ((i * 47 + this.time * 18) % (w + 20)) - 10;
-          const y = ((i * 73 + this.time * 8) % (h + 20)) - 10;
-          ctx.fillRect(x, y, 1.5, 1.5);
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        for (let i = 0; i < 55; i++) {
+          const x = ((i * 47 + this.time * 22) % (w + 20)) - 10;
+          const y = ((i * 73 + this.time * 11) % (h + 20)) - 10;
+          ctx.fillRect(x, y, 1.8, 1.8);
         }
         break;
       }
       case 'caustics': {
-        ctx.strokeStyle = 'rgba(200, 230, 235, 0.12)';
+        ctx.strokeStyle = 'rgba(200, 230, 235, 0.16)';
         ctx.lineWidth = 1.5;
         for (let i = 0; i < 5; i++) {
           ctx.beginPath();
@@ -190,22 +190,22 @@ export class Background {
       case 'frostEdge': {
         const edge = 70;
         const top = ctx.createLinearGradient(0, 0, 0, edge);
-        top.addColorStop(0, 'rgba(255,255,255,0.22)');
+        top.addColorStop(0, 'rgba(255,255,255,0.28)');
         top.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = top;
         ctx.fillRect(0, 0, w, edge);
         const bot = ctx.createLinearGradient(0, h, 0, h - edge);
-        bot.addColorStop(0, 'rgba(255,255,255,0.18)');
+        bot.addColorStop(0, 'rgba(255,255,255,0.24)');
         bot.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = bot;
         ctx.fillRect(0, h - edge, w, edge);
         const left = ctx.createLinearGradient(0, 0, edge, 0);
-        left.addColorStop(0, 'rgba(230,245,255,0.16)');
+        left.addColorStop(0, 'rgba(230,245,255,0.2)');
         left.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = left;
         ctx.fillRect(0, 0, edge, h);
         const right = ctx.createLinearGradient(w, 0, w - edge, 0);
-        right.addColorStop(0, 'rgba(230,245,255,0.16)');
+        right.addColorStop(0, 'rgba(230,245,255,0.2)');
         right.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = right;
         ctx.fillRect(w - edge, 0, edge, h);
@@ -220,8 +220,8 @@ export class Background {
       }
       case 'goldBloom': {
         const g = ctx.createRadialGradient(w * 0.5, h * 0.42, 10, w * 0.5, h * 0.42, h * 0.6);
-        g.addColorStop(0, 'rgba(255, 230, 190, 0.1)');
-        g.addColorStop(0.5, 'rgba(255, 220, 180, 0.04)');
+        g.addColorStop(0, 'rgba(255, 230, 190, 0.14)');
+        g.addColorStop(0.5, 'rgba(255, 220, 180, 0.06)');
         g.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);

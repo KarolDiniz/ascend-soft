@@ -109,7 +109,7 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     blobKinds: ['slice', 'petal', 'flake'],
     scenery: ['leaf', 'hibiscus', 'citrus', 'abstractMote', 'leaf', 'citrus'],
     overlay: 'mottle',
-    particleBudget: 300,
+    particleBudget: 380,
   },
   {
     id: 'bakery',
@@ -144,7 +144,7 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     blobKinds: ['scoop', 'petal', 'flake'],
     scenery: ['cake', 'spoon', 'creamCloud', 'donut', 'creamCloud', 'abstractMote'],
     overlay: 'sugarVeil',
-    particleBudget: 320,
+    particleBudget: 400,
   },
   {
     id: 'spa',
@@ -178,7 +178,7 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     blobKinds: ['bubble', 'orb', 'flake'],
     scenery: ['bottle', 'bigBubble', 'towel', 'stone', 'bigBubble', 'abstractMote'],
     overlay: 'caustics',
-    particleBudget: 340,
+    particleBudget: 420,
   },
   {
     id: 'frost',
@@ -211,7 +211,7 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     blobKinds: ['crystal', 'flake', 'orb'],
     scenery: ['crystal', 'iceBlock', 'snowflake', 'crystal', 'softOrb', 'snowflake'],
     overlay: 'frostEdge',
-    particleBudget: 350,
+    particleBudget: 430,
   },
   {
     id: 'ether',
@@ -245,7 +245,7 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     blobKinds: ['orb', 'petal', 'flake'],
     scenery: ['lightRing', 'softOrb', 'abstractMote', 'lightRing', 'softOrb', 'abstractMote'],
     overlay: 'goldBloom',
-    particleBudget: 280,
+    particleBudget: 360,
   },
 ];
 

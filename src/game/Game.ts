@@ -165,10 +165,20 @@ export class Game {
     this.time += dt;
     this.input.update(dt);
     this.fpsEma = this.fpsEma * 0.9 + (1 / Math.max(0.001, dt)) * 0.1;
-    if (this.fpsEma < 50) {
+    if (this.fpsEma < 45) {
+      this.ambient.setMobileScale(0.5);
+      this.particles.setMobileScale(0.5);
+      this.particles.setAllowContinuous(false);
+      this.scenery.setPerfMode(true);
+    } else if (this.fpsEma < 55) {
       this.ambient.setMobileScale(0.65);
+      this.particles.setMobileScale(0.7);
+      this.particles.setAllowContinuous(true);
       this.scenery.setPerfMode(true);
     } else {
+      this.ambient.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.65 : 1);
+      this.particles.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.6 : 1);
+      this.particles.setAllowContinuous(true);
       this.scenery.setPerfMode(false);
     }
 
@@ -226,8 +236,20 @@ export class Game {
 
     const prevPlat = this.player.groundedPlatform;
     const prevBottom = this.player.bottom;
+    const wasGrounded = this.player.onGround;
     const jumped = this.player.update(dt, this.input);
-    if (jumped) this.audio.playJump();
+    if (jumped) {
+      this.audio.playJump();
+      if (prevPlat) {
+        const mat = MATERIALS[prevPlat.material];
+        this.particles.releasePuff(
+          this.player.x,
+          prevPlat.surfaceY,
+          mat.particle,
+          this.atmosphere.getAccent(),
+        );
+      }
+    }
 
     const wall = this.worldHalfW + 20;
     if (this.player.x < -wall) {
@@ -244,6 +266,36 @@ export class Game {
     // Walk-off / fall-off: release press on previous platform
     if (prevPlat && this.player.groundedPlatform !== prevPlat) {
       prevPlat.setPressed(false);
+      if (wasGrounded && !jumped) {
+        const mat = MATERIALS[prevPlat.material];
+        this.particles.releasePuff(
+          this.player.x,
+          prevPlat.surfaceY,
+          mat.particle,
+          this.atmosphere.getAccent(),
+        );
+      }
+    }
+
+    // Continuous grounded ASMR juice
+    if (this.player.groundedPlatform?.alive && this.player.onGround) {
+      const gp = this.player.groundedPlatform;
+      const mat = MATERIALS[gp.material];
+      this.particles.emitGrounded(
+        dt,
+        this.player.x,
+        gp.surfaceY,
+        this.player.vx,
+        gp.pressAmount,
+        mat.squash,
+        mat.particle,
+        mat.particleStyle,
+        gp.material,
+        gp.behavior,
+        this.atmosphere.getAccent(),
+      );
+    } else if (!this.player.onGround) {
+      this.particles.emitAirTrail(dt, this.player.x, this.player.y, this.player.trailColor);
     }
 
     this.spawner.update(this.player.y, this.camera.y, this.H);
@@ -362,15 +414,15 @@ export class Game {
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
 
-      const count = 8 + Math.floor(impact * 8);
-      this.particles.burst(
+      this.particles.landBurst(
         this.player.x,
         platformTop,
         mat.particle,
-        count,
         mat.particleStyle,
+        impact,
         perfect,
         this.atmosphere.getAccent(),
+        p.material,
       );
       this.audio.playLand(p.material, perfect, this.perfectStreak);
 
@@ -418,26 +470,28 @@ export class Game {
     const mat = MATERIALS[p.material];
     switch (ev.type) {
       case 'meltDrip':
-        this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 2);
+        this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);
+        this.particles.meltRibbon(p.x, p.surfaceY, mat.particle);
         if (this.atmosphere.primaryId === 'bakery' || this.atmosphere.primaryId === 'spa') {
-          this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 2, 'foam', false);
+          this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 3, 'foam', false);
         }
         if (Math.random() > 0.6) this.audio.playMeltDrip();
         break;
       case 'meltGone':
-        this.particles.drip(p.x, p.surfaceY, mat.particle, 10);
+        this.particles.meltFinish(p.x, p.surfaceY, mat.particle);
         this.audio.playMeltGone();
         this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#d4a574');
         break;
       case 'crack':
         this.audio.playCrack();
-        this.particles.burst(p.x, p.surfaceY, '#ffffff', 4, 'glitter', false);
+        this.particles.crackSpark(p.x, p.surfaceY, this.atmosphere.getAccent());
+        this.particles.burst(p.x, p.surfaceY, '#ffffff', 6, 'glitter', false);
         break;
       case 'shatter':
-        this.shards.burst(p.x, p.surfaceY, ev.color, 10, p.w * 0.6);
-        this.particles.burst(p.x, p.surfaceY, '#ffffff', 12, 'glitter', true, this.atmosphere.getAccent());
+        this.shards.burst(p.x, p.surfaceY, ev.color, 16, p.w * 0.65);
+        this.particles.shatterFollowThrough(p.x, p.surfaceY, mat.particle, this.atmosphere.getAccent());
         if (this.atmosphere.primaryId === 'frost') {
-          this.particles.burst(p.x, p.surfaceY, '#d0e8f8', 8, 'glitter', false);
+          this.particles.burst(p.x, p.surfaceY, '#d0e8f8', 10, 'glitter', false);
         }
         this.audio.playShatter();
         this.screenPunch = Math.max(this.screenPunch, 0.4);
@@ -446,19 +500,18 @@ export class Game {
       case 'crumbleSand':
         this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w);
         if (Math.random() > 0.55) {
-          this.particles.burst(p.x, p.surfaceY, mat.particle, 3, 'sand', false, this.atmosphere.getAccent());
+          this.particles.burst(p.x, p.surfaceY, mat.particle, 5, 'sand', false, this.atmosphere.getAccent());
         }
         if (Math.random() > 0.5) this.audio.playCrumbleLoop();
         break;
       case 'crumbleGone':
         this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w * 1.2);
-        this.particles.burst(p.x, p.surfaceY, mat.particle, 14, 'sand', false, this.atmosphere.getAccent());
+        this.particles.burst(p.x, p.surfaceY, mat.particle, 18, 'sand', false, this.atmosphere.getAccent());
         this.audio.playCrumbleGone();
         this.noteReaction(ev.floater, p.x, p.surfaceY + 18, '#c9a88a');
         break;
       case 'foamPop':
-        this.particles.foamBurst(p.x, p.surfaceY, mat.particle);
-        this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 10, 'bubble', false);
+        this.particles.foamPopStorm(p.x, p.surfaceY, mat.particle);
         this.audio.playFoamPop();
         this.screenPunch = Math.max(this.screenPunch, 0.35);
         this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#fff5fa');
@@ -486,6 +539,7 @@ export class Game {
   private noteReaction(text: string, x: number, y: number, color: string): void {
     if (!text) return;
     this.addFloater(x, y, text, color);
+    this.particles.floaterOrbit(x, y + 10, color);
     if (this.lastReaction && this.lastReaction !== text) {
       this.mixStreak += 1;
       if (this.mixStreak >= 3) {
@@ -606,12 +660,12 @@ export class Game {
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(
-      `zone=${this.atmosphere.getDebugLabel()} ambient=${this.ambient.activeCount} scenery=${this.scenery.activeCount} h=${this.height} fps~${this.fpsEma.toFixed(0)}`,
+      `zone=${this.atmosphere.getDebugLabel()} gp=${this.particles.activeCount} amb=${this.ambient.activeCount} scn=${this.scenery.activeCount} h=${this.height} fps~${this.fpsEma.toFixed(0)}`,
       10,
       this.H - 12,
     );
     ctx.fillText(
-      `${this.atmosphere.getDebugWeights()} wind=${this.atmosphere.windX.toFixed(0)},${this.atmosphere.windY.toFixed(0)}`,
+      `${this.atmosphere.getDebugWeights()} emit=${this.scenery.lastEmitterCount} gust=${this.atmosphere.gustStrength.toFixed(2)}`,
       10,
       this.H - 28,
     );

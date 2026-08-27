@@ -40,8 +40,8 @@ interface ScreenMote {
   spin: number;
 }
 
-const WORLD_POOL = 280;
-const SCREEN_POOL = 180;
+const WORLD_POOL = 300;
+const SCREEN_POOL = 220;
 const SPRINKLE_COLORS = ['#ff9eb5', '#8fd4c8', '#ffd07a', '#c9b6ff', '#fff5f0'];
 
 export class AmbientParticles {
@@ -50,8 +50,10 @@ export class AmbientParticles {
   private spawnAcc = 0;
   private screenAcc = 0;
   private sceneryAcc = 0;
+  private microAcc = 0;
   private densityScale = 1;
   private warmed = false;
+  private preferTiny = false;
   activeCount = 0;
 
   constructor() {
@@ -142,7 +144,77 @@ export class AmbientParticles {
 
     this.updateWorld(dt, atm, cameraY, viewW, viewH);
     this.updateScreen(dt, viewW, viewH);
+    this.tickMicroEvent(dt, atm, cameraY, viewW, viewH);
     this.activeCount = this.countWorld() + this.countScreen();
+    this.preferTiny = this.activeCount > atm.particleBudget * 0.85 * this.densityScale;
+  }
+
+  private tickMicroEvent(
+    dt: number,
+    atm: Atmosphere,
+    _cameraY: number,
+    viewW: number,
+    viewH: number,
+  ): void {
+    // ~1% chance per second scaled → accumulate
+    this.microAcc += dt * 0.012;
+    if (this.microAcc < 1) return;
+    this.microAcc = 0;
+    const id = atm.primaryId;
+    const n = Math.floor(18 * this.densityScale);
+    for (let i = 0; i < n; i++) {
+      const p = this.allocScreen();
+      if (!p) break;
+      p.active = true;
+      p.layer = 1;
+      p.phase = Math.random() * 10;
+      p.rot = Math.random() * Math.PI;
+      p.spin = (Math.random() - 0.5) * 3;
+      p.x = Math.random() * viewW;
+      p.life = 0.7 + Math.random() * 0.5;
+      p.maxLife = p.life;
+      p.alpha = 0.4;
+      if (id === 'garden') {
+        p.type = Math.random() > 0.4 ? 'pollen' : 'petal';
+        p.color = p.type === 'pollen' ? '#f0d878' : '#ffd0e0';
+        p.y = viewH * 0.7 + Math.random() * 40;
+        p.vx = (Math.random() - 0.5) * 40;
+        p.vy = -50 - Math.random() * 40;
+        p.size = 3 + Math.random() * 4;
+      } else if (id === 'bakery') {
+        p.type = 'sprinkle';
+        p.color = SPRINKLE_COLORS[i % SPRINKLE_COLORS.length];
+        p.y = -10;
+        p.vx = (Math.random() - 0.5) * 30;
+        p.vy = 60 + Math.random() * 80;
+        p.size = 2 + Math.random() * 2;
+        p.life = 0.8;
+        p.maxLife = 0.8;
+      } else if (id === 'spa') {
+        p.type = 'bubbleFloat';
+        p.color = '#c8e8f0';
+        p.y = viewH + 10;
+        p.vx = (Math.random() - 0.5) * 25;
+        p.vy = -70 - Math.random() * 50;
+        p.size = 4 + Math.random() * 8;
+      } else if (id === 'frost') {
+        p.type = 'snowMote';
+        p.color = '#ffffff';
+        p.y = -5;
+        p.vx = 20 + Math.random() * 40;
+        p.vy = 40 + Math.random() * 50;
+        p.size = 2 + Math.random() * 3;
+        p.alpha = 0.55;
+      } else {
+        p.type = 'lightOrb';
+        p.color = '#ffe8c8';
+        p.y = -10;
+        p.vx = (Math.random() - 0.5) * 20;
+        p.vy = 35 + Math.random() * 40;
+        p.size = 5 + Math.random() * 8;
+        p.alpha = 0.28;
+      }
+    }
   }
 
   /** Emit particles from scenery prop screen positions (cenário) */
@@ -154,32 +226,55 @@ export class AmbientParticles {
     dt = 1 / 60,
   ): void {
     if (emitters.length === 0) return;
-    this.sceneryAcc += dt * (10 + atm.density * 14) * this.densityScale;
+    this.sceneryAcc += dt * (28 + atm.density * 32) * this.densityScale * (1 + atm.gustStrength);
     const mix = atm.getAmbientMix();
     while (this.sceneryAcc >= 1) {
       this.sceneryAcc -= 1;
       if (this.countScreen() >= SCREEN_POOL - 4) break;
-      const e = emitters[(Math.random() * emitters.length) | 0];
+      const e = emitters[(Math.random() * emitters.length) | 0] as {
+        x: number;
+        y: number;
+        color: string;
+        kind?: string;
+      };
       if (e.x < -20 || e.x > viewW + 20 || e.y < -20 || e.y > viewH + 20) continue;
       const p = this.allocScreen();
       if (!p) break;
-      const preset = mix[(Math.random() * mix.length) | 0]?.preset;
+      const forced = this.typeForDecor(e.kind);
+      const preset = forced
+        ? { type: forced, color: e.color }
+        : mix[(Math.random() * mix.length) | 0]?.preset;
       p.active = true;
       p.type = preset?.type ?? 'sparkleIdle';
       p.color = preset?.color ?? e.color;
-      p.x = e.x + (Math.random() - 0.5) * 36;
-      p.y = e.y + (Math.random() - 0.5) * 36;
-      p.vx = (Math.random() - 0.5) * 100;
-      p.vy = -40 - Math.random() * 80;
-      p.size = 2 + Math.random() * 4.5;
-      p.alpha = 0.42 + Math.random() * 0.28;
-      p.life = 1.4 + Math.random() * 1.8;
+      p.x = e.x + (Math.random() - 0.5) * 40;
+      p.y = e.y + (Math.random() - 0.5) * 40;
+      p.vx = (Math.random() - 0.5) * 110 + atm.windX * 0.5;
+      p.vy = -45 - Math.random() * 90 + atm.windY * 0.2;
+      p.size = 2 + Math.random() * 5;
+      p.alpha = 0.45 + Math.random() * 0.3;
+      p.life = 1.5 + Math.random() * 2;
       p.maxLife = p.life;
       p.phase = Math.random() * 10;
       p.layer = 2;
       p.rot = Math.random() * Math.PI;
       p.spin = (Math.random() - 0.5) * 4;
     }
+  }
+
+  private typeForDecor(kind?: string): AmbientType | null {
+    if (!kind) return null;
+    if (kind === 'leaf' || kind === 'hibiscus') return Math.random() > 0.5 ? 'petal' : 'pollen';
+    if (kind === 'cake' || kind === 'donut' || kind === 'creamCloud' || kind === 'spoon') {
+      return Math.random() > 0.5 ? 'sprinkle' : 'sugarDust';
+    }
+    if (kind === 'bottle' || kind === 'bigBubble' || kind === 'towel') return 'bubbleFloat';
+    if (kind === 'crystal' || kind === 'iceBlock' || kind === 'snowflake') {
+      return Math.random() > 0.5 ? 'frost' : 'sparkleIdle';
+    }
+    if (kind === 'lightRing' || kind === 'softOrb') return Math.random() > 0.5 ? 'lightOrb' : 'emberSoft';
+    if (kind === 'citrus') return 'petal';
+    return null;
   }
 
   private countWorld(): number {
@@ -414,9 +509,9 @@ export class AmbientParticles {
     const layerSize = layer === 0 ? 1.4 : layer === 1 ? 1 : 0.8;
     p.size =
       preset.type === 'steam'
-        ? (14 + Math.random() * 20) * layerSize
+        ? (this.preferTiny ? 8 : 14 + Math.random() * 20) * layerSize
         : preset.type === 'lightOrb'
-          ? (6 + Math.random() * 10) * layerSize
+          ? (this.preferTiny ? 4 : 6 + Math.random() * 10) * layerSize
           : preset.type === 'bubbleFloat'
             ? (4 + Math.random() * 7) * layerSize
             : (2 + Math.random() * 4) * layerSize;
@@ -464,7 +559,7 @@ export class AmbientParticles {
 
   biomeBurst(x: number, y: number, atm: Atmosphere): void {
     const mix = atm.getAmbientMix();
-    for (let i = 0; i < 72; i++) {
+    for (let i = 0; i < 84; i++) {
       const p = this.allocWorld();
       if (!p) break;
       const preset = mix[i % mix.length]?.preset ?? mix[0]?.preset;

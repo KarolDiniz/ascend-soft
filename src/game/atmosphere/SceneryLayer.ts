@@ -24,7 +24,7 @@ interface BiomeSpriteSet {
 }
 
 const PARALLAX = [0.05, 0.1, 0.18, 0.26];
-const PROP_COUNT = 36;
+const PROP_COUNT = 60;
 const FADE_SPEED = 1.15;
 
 const ZONE_COLORS: Record<ZoneId, string[]> = {
@@ -66,6 +66,7 @@ export class SceneryLayer {
   private time = 0;
   private skipFar = false;
   activeCount = 0;
+  lastEmitterCount = 0;
 
   constructor() {
     this.seedProps();
@@ -97,22 +98,35 @@ export class SceneryLayer {
         i++;
       }
     }
-    // Extra props to reach ~36
-    while (this.props.length < PROP_COUNT) {
-      const zone = ALTITUDE_ZONES[this.props.length % ALTITUDE_ZONES.length];
-      const k = this.props.length;
+    // Hero midground props (1–2 large per zone)
+    for (const zone of ALTITUDE_ZONES) {
+      const hero = zone.scenery[0];
+      const colors = ZONE_COLORS[zone.id];
       this.props.push({
         zoneId: zone.id,
-        kind: zone.scenery[k % zone.scenery.length],
-        nx: Math.random(),
-        ny: 0.1 + Math.random() * 0.8,
-        scale: 50 + Math.random() * 70,
-        layer: (k % 4) as 0 | 1 | 2 | 3,
+        kind: hero,
+        nx: 0.18 + Math.random() * 0.2,
+        ny: 0.35 + Math.random() * 0.2,
+        scale: 110 + Math.random() * 50,
+        layer: 2,
         phase: Math.random() * 10,
-        speed: 0.4 + Math.random() * 0.4,
-        color: ZONE_COLORS[zone.id][k % 4],
-        alpha: 0,
-        targetAlpha: 0,
+        speed: 0.25 + Math.random() * 0.2,
+        color: colors[0],
+        alpha: zone.id === 'garden' ? 0.9 : 0,
+        targetAlpha: zone.id === 'garden' ? 0.9 : 0,
+      });
+      this.props.push({
+        zoneId: zone.id,
+        kind: zone.scenery[1] ?? hero,
+        nx: 0.62 + Math.random() * 0.2,
+        ny: 0.4 + Math.random() * 0.2,
+        scale: 95 + Math.random() * 40,
+        layer: 3,
+        phase: Math.random() * 10,
+        speed: 0.3 + Math.random() * 0.25,
+        color: colors[1],
+        alpha: zone.id === 'garden' ? 0.85 : 0,
+        targetAlpha: zone.id === 'garden' ? 0.85 : 0,
       });
     }
   }
@@ -158,21 +172,21 @@ export class SceneryLayer {
     }
   }
 
-  /** Screen-space positions of visible props — for particle emitters */
-  collectEmitters(w: number, h: number, cameraY: number): { x: number; y: number; color: string }[] {
-    const out: { x: number; y: number; color: string }[] = [];
+  collectEmitters(w: number, h: number, cameraY: number): { x: number; y: number; color: string; kind: string }[] {
+    const out: { x: number; y: number; color: string; kind: string }[] = [];
     for (const p of this.props) {
       if (p.alpha < 0.15) continue;
       const px = PARALLAX[p.layer];
-      const sway = Math.sin(p.phase) * (12 + p.layer * 4);
-      const bob = Math.cos(p.phase * 0.85) * (8 + p.layer * 3);
+      const sway = Math.sin(p.phase) * (14 + p.layer * 5) + Math.sin(p.phase * 0.37) * 6;
+      const bob = Math.cos(p.phase * 0.85) * (9 + p.layer * 3);
       const scroll = -(cameraY * px);
       const x = p.nx * w + sway;
       const band = h + p.scale * 2;
       const y = ((((p.ny * h + scroll + bob) % band) + band) % band) - p.scale;
       if (y < -40 || y > h + 40 || x < -40 || x > w + 40) continue;
-      out.push({ x, y, color: p.color });
+      out.push({ x, y, color: p.color, kind: p.kind });
     }
+    this.lastEmitterCount = out.length;
     return out;
   }
 
