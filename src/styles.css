@@ -148,92 +148,96 @@ body {
 .material-toast {
   position: absolute;
   left: 50%;
-  top: calc(18% + var(--safe-top));
+  bottom: calc(20px + var(--safe-bottom));
+  top: auto;
   transform: translateX(-50%);
-  max-width: min(92vw, 420px);
+  max-width: min(94vw, 520px);
   text-align: center;
-  padding: 0.65rem 1rem 0.75rem;
-  background: rgba(255, 250, 245, 0.92);
+  padding: 0;
+  background: rgba(255, 250, 245, 0.96);
   border: 3px solid var(--ink);
-  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.25);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.28);
   pointer-events: none;
-  line-height: 1.55;
+  z-index: 4;
+  border-radius: 0;
+  image-rendering: pixelated;
+  overflow: hidden;
+}
+
+.toast-banner-head {
+  background: var(--quote-accent, var(--butter));
+  border-bottom: 3px solid var(--ink);
+  padding: 0.55rem 1rem 0.6rem;
 }
 
 .toast-phase {
   display: block;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
+  font-size: clamp(0.5rem, 2.6vw, 0.62rem);
+  font-weight: 400;
   color: var(--ink);
-  margin-bottom: 0.45rem;
   text-transform: lowercase;
+  line-height: 1.65;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.45);
 }
 
 .toast-quote {
   display: block;
+  margin: 0;
+  padding: 0.9rem 1.15rem 1rem;
   font-family: 'Nunito', system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 3.4vw, 1.08rem);
   font-weight: 600;
   font-style: italic;
   color: var(--ink-soft);
   letter-spacing: 0.01em;
-}
-
-.toast-quote.hidden {
-  display: none;
-}
-
-.phase-strip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(14px + var(--safe-bottom));
-  transform: translateX(-50%);
-  padding: 0.35rem 0.75rem;
-  background: rgba(255, 252, 248, 0.78);
-  border: 2px solid var(--phase-accent, var(--butter));
-  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.18);
-  pointer-events: none;
-  transition:
-    border-color 0.6s ease,
-    background 0.6s ease;
-}
-
-.phase-strip-name {
-  font-family: 'Nunito', system-ui, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
+  line-height: 1.55;
 }
 
 .material-toast.toast-in {
-  animation: toast-in 0.35s steps(6) both;
+  animation: quote-banner-in 0.42s steps(7) both;
+}
+
+.material-toast.toast-live {
+  animation: quote-banner-live 1.8s steps(4) infinite;
 }
 
 .material-toast.toast-out {
-  animation: toast-out 0.4s steps(5) both;
+  animation: quote-banner-out 0.36s steps(5) both;
 }
 
-@keyframes toast-in {
+@keyframes quote-banner-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes quote-banner-live {
+  0%,
+  100% {
+    box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.28);
+  }
+  50% {
+    box-shadow:
+      5px 5px 0 rgba(90, 97, 108, 0.32),
+      0 -3px 0 0 var(--quote-accent, var(--butter));
+  }
+}
+
+@keyframes quote-banner-out {
   from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
     opacity: 0;
     transform: translateX(-50%) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes toast-out {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-8px);
   }
 }
 

@@ -477,6 +477,101 @@ export class AudioBus {
     });
   }
 
+  /** Bonequinho murmurando — voz fina e calma, sem palavras legíveis */
+  playSoftMurmur(quoteLength = 48): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(320);
+      const t = ctx.currentTime;
+      const syllables = clamp(Math.floor(quoteLength / 11) + 3, 4, 11);
+      let cursor = t + 0.06;
+
+      for (let i = 0; i < syllables; i++) {
+        const dur = 0.07 + Math.random() * 0.11;
+        const pause = 0.05 + Math.random() * 0.09;
+        this.murmurSyllable(ctx, sfx, cursor, dur, i);
+        cursor += dur + pause;
+      }
+    });
+  }
+
+  private murmurSyllable(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    dur: number,
+    index: number,
+  ): void {
+    const pitch = 1.05 + Math.random() * 0.22 + index * 0.015;
+    const f0 = (420 + Math.random() * 140) * pitch;
+    const f1 = f0 * (1.75 + Math.random() * 0.35);
+    const f2 = f0 * (2.65 + Math.random() * 0.45);
+    const vol = 0.062 + Math.random() * 0.028;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 360;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3200;
+    lp.Q.value = 0.6;
+    const bus = ctx.createGain();
+    bus.gain.setValueAtTime(0.0001, t);
+    bus.gain.exponentialRampToValueAtTime(vol, t + 0.018);
+    bus.gain.exponentialRampToValueAtTime(vol * 0.55, t + dur * 0.55);
+    bus.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    hp.connect(lp);
+    lp.connect(bus);
+    bus.connect(sfx);
+
+    const vibrato = ctx.createOscillator();
+    const vibratoG = ctx.createGain();
+    vibrato.frequency.value = 5.5 + Math.random() * 2.5;
+    vibratoG.gain.value = f0 * 0.018;
+
+    const body = ctx.createOscillator();
+    body.type = 'triangle';
+    body.frequency.setValueAtTime(f0, t);
+    body.frequency.exponentialRampToValueAtTime(f0 * (0.92 + Math.random() * 0.12), t + dur);
+    vibrato.connect(vibratoG);
+    vibratoG.connect(body.frequency);
+    body.connect(hp);
+    body.start(t);
+    body.stop(t + dur + 0.02);
+    vibrato.start(t);
+    vibrato.stop(t + dur + 0.02);
+
+    const formant = ctx.createOscillator();
+    formant.type = 'sine';
+    formant.frequency.setValueAtTime(f1, t);
+    formant.frequency.exponentialRampToValueAtTime(f2, t + dur * 0.85);
+    const fg = ctx.createGain();
+    fg.gain.setValueAtTime(0.0001, t);
+    fg.gain.exponentialRampToValueAtTime(vol * 0.72, t + 0.02);
+    fg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    formant.connect(fg);
+    fg.connect(hp);
+    formant.start(t);
+    formant.stop(t + dur + 0.02);
+
+    if (Math.random() > 0.35) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(ctx, Math.max(0.04, dur * 0.55));
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.value = 1800 + Math.random() * 900;
+      nf.Q.value = 1.2;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(vol * 0.52, t + 0.008);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.45);
+      src.connect(nf);
+      nf.connect(ng);
+      ng.connect(hp);
+      src.start(t);
+      src.stop(t + dur + 0.02);
+    }
+  }
+
   // —— Material one-shots ——
 
   private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number): void {

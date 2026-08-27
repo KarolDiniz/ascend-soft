@@ -1,5 +1,5 @@
 import type { MaterialDef } from '../../audio/materials';
-import { PASTEL, rgba } from '../../theme/pastelPalette';
+import { PASTEL, materialDetailStroke, rgba } from '../../theme/pastelPalette';
 import { traceShape } from './PlatformShape';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
@@ -40,7 +40,7 @@ export function renderPlatform(
   ctx.save();
   ctx.globalAlpha = s.opacity;
   traceShape(ctx, variant, s);
-  ctx.strokeStyle = mat.stroke;
+  ctx.strokeStyle = materialDetailStroke(mat.fill);
   ctx.lineWidth = variant.includes('whipped') ? 1.2 : 1.8;
   ctx.stroke();
   ctx.restore();
@@ -81,14 +81,14 @@ function drawBaseGradient(
 function drawTexture(
   ctx: CanvasRenderingContext2D,
   variant: PlatformVariant,
-  _mat: MaterialDef,
+  mat: MaterialDef,
   s: PlatformDrawState,
 ): void {
   const { cx, surfaceY, w, h, seed, time } = s;
   const spread = w * 1.05;
 
   if (variant.startsWith('butter')) {
-    ctx.strokeStyle = 'rgba(180, 140, 40, 0.35)';
+    ctx.strokeStyle = rgba(materialDetailStroke(mat.fill), 0.38);
     ctx.lineWidth = 1.3;
     for (let i = 0; i < 4; i++) {
       const ly = surfaceY + h * (0.35 + i * 0.22);
@@ -98,7 +98,7 @@ function drawTexture(
       ctx.stroke();
     }
     if (variant === 'butter_curl') {
-      ctx.strokeStyle = 'rgba(220, 180, 60, 0.4)';
+      ctx.strokeStyle = rgba(mat.particle, 0.45);
       ctx.beginPath();
       ctx.arc(cx, surfaceY + h * 0.5, spread * 0.25, 0.2, Math.PI * 1.2);
       ctx.stroke();
@@ -192,7 +192,7 @@ function drawTexture(
     ctx.quadraticCurveTo(cx, surfaceY + h * 0.6, cx + spread * 0.35, surfaceY + h * 0.4);
     ctx.stroke();
   } else if (variant.startsWith('butterSlime')) {
-    ctx.strokeStyle = 'rgba(200, 120, 80, 0.35)';
+    ctx.strokeStyle = rgba(materialDetailStroke(mat.fill), 0.35);
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(cx - spread * 0.35, surfaceY + h * 0.35);

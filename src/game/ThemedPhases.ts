@@ -1,5 +1,5 @@
 import { MATERIALS, type MaterialId } from '../audio/materials';
-import { MATERIAL_PASTEL, PASTEL, rgba } from '../theme/pastelPalette';
+import { MATERIAL_PASTEL, materialDetailStroke, PASTEL, rgba } from '../theme/pastelPalette';
 
 /**
  * Ordem das fases temáticas — começa em manteiga (starters + mundo inicial).
@@ -205,7 +205,7 @@ export function materialSceneryColors(id: MaterialId): string[] {
   return [
     rgba(m.particle, 0.42),
     rgba(m.fill, 0.38),
-    rgba(m.stroke, 0.34),
+    rgba(materialDetailStroke(m.fill), 0.34),
     rgba(m.glow, 0.36),
   ];
 }

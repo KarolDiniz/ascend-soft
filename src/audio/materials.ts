@@ -1,4 +1,4 @@
-import { MATERIAL_PASTEL } from '../theme/pastelPalette';
+import { MATERIAL_PASTEL, materialDetailStroke } from '../theme/pastelPalette';
 
 export type MaterialId =
   | 'jelly'
@@ -64,7 +64,7 @@ function mat(
     id,
     name,
     fill: p.fill,
-    stroke: p.stroke,
+    stroke: materialDetailStroke(p.fill),
     glow: p.glow,
     particle: p.particle,
     particleStyle,

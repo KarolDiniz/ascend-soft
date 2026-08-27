@@ -32,14 +32,52 @@ export const PASTEL = {
 
 export type PastelKey = keyof typeof PASTEL;
 
-export function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+export function parseColor(color: string): [number, number, number] {
+  if (color.startsWith('#')) {
+    const n = parseInt(color.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const m = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (m) return [+m[1], +m[2], +m[3]];
+  return [200, 200, 200];
 }
 
-export function rgba(hex: string, a: number): string {
-  const [r, g, b] = hexToRgb(hex);
+export function hexToRgb(hex: string): [number, number, number] {
+  return parseColor(hex);
+}
+
+export function rgba(color: string, a: number): string {
+  const [r, g, b] = parseColor(color);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/** Tom de detalhe/borda — um pouco mais escuro que o fill, nunca preto ou muito escuro */
+export function materialDetailStroke(fill: string, amount = 20): string {
+  const [r, g, b] = parseColor(fill);
+  const factor = 1 - amount / 255;
+  const dr = Math.round(r * factor);
+  const dg = Math.round(g * factor);
+  const db = Math.round(b * factor);
+  const floor = 0.78;
+  const rr = Math.max(Math.round(r * floor), dr);
+  const rg = Math.max(Math.round(g * floor), dg);
+  const rb = Math.max(Math.round(b * floor), db);
+  return `#${[rr, rg, rb].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function matColors(
+  fill: string,
+  glow: string,
+  particle: string,
+  spriteWash: string,
+): PastelMaterialColors {
+  return {
+    fill,
+    stroke: materialDetailStroke(fill),
+    glow,
+    particle,
+    spriteWash,
+  };
 }
 
 /** Soft pastel material look — fill/stroke/glow/particle */
@@ -53,146 +91,126 @@ export interface PastelMaterialColors {
 }
 
 export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
-  jelly: {
-    fill: '#7EC8B8',
-    stroke: '#4A9E8C',
-    glow: rgba(PASTEL.seafoam, 0.5),
-    particle: '#A8E0D4',
-    spriteWash: rgba(PASTEL.mint, 0.28),
-  },
-  butter: {
-    fill: '#FFE08A',
-    stroke: '#E0B84A',
-    glow: rgba(PASTEL.butter, 0.45),
-    particle: '#FFF0B8',
-    spriteWash: rgba(PASTEL.butter, 0.32),
-  },
-  mochi: {
-    fill: '#F0B85A',
-    stroke: '#C88A28',
-    glow: rgba(PASTEL.peach, 0.4),
-    particle: '#FFD898',
-    spriteWash: rgba(PASTEL.citrus, 0.3),
-  },
-  chocolate: {
-    fill: '#C49A6C',
-    stroke: '#8B6540',
-    glow: rgba(PASTEL.peach, 0.35),
-    particle: '#D4B090',
-    spriteWash: rgba(PASTEL.caramel, 0.38),
-  },
-  citrus: {
-    fill: '#FF9E5A',
-    stroke: '#E07030',
-    glow: rgba(PASTEL.citrusSoft, 0.45),
-    particle: '#FFC090',
-    spriteWash: rgba(PASTEL.citrusSoft, 0.3),
-  },
-  honeycomb: {
-    fill: '#E8C04A',
-    stroke: '#B89020',
-    glow: rgba(PASTEL.honey, 0.45),
-    particle: '#F5D878',
-    spriteWash: rgba(PASTEL.honey, 0.3),
-  },
-  glycerin: {
-    fill: '#F2A8C0',
-    stroke: '#D07090',
-    glow: rgba(PASTEL.blush, 0.5),
-    particle: '#FFE0EC',
-    spriteWash: rgba(PASTEL.blush, 0.3),
-  },
-  whipped: {
-    fill: '#FFF8F4',
-    stroke: '#E8B4C0',
-    glow: rgba(PASTEL.blush, 0.5),
-    particle: '#FFFFFF',
-    spriteWash: rgba(PASTEL.white, 0.22),
-  },
-  kinetic: {
-    fill: '#D4B898',
-    stroke: '#A88868',
-    glow: rgba(PASTEL.sand, 0.35),
-    particle: '#E8D0B0',
-    spriteWash: rgba(PASTEL.sandSoft, 0.34),
-  },
-  iceSoap: {
-    fill: '#B8DCF0',
-    stroke: '#70A8C8',
-    glow: rgba(PASTEL.mist, 0.55),
-    particle: '#E0F4FF',
-    spriteWash: rgba(PASTEL.mist, 0.35),
-  },
-  clearSlime: {
-    fill: '#E878A8',
-    stroke: '#C04878',
-    glow: rgba(PASTEL.rose, 0.5),
-    particle: '#F8A8C8',
-    spriteWash: rgba(PASTEL.rose, 0.32),
-  },
-  butterSlime: {
-    fill: '#F0B898',
-    stroke: '#D08060',
-    glow: rgba(PASTEL.peach, 0.4),
-    particle: '#FFD0B8',
-    spriteWash: rgba(PASTEL.peach, 0.3),
-  },
-  marshmallow: {
-    fill: '#FFF5F0',
-    stroke: '#E8C8C0',
-    glow: rgba(PASTEL.blush, 0.45),
-    particle: '#FFFFFF',
-    spriteWash: rgba(PASTEL.white, 0.28),
-  },
-  sponge: {
-    fill: '#F2C878',
-    stroke: '#C89840',
-    glow: rgba(PASTEL.butter, 0.4),
-    particle: '#FFE8A8',
-    spriteWash: rgba(PASTEL.butter, 0.3),
-  },
-  soapBubble: {
-    fill: '#C8E8F8',
-    stroke: '#78B0D0',
-    glow: rgba(PASTEL.sky, 0.55),
-    particle: '#E8F8FF',
-    spriteWash: rgba(PASTEL.sky, 0.28),
-  },
-  bathFoam: {
-    fill: '#F8F0F8',
-    stroke: '#D0B8D8',
-    glow: rgba(PASTEL.lilac, 0.5),
-    particle: '#FFFFFF',
-    spriteWash: rgba(PASTEL.lilac, 0.26),
-  },
-  lavenderSoap: {
-    fill: '#D0B8E8',
-    stroke: '#9870B8',
-    glow: rgba(PASTEL.lilac, 0.55),
-    particle: '#F0E0FF',
-    spriteWash: rgba(PASTEL.lilac, 0.32),
-  },
-  creamSoap: {
-    fill: '#F8E8D0',
-    stroke: '#D0B088',
-    glow: rgba(PASTEL.cream, 0.5),
-    particle: '#FFF8EC',
-    spriteWash: rgba(PASTEL.cream, 0.3),
-  },
-  keyboard: {
-    fill: '#D8DEE8',
-    stroke: '#8890A0',
-    glow: rgba(PASTEL.mist, 0.4),
-    particle: '#F0F4F8',
-    spriteWash: rgba(PASTEL.mist, 0.28),
-  },
-  bubbleWrap: {
-    fill: '#E0F0F0',
-    stroke: '#90B8B8',
-    glow: rgba(PASTEL.seafoam, 0.45),
-    particle: '#F0FFFF',
-    spriteWash: rgba(PASTEL.mint, 0.26),
-  },
+  jelly: matColors(
+    '#7EC8B8',
+    rgba(PASTEL.seafoam, 0.5),
+    '#A8E0D4',
+    rgba(PASTEL.mint, 0.28),
+  ),
+  butter: matColors(
+    '#FFE08A',
+    rgba(PASTEL.butter, 0.45),
+    '#FFF0B8',
+    rgba(PASTEL.butter, 0.32),
+  ),
+  mochi: matColors(
+    '#F0B85A',
+    rgba(PASTEL.peach, 0.4),
+    '#FFD898',
+    rgba(PASTEL.citrus, 0.3),
+  ),
+  chocolate: matColors(
+    '#C49A6C',
+    rgba(PASTEL.peach, 0.35),
+    '#D4B090',
+    rgba(PASTEL.caramel, 0.38),
+  ),
+  citrus: matColors(
+    '#FF9E5A',
+    rgba(PASTEL.citrusSoft, 0.45),
+    '#FFC090',
+    rgba(PASTEL.citrusSoft, 0.3),
+  ),
+  honeycomb: matColors(
+    '#E8C04A',
+    rgba(PASTEL.honey, 0.45),
+    '#F5D878',
+    rgba(PASTEL.honey, 0.3),
+  ),
+  glycerin: matColors(
+    '#F2A8C0',
+    rgba(PASTEL.blush, 0.5),
+    '#FFE0EC',
+    rgba(PASTEL.blush, 0.3),
+  ),
+  whipped: matColors(
+    '#FFF8F4',
+    rgba(PASTEL.blush, 0.5),
+    '#FFFFFF',
+    rgba(PASTEL.white, 0.22),
+  ),
+  kinetic: matColors(
+    '#D4B898',
+    rgba(PASTEL.sand, 0.35),
+    '#E8D0B0',
+    rgba(PASTEL.sandSoft, 0.34),
+  ),
+  iceSoap: matColors(
+    '#B8DCF0',
+    rgba(PASTEL.mist, 0.55),
+    '#E0F4FF',
+    rgba(PASTEL.mist, 0.35),
+  ),
+  clearSlime: matColors(
+    '#E878A8',
+    rgba(PASTEL.rose, 0.5),
+    '#F8A8C8',
+    rgba(PASTEL.rose, 0.32),
+  ),
+  butterSlime: matColors(
+    '#F0B898',
+    rgba(PASTEL.peach, 0.4),
+    '#FFD0B8',
+    rgba(PASTEL.peach, 0.3),
+  ),
+  marshmallow: matColors(
+    '#FFF5F0',
+    rgba(PASTEL.blush, 0.45),
+    '#FFFFFF',
+    rgba(PASTEL.white, 0.28),
+  ),
+  sponge: matColors(
+    '#F2C878',
+    rgba(PASTEL.butter, 0.4),
+    '#FFE8A8',
+    rgba(PASTEL.butter, 0.3),
+  ),
+  soapBubble: matColors(
+    '#C8E8F8',
+    rgba(PASTEL.sky, 0.55),
+    '#E8F8FF',
+    rgba(PASTEL.sky, 0.28),
+  ),
+  bathFoam: matColors(
+    '#F8F0F8',
+    rgba(PASTEL.lilac, 0.5),
+    '#FFFFFF',
+    rgba(PASTEL.lilac, 0.26),
+  ),
+  lavenderSoap: matColors(
+    '#D0B8E8',
+    rgba(PASTEL.lilac, 0.55),
+    '#F0E0FF',
+    rgba(PASTEL.lilac, 0.32),
+  ),
+  creamSoap: matColors(
+    '#F8E8D0',
+    rgba(PASTEL.cream, 0.5),
+    '#FFF8EC',
+    rgba(PASTEL.cream, 0.3),
+  ),
+  keyboard: matColors(
+    '#D8DEE8',
+    rgba(PASTEL.mist, 0.4),
+    '#F0F4F8',
+    rgba(PASTEL.mist, 0.28),
+  ),
+  bubbleWrap: matColors(
+    '#E0F0F0',
+    rgba(PASTEL.seafoam, 0.45),
+    '#F0FFFF',
+    rgba(PASTEL.mint, 0.26),
+  ),
 };
 
 export interface BiomePastelPalette {

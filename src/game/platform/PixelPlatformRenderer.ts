@@ -1,5 +1,5 @@
 import type { MaterialDef, MaterialId } from '../../audio/materials';
-import { PASTEL, rgba } from '../../theme/pastelPalette';
+import { PASTEL, materialDetailStroke, rgba } from '../../theme/pastelPalette';
 import { PIXEL, fillPx, px } from '../../theme/pixel';
 import { MATERIAL_LEDGE } from './ledgeSizes';
 import type { PlatformBehavior } from './behaviors';
@@ -31,18 +31,10 @@ function parseTone(c: string): [number, number, number] {
 function shiftTone(color: string, shift: number): string {
   const [r, g, b] = parseTone(color);
   const a = shift * 32;
-  return `rgb(${Math.max(0, Math.min(255, Math.round(r + a)))},${Math.max(0, Math.min(255, Math.round(g + a * 0.92)))},${Math.max(0, Math.min(255, Math.round(b + a * 0.78)))})`;
-}
-
-function softCrumb(mat: MaterialDef, alpha = 0.82): string {
-  return rgba(mat.particle, alpha);
-}
-
-function softCrumbAlt(mat: MaterialDef, seed: number, i: number): string {
-  const pick = seeded(seed, i + 500);
-  if (pick > 0.66) return rgba(PASTEL.white, 0.75);
-  if (pick > 0.33) return rgba(mat.particle, 0.8);
-  return rgba(mat.fill, 0.72);
+  const rr = Math.max(0, Math.min(255, Math.round(r + a)));
+  const rg = Math.max(0, Math.min(255, Math.round(g + a * 0.92)));
+  const rb = Math.max(0, Math.min(255, Math.round(b + a * 0.78)));
+  return `#${[rr, rg, rb].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function softShadow(mat: MaterialDef, alpha = 0.22): string {
@@ -50,12 +42,12 @@ function softShadow(mat: MaterialDef, alpha = 0.22): string {
 }
 
 function tonedMat(mat: MaterialDef, shift: number): MaterialDef {
-  if (Math.abs(shift) < 0.01) return mat;
+  const fill = Math.abs(shift) < 0.01 ? mat.fill : shiftTone(mat.fill, shift);
   return {
     ...mat,
-    fill: shiftTone(mat.fill, shift),
-    stroke: shiftTone(mat.stroke, shift * 0.85),
-    particle: shiftTone(mat.particle, shift * 0.7),
+    fill,
+    stroke: materialDetailStroke(fill),
+    particle: Math.abs(shift) < 0.01 ? mat.particle : shiftTone(mat.particle, shift * 0.7),
     glow: mat.glow,
   };
 }
@@ -271,15 +263,14 @@ function drawHangingDetails(a: DrawArgs): void {
         // Fios elásticos (chiclete / slime)
         const pull = Math.sin(wobble * 1.5 + i) * u;
         fillPx(ctx, hx + sway, baseY, u, strandLen + pull, mat.particle);
-        fillPx(ctx, hx + sway - u, baseY + strandLen + pull, u * 2, u, mat.stroke);
+        fillPx(ctx, hx + sway - u, baseY + strandLen + pull, u * 2, u, rgba(mat.particle, 0.7));
         fillPx(ctx, hx + sway - u * 0.5, baseY + strandLen + pull + u, u, u, mat.fill);
         break;
       }
       case 2: {
-        // Migalhas pastel (nunca preto/cinza escuro)
-        fillPx(ctx, hx + sway - u, baseY + u, u * 2, u, softCrumb(mat, 0.85));
-        fillPx(ctx, hx + sway + u * 0.5, baseY + u * 2, u, u * 2, softCrumbAlt(mat, seed, i));
-        fillPx(ctx, hx + sway, baseY + u * 3 + Math.sin(time + i) * u, u, u, rgba(mat.fill, 0.7));
+        // Gotas suaves (sem migalhas)
+        fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
+        fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
         break;
       }
       case 3: {
@@ -324,11 +315,6 @@ function drawRelaxSparkles(a: DrawArgs): void {
     if (Math.sin(phase * 1.3) > 0.15) {
       fillPx(ctx, fx + side * u, fy - u, u, u, rgba(PASTEL.white, vis * 0.85));
     }
-
-    // Motes caindo devagar — ASMR relaxante
-    const fallT = (time * 0.35 + seeded(seed, i + 430)) % 1;
-    const fallY = sy + h + u * 2 + fallT * u * (6 + (i % 4));
-    fillPx(ctx, fx + Math.sin(phase) * u, fallY, u, u, rgba(mat.particle, (1 - fallT) * 0.55));
   }
 }
 
@@ -337,27 +323,14 @@ function seeded(seed: number, i: number): number {
   return x - Math.floor(x);
 }
 
-/** Static debris chips at base — shift slightly when pressed */
-function drawDebris(a: DrawArgs, count: number, _color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, wobble, personality, mat } = a;
-  const press = a.overlay?.pressAmount ?? 0;
-  const n = scaledCount(count, personality?.debrisMul ?? 1, 3);
-  const baseY = sy + h;
-  for (let i = 0; i < n; i++) {
-    const side = seeded(seed, i + 40) > 0.45 ? 1 : -1;
-    const spread = w * (0.22 + seeded(seed, i + 50) * 0.38);
-    const push = press * u * (2.5 + i * 0.6);
-    const fx = cx + side * spread + push * side;
-    const bob = Math.sin(time * 3.1 + i * 1.3 + wobble) * u * 0.65;
-    const sz = u * (1 + Math.floor(seeded(seed, i + 60) * 3));
-    const crumb = softCrumbAlt(mat, seed, i);
-    fillPx(ctx, fx, baseY + u * 0.5 + bob, sz, sz, crumb);
-    fillPx(ctx, fx + side * u * 1.5, baseY + u * 1.5 + bob, u, u, softCrumb(mat, 0.65));
-    if (seeded(seed, i + 62) > 0.35) {
-      fillPx(ctx, fx + side * u * 2.5, baseY + u * 2 + bob, u, u, rgba(mat.fill, 0.6));
-    }
-  }
-}
+/** Static debris chips at base — disabled (sem migalhas escuras nas bordas) */
+function drawDebris(_a: DrawArgs, _count: number, _color: string): void {}
+
+/** Side flecks / rim crumbs — disabled */
+function drawEdgeFlecks(_a: DrawArgs, _count: number, _color: string): void {}
+
+/** Dense surface microdots — disabled */
+function drawSurfaceGrain(_a: DrawArgs, _count: number, _color: string, _alpha = 0.4): void {}
 
 /** Twinkling floaters around the platform (idle juice) */
 function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
@@ -373,42 +346,6 @@ function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
     if (Math.sin(phase * 1.7) > 0.35) {
       fillPx(ctx, fx + u, fy - u, u, u, rgba(PASTEL.white, 0.72));
       fillPx(ctx, fx - u * 0.5, fy + u * 0.5, u, u, rgba(color, alpha * 0.65));
-    }
-  }
-}
-
-/** Dense surface microdots inside body */
-function drawSurfaceGrain(a: DrawArgs, count: number, _color: string, alpha = 0.4): void {
-  const { ctx, cx, sy, w, h, u, seed, mat } = a;
-  const x = cx - w / 2;
-  for (let i = 0; i < count; i++) {
-    const pick = seeded(seed, i + 500);
-    const grainColor = pick > 0.66 ? PASTEL.white : pick > 0.33 ? mat.particle : mat.fill;
-    const grainAlpha = alpha + seeded(seed, i + 130) * 0.2;
-    fillPx(
-      ctx,
-      x + u + seeded(seed, i + 110) * (w - u * 2),
-      sy + u + seeded(seed, i + 120) * (h - u * 2),
-      u,
-      u,
-      rgba(grainColor, grainAlpha),
-    );
-  }
-}
-
-/** Side flecks / rim crumbs on left+right edges */
-function drawEdgeFlecks(a: DrawArgs, count: number, _color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, personality, mat } = a;
-  const n = scaledCount(count, (personality?.debrisMul ?? 1) * 0.9, 4);
-  const bias = personality?.edgeBias ?? 0;
-  for (let i = 0; i < n; i++) {
-    const side = i % 2 === 0 ? -1 : 1;
-    const fy = sy + u * 2 + seeded(seed, i + 140) * (h - u * 4);
-    const bob = Math.sin(time * 2.2 + i) * u * 0.45;
-    const inset = w * 0.48 + bias * side * u * 2;
-    fillPx(ctx, cx + side * inset, fy + bob, u, u, softCrumb(mat, 0.7));
-    if (seeded(seed, i + 145) > 0.4) {
-      fillPx(ctx, cx + side * (inset + u * 2), fy + u + bob, u, u, softCrumbAlt(mat, seed, i + 150));
     }
   }
 }

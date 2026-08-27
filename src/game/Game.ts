@@ -124,9 +124,9 @@ export class Game {
     this.hud.showPlaying(this.best);
     const z = this.atmosphere.getPrimaryZone();
     const pal = this.atmosphere.getPalette();
-    this.hud.showPhaseToast(z.label, z.quote);
-    this.hud.setPhaseStrip(z.label, pal.accent);
+    this.hud.showPhaseToast(z.label, z.quote, pal.accent);
     this.hud.setAmbientColors(pal.top, pal.mid);
+    this.audio.playSoftMurmur(z.quote.length);
   }
 
   retry(): void {
@@ -209,11 +209,10 @@ export class Game {
       const z = this.atmosphere.getPrimaryZone();
       const pal = this.atmosphere.getPalette();
       this.ambient.biomeBurst(this.player.x, this.player.y, this.atmosphere);
-      this.addFloater(this.player.x, this.player.y + 50, z.quote, this.atmosphere.getAccent());
-      this.hud.showPhaseToast(z.label, z.quote);
-      this.hud.setPhaseStrip(z.label, this.atmosphere.getAccent());
+      this.hud.showPhaseToast(z.label, z.quote, this.atmosphere.getAccent());
       this.hud.setAmbientColors(pal.top, pal.mid);
       this.audio.playBiomeEnter(z.id);
+      this.audio.playSoftMurmur(z.quote.length);
       this.screenPunch = Math.max(this.screenPunch, 0.32);
       this.particles.burst(
         this.player.x,
@@ -226,9 +225,7 @@ export class Game {
     }
 
     if (this.state === 'playing') {
-      const z = this.atmosphere.getPrimaryZone();
       const pal = this.atmosphere.getPalette();
-      this.hud.setPhaseStrip(z.label, pal.accent);
       this.hud.setAmbientColors(pal.top, pal.mid);
     }
 
@@ -550,7 +547,6 @@ export class Game {
         } catch {
           /* ignore */
         }
-        this.hud.showMaterialToast(mat.name);
       }
 
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -646,7 +642,6 @@ export class Game {
     if (this.lastReaction && this.lastReaction !== text) {
       this.mixStreak += 1;
       if (this.mixStreak >= 3) {
-        this.hud.showMaterialToast('mix ASMR');
         this.mixStreak = 0;
       }
     } else {
