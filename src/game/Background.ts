@@ -63,21 +63,14 @@ export class Background {
     ctx.fillRect(0, bandY + 6, w, 10);
   }
 
-  /** Soft light — pixel rect wash */
+  /** Soft light — disabled (kept for call-site compatibility) */
   drawLightOverlay(
-    ctx: CanvasRenderingContext2D,
-    w: number,
-    h: number,
-    atm?: Atmosphere,
+    _ctx: CanvasRenderingContext2D,
+    _w: number,
+    _h: number,
+    _atm?: Atmosphere,
   ): void {
-    ctx.imageSmoothingEnabled = false;
-    const breath = (Math.sin(this.time * 0.4) + 1) * 0.5;
-    const accent = atm?.getAccent() ?? '#fff8e8';
-    const rgb = this.hex(accent);
-    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.04 + breath * 0.03})`;
-    const bw = Math.floor(w * 0.7);
-    const bh = Math.floor(h * 0.22);
-    ctx.fillRect(Math.floor(w * 0.15), Math.floor(h * 0.28), bw, bh);
+    // Was a visible soft rectangle behind platforms — left invisible on purpose.
   }
 
   /** Weather / cinematic overlays after near particles */

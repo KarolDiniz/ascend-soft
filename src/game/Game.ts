@@ -639,12 +639,6 @@ export class Game {
     this.ambient.drawFar(ctx, this.toScreen);
     this.scenery.drawMid(ctx, this.W, this.H, this.camera.y, this.atmosphere);
 
-    const left = this.toScreen(-this.worldHalfW - 30, this.camera.y);
-    const right = this.toScreen(this.worldHalfW + 30, this.camera.y);
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(0, 0, Math.max(0, left.x), this.H);
-    ctx.fillRect(right.x, 0, Math.max(0, this.W - right.x), this.H);
-
     this.ambient.drawMid(ctx, this.toScreen);
     this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
 
