@@ -16,6 +16,7 @@ import { Player } from './Player';
 import { REACH } from './physics';
 import { PhaseRunOrder, setPhaseRun } from './PhaseRunOrder';
 import { materialMood } from './ThemedPhases';
+import type { FallSummary } from '../ui/fallCopy';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
@@ -79,6 +80,8 @@ export class Game {
   private shownPhaseToasts = new Set<MaterialId>();
   private runBestBroken = false;
   private startBest = 0;
+  private fallRevealTimer = 0;
+  private fallSummaryPending: FallSummary | null = null;
   private userSettings: UserSettings = loadSettings();
   private lightMode = this.userSettings.lightMode;
 
@@ -188,6 +191,13 @@ export class Game {
     this.hud.showTitle(this.best);
   }
 
+  goToTitle(): void {
+    this.audio.stopSoftMurmur();
+    this.fallRevealTimer = 0;
+    this.fallSummaryPending = null;
+    this.initTitle();
+  }
+
   beginPlay(): void {
     this.resetRun();
     this.state = 'playing';
@@ -199,6 +209,8 @@ export class Game {
   }
 
   retry(): void {
+    this.fallRevealTimer = 0;
+    this.fallSummaryPending = null;
     this.beginPlay();
   }
 
@@ -230,6 +242,8 @@ export class Game {
     this.runBestBroken = false;
     this.startBest = this.best;
     this.shownPhaseToasts.clear();
+    this.fallRevealTimer = 0;
+    this.fallSummaryPending = null;
   }
 
   /** Exibe banner de reflexão conforme preferência do jogador */
@@ -374,10 +388,18 @@ export class Game {
       this.player.vy -= 200 * dt;
       this.player.y += this.player.vy * dt * 0.3;
       this.particles.setWind(this.atmosphere.windX, this.atmosphere.windY);
-    this.particles.update(dt);
+      this.particles.update(dt);
       this.shards.update(dt);
       this.camera.update(dt);
       for (const p of this.spawner.platforms) p.update(dt, this.time);
+
+      if (this.fallRevealTimer > 0) {
+        this.fallRevealTimer -= dt;
+        if (this.fallRevealTimer <= 0 && this.fallSummaryPending) {
+          this.hud.showFall(this.fallSummaryPending);
+          this.fallSummaryPending = null;
+        }
+      }
       return;
     }
 
@@ -832,7 +854,14 @@ export class Game {
     this.perfectStreak = 0;
     this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());
     this.audio.playFall();
-    this.hud.showFall(this.height, this.best);
+    this.fallSummaryPending = {
+      height: this.height,
+      best: this.best,
+      breaths: this.breathCount,
+      startBest: this.startBest,
+      runBestBroken: this.runBestBroken,
+    };
+    this.fallRevealTimer = 0.48;
   }
 
   private toScreen = (x: number, y: number) => {
@@ -914,7 +943,9 @@ export class Game {
     ctx.restore();
 
     if (this.state === 'falling') {
-      const a = Math.min(0.38, this.fallTimer * 0.4);
+      const a = Math.min(0.55, this.fallTimer * 0.62);
+      ctx.fillStyle = `rgba(168, 198, 214, ${a * 0.28})`;
+      ctx.fillRect(0, 0, this.W, this.H);
       ctx.fillStyle = `rgba(243, 230, 220, ${a})`;
       ctx.fillRect(0, 0, this.W, this.H);
     }

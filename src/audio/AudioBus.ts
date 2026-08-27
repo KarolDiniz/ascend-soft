@@ -446,6 +446,17 @@ export class AudioBus {
     });
   }
 
+  /** Soluço suave ao abrir a tela de derrota */
+  playFallWhimper(): void {
+    if (!this.voiceEnabled) return;
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.creatureVocal(ctx, sfx, t, 0.16, 520, 360, 0.046, { wobble: true });
+      this.creatureVocal(ctx, sfx, t + 0.18, 0.1, 680, 300, 0.034, { squeak: true });
+      this.creatureVocal(ctx, sfx, t + 0.34, 0.08, 460, 320, 0.028, { wobble: true, blip: true });
+    });
+  }
+
   playBreath(): void {
     if (!this.voiceEnabled) return;
     this.withCtx((ctx, sfx) => {

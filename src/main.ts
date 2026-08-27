@@ -19,6 +19,7 @@ void spriteAtlas.init().then(() => {
 
 const btnStart = document.getElementById('btn-start')!;
 const btnRetry = document.getElementById('btn-retry')!;
+const btnHome = document.getElementById('btn-home')!;
 
 async function unlockAndPlay(): Promise<void> {
   if (titleSettings.isOpen()) return;
@@ -44,8 +45,17 @@ btnRetry.addEventListener('click', () => {
   void unlockAndRetry();
 });
 
+btnHome.addEventListener('click', () => {
+  game.goToTitle();
+});
+
 window.addEventListener('keydown', (e) => {
   if (titleSettings.isOpen()) return;
+  if (e.code === 'Escape' && hud.isFallVisible()) {
+    e.preventDefault();
+    game.goToTitle();
+    return;
+  }
   if (e.code !== 'Enter' && e.code !== 'Space') return;
   if (hud.isTitleVisible()) {
     e.preventDefault();

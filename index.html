@@ -190,10 +190,48 @@
         </section>
 
         <section id="fall-screen" class="overlay fall-screen hidden">
-          <div class="title-panel fall-panel">
-            <p class="fall-title">quase…</p>
-            <p id="fall-score" class="fall-score">altura 0</p>
-            <button id="btn-retry" class="btn btn-primary btn-soap" type="button">de novo</button>
+          <div class="fall-veil" aria-hidden="true"></div>
+
+          <div class="fall-stack">
+            <div class="fall-mascot-stage">
+              <div id="fall-mascot-wrap" class="fall-mascot-wrap" aria-hidden="true">
+                <canvas id="fall-mascot" class="fall-mascot" width="160" height="176"></canvas>
+              </div>
+            </div>
+
+            <div class="title-panel fall-panel">
+              <p id="fall-eyebrow" class="fall-eyebrow">fim da subida</p>
+              <p id="fall-title" class="fall-title">quase…</p>
+              <p id="fall-subtitle" class="fall-subtitle">respira fundo e tenta outra vez</p>
+
+              <div id="fall-score" class="fall-score-card" aria-live="polite">
+                <div class="fall-stat">
+                  <span class="fall-stat-label">altura</span>
+                  <span id="fall-stat-height" class="fall-stat-value">0</span>
+                </div>
+                <div class="fall-stat">
+                  <span class="fall-stat-label">respiros</span>
+                  <span id="fall-stat-breaths" class="fall-stat-value">0</span>
+                </div>
+                <div class="fall-stat">
+                  <span class="fall-stat-label">recorde</span>
+                  <span id="fall-stat-best" class="fall-stat-value">0</span>
+                </div>
+              </div>
+              <p id="fall-gap" class="fall-gap hidden"></p>
+
+              <div class="fall-actions">
+                <button id="btn-retry" class="btn btn-primary btn-soap btn-fall-retry" type="button">
+                  de novo
+                </button>
+                <button id="btn-home" class="btn btn-ghost btn-fall-home" type="button">início</button>
+              </div>
+              <p class="fall-hint">espaço · de novo · esc · início</p>
+            </div>
+
+            <div id="fall-tears-overlay" class="fall-tears-overlay" aria-hidden="true">
+              <canvas id="fall-tears" class="fall-tears-canvas"></canvas>
+            </div>
           </div>
         </section>
       </div>

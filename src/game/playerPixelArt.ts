@@ -37,6 +37,52 @@ export interface PlayerFaceOptions {
   showSparkle?: boolean;
   /** Expressão mais animada no banner */
   excited?: boolean;
+  /** Olhos marejados e boca triste (legado) */
+  crying?: boolean;
+  /** Semblante de derrota — só tela game over */
+  defeatSad?: boolean;
+}
+
+/** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
+export function getDefeatEyeTearOrigins(facing = 1, look = 0): { x: number; y: number }[] {
+  const eyeOff = 5 * facing;
+  const lk = look + facing;
+  const eyeY = -u * 5;
+  const eyeW = u * 4;
+  const eyeH = u * 5;
+  return [
+    { x: eyeOff - u * 4 + lk + eyeW * 0.5, y: eyeY + eyeH },
+    { x: eyeOff + u * 1 + lk + eyeW * 0.5, y: eyeY + eyeH },
+  ];
+}
+
+/** @deprecated use getDefeatEyeTearOrigins */
+export function getCryingEyeTearOrigins(facing = 1, look = 0): { x: number; y: number }[] {
+  return getDefeatEyeTearOrigins(facing, look);
+}
+
+/** Nuvem de chuva pixelada — só derrota */
+export function drawPlayerDefeatCloud(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT = 0,
+): void {
+  const bob = Math.sin(animT * 3.2) * u * 0.6;
+  const cy = -bh * 0.54 + bob;
+  const cloud = rgba('#c5d4de', 0.96);
+  const cloudHi = rgba('#e8f0f4', 0.9);
+  const cloudLo = rgba('#8fa8b8', 0.88);
+
+  fillPx(ctx, -bw * 0.2, cy, bw * 0.4, u * 3, cloud);
+  fillPx(ctx, -bw * 0.14, cy - u * 2, bw * 0.28, u * 2, cloud);
+  fillPx(ctx, -bw * 0.26, cy - u, u * 3, u * 2, cloud);
+  fillPx(ctx, bw * 0.18, cy - u, u * 3, u * 2, cloud);
+  fillPx(ctx, -bw * 0.08, cy - u * 3, u * 4, u * 2, cloudHi);
+  fillPx(ctx, -bw * 0.22, cy + u * 2, u * 2, u, cloudLo);
+  fillPx(ctx, bw * 0.14, cy + u * 2, u * 2, u, cloudLo);
+  fillPx(ctx, u, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.55));
+  fillPx(ctx, -u * 2, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.45));
 }
 
 function bodyColorForRow(index: number, total: number): string {
@@ -164,43 +210,82 @@ export function drawPlayerPixelFace(
   const animT = opts.animT ?? 0;
   const mouthOpen = opts.mouthOpen ?? false;
   const excited = opts.excited ?? false;
+  const crying = opts.crying ?? false;
+  const defeatSad = opts.defeatSad ?? false;
   const look = (opts.look ?? 0) + facing;
   const eyeOff = 5 * facing;
+  const eyeY = -u * 5;
+  const eyeW = u * 4;
+  const eyeH = excited && mouthOpen && !crying && !defeatSad ? u * 6 : u * 5;
+  const mouthY = u * 5;
+  const blushY = u * 1.5;
 
   fillPx(ctx, -bw * 0.14, -bh * 0.32, bw * 0.28, u, rgba(PASTEL.white, 0.35));
 
-  const blushAlpha = excited && mouthOpen ? 0.55 : 0.42;
+  const blushAlpha = defeatSad ? 0.28 : crying ? 0.32 : excited && mouthOpen ? 0.55 : 0.42;
   const blush = rgba(PASTEL.coral, blushAlpha);
-  fillPx(ctx, -u * 5, u * 0.5, u * 2, u, blush);
-  fillPx(ctx, -u * 4, u, u, u, blush);
-  fillPx(ctx, u * 3, u * 0.5, u * 2, u, blush);
-  fillPx(ctx, u * 4, u, u, u, blush);
+  fillPx(ctx, -u * 5, blushY, u * 2, u, blush);
+  fillPx(ctx, -u * 4, blushY + u, u, u, blush);
+  fillPx(ctx, u * 3, blushY, u * 2, u, blush);
+  fillPx(ctx, u * 4, blushY + u, u, u, blush);
+
+  if (defeatSad) {
+    fillPx(ctx, eyeOff - u * 5 + look, eyeY - u * 2, u * 3, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u * 2, u * 3, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + eyeH - u, eyeW, u, PLAYER_PASTEL.eyeLine);
+
+    fillPx(ctx, eyeOff - u * 3, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2, mouthY, u, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 3, mouthY, u, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, PLAYER_PASTEL.eyeLine);
+    return;
+  }
+
+  if (crying) {
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u, u, PASTEL.white);
+
+    fillPx(ctx, eyeOff - u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, PLAYER_PASTEL.eyeLine);
+    return;
+  }
 
   if (blinking) {
-    fillPx(ctx, eyeOff - u * 3, -u, u * 3, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, -u, u * 3, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 4, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
   } else {
-    const eyeH = excited && mouthOpen ? u * 5 : u * 4;
-    fillPx(ctx, eyeOff - u * 3 + look, -u * 2, u * 3, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2 + look, -u * 2, u * 3, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 2 + look, -u * 3, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 3 + look, -u * 3, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff - u * 2 + look, -u * 3, u, u, PASTEL.white);
-    fillPx(ctx, eyeOff + u * 3 + look, -u * 3, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u, u, PASTEL.white);
     if (Math.sin(animT * 5) > 0.7) {
-      fillPx(ctx, eyeOff - u + look, -u, u, u, rgba(PASTEL.white, 0.6));
-      fillPx(ctx, eyeOff + u * 4 + look, -u, u, u, rgba(PASTEL.white, 0.6));
+      fillPx(ctx, eyeOff - u * 2 + look, eyeY + u, u, u, rgba(PASTEL.white, 0.6));
+      fillPx(ctx, eyeOff + u * 3 + look, eyeY + u, u, u, rgba(PASTEL.white, 0.6));
     }
   }
 
   if (mouthOpen) {
     const mouthH = excited ? u * 3 : u * 2;
-    fillPx(ctx, eyeOff - u * 2, u * 2, u * 5, mouthH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u, u * 3, u * 3, u, rgba(PASTEL.rose, 0.45));
-    fillPx(ctx, eyeOff - u * 0.5, u * 2.5, u * 2, u, rgba(PASTEL.white, 0.35));
+    fillPx(ctx, eyeOff - u * 2, mouthY, u * 5, mouthH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY + u, u * 3, u, rgba(PASTEL.rose, 0.45));
+    fillPx(ctx, eyeOff - u * 0.5, mouthY + u * 0.5, u * 2, u, rgba(PASTEL.white, 0.35));
   } else {
-    fillPx(ctx, eyeOff - u, u * 2, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, u * 2, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
   }
 
   if (opts.showSparkle && Math.sin(animT * 4) > 0.94) {

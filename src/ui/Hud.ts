@@ -1,3 +1,6 @@
+import { FallMascot } from './FallMascot';
+import { FallTearsOverlay } from './FallTearsOverlay';
+import { getFallCopy, getFallGapLabel, type FallSummary } from './fallCopy';
 import { ToastSpeaker } from './ToastSpeaker';
 import { PHASE_TOAST_MS } from './toastConfig';
 import type { AudioBus } from '../audio/AudioBus';
@@ -11,12 +14,20 @@ export class Hud {
   private titleScreen: HTMLElement;
   private titleBestEl: HTMLElement;
   private fallScreen: HTMLElement;
-  private fallScore: HTMLElement;
+  private fallEyebrow: HTMLElement;
+  private fallTitle: HTMLElement;
+  private fallSubtitle: HTMLElement;
+  private fallStatHeight: HTMLElement;
+  private fallStatBreaths: HTMLElement;
+  private fallStatBest: HTMLElement;
+  private fallGap: HTMLElement;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
   private toastPhaseEl: HTMLElement;
   private toastQuoteEl: HTMLElement;
   private speaker: ToastSpeaker;
+  private fallMascot: FallMascot;
+  private fallTears: FallTearsOverlay;
   private audio: AudioBus | null = null;
   private toastTimer = 0;
   private toastLiveTimer = 0;
@@ -32,18 +43,28 @@ export class Hud {
     this.titleScreen = document.getElementById('title-screen')!;
     this.titleBestEl = document.getElementById('title-best')!;
     this.fallScreen = document.getElementById('fall-screen')!;
-    this.fallScore = document.getElementById('fall-score')!;
+    this.fallEyebrow = document.getElementById('fall-eyebrow')!;
+    this.fallTitle = document.getElementById('fall-title')!;
+    this.fallSubtitle = document.getElementById('fall-subtitle')!;
+    this.fallStatHeight = document.getElementById('fall-stat-height')!;
+    this.fallStatBreaths = document.getElementById('fall-stat-breaths')!;
+    this.fallStatBest = document.getElementById('fall-stat-best')!;
+    this.fallGap = document.getElementById('fall-gap')!;
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
     this.toastPhaseEl = document.getElementById('toast-phase')!;
     this.toastQuoteEl = document.getElementById('toast-quote')!;
     this.speaker = new ToastSpeaker();
+    this.fallMascot = new FallMascot();
+    this.fallTears = new FallTearsOverlay(this.fallMascot);
     this.audio = audio ?? null;
     this.toastEl.style.setProperty('--toast-duration', `${PHASE_TOAST_MS}ms`);
   }
 
   showTitle(best: number): void {
     window.clearTimeout(this.leaveTimer);
+    this.fallMascot.stop();
+    this.fallTears.stop();
     this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
@@ -86,6 +107,8 @@ export class Hud {
 
   showPlaying(best: number): void {
     window.clearTimeout(this.leaveTimer);
+    this.fallMascot.stop();
+    this.fallTears.stop();
     this.titleScreen.classList.add('hidden');
     this.titleScreen.classList.remove('is-leaving');
     document.getElementById('app')?.classList.remove('is-title');
@@ -98,9 +121,35 @@ export class Hud {
     this.streakEl.classList.add('hidden');
   }
 
-  showFall(height: number, best: number): void {
+  showFall(summary: FallSummary): void {
+    const copy = getFallCopy(summary);
+    this.fallEyebrow.textContent = copy.eyebrow;
+    this.fallTitle.textContent = copy.title;
+    this.fallSubtitle.textContent = copy.subtitle;
+    this.fallStatHeight.textContent = String(summary.height);
+    this.fallStatBreaths.textContent = String(summary.breaths);
+    this.fallStatBest.textContent = String(summary.best);
+
+    const gapLabel = getFallGapLabel(summary);
+    if (gapLabel) {
+      this.fallGap.textContent = gapLabel;
+      this.fallGap.classList.remove('hidden');
+      this.fallGap.classList.toggle('fall-gap--record', gapLabel === 'recorde!');
+    } else {
+      this.fallGap.classList.add('hidden');
+    }
+
     this.fallScreen.classList.remove('hidden');
-    this.fallScore.innerHTML = `<span class="fall-height">${height}</span><span class="fall-meta">melhor ${best}</span>`;
+    this.fallScreen.classList.add('is-entering');
+    window.setTimeout(() => this.fallScreen.classList.remove('is-entering'), 500);
+    this.fallMascot.start();
+    window.setTimeout(() => this.fallTears.start(), 120);
+
+    const muted = this.audio?.isMuted ?? false;
+    const voiceOn = this.audio?.isVoiceEnabled ?? true;
+    if (voiceOn && !muted) {
+      window.setTimeout(() => this.audio?.playFallWhimper(), 180);
+    }
   }
 
   update(height: number, best: number, breaths: number, streak = 0): void {

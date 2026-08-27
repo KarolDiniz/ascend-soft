@@ -521,7 +521,9 @@ body {
 
 .reduce-motion .title-floaters,
 .reduce-motion .press-blink,
-.reduce-motion .floater {
+.reduce-motion .floater,
+.reduce-motion .fall-mascot-wrap.is-crying,
+.reduce-motion .btn-fall-retry {
   animation: none !important;
 }
 
@@ -919,45 +921,241 @@ body {
 /* —— Fall —— */
 .fall-screen {
   justify-content: center;
-  padding: calc(24px + var(--safe-top)) 20px calc(28px + var(--safe-bottom));
+  padding: calc(20px + var(--safe-top)) 18px calc(24px + var(--safe-bottom));
   background: linear-gradient(
     180deg,
-    rgba(197, 224, 220, 0.28) 0%,
-    rgba(243, 213, 200, 0.55) 100%
+    rgba(168, 198, 214, 0.34) 0%,
+    rgba(232, 210, 196, 0.62) 55%,
+    rgba(243, 213, 200, 0.72) 100%
   );
 }
 
+.fall-screen.is-entering .fall-stack {
+  animation: fall-stack-in 0.55s steps(6) both;
+}
+
+.fall-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 58% 52% at 50% 42%,
+      rgba(255, 252, 248, 0.42) 0%,
+      rgba(210, 228, 236, 0.28) 48%,
+      rgba(180, 200, 210, 0.18) 100%
+    ),
+    linear-gradient(180deg, rgba(168, 198, 214, 0.22) 0%, rgba(243, 213, 200, 0.35) 100%);
+}
+
+.fall-tears-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fall-tears-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.fall-stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(92vw, 340px);
+  filter: drop-shadow(0 10px 22px rgba(90, 97, 108, 0.2));
+}
+
+@keyframes fall-stack-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fall-mascot-stage {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 0.2rem 0 0.1rem;
+  animation: fall-mascot-in 0.45s steps(5) both;
+}
+
+@keyframes fall-mascot-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fall-mascot-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.2rem 0.75rem 0;
+}
+
+.fall-mascot-wrap.is-crying {
+  animation: fall-sob 1.35s steps(4) infinite;
+}
+
+.fall-mascot {
+  display: block;
+  width: 160px;
+  height: 176px;
+  image-rendering: pixelated;
+}
+
+@keyframes fall-sob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(2px);
+  }
+  55% {
+    transform: translateY(4px);
+  }
+}
+
 .fall-panel {
-  animation: panel-pop 0.35s steps(6) both;
+  position: relative;
+  z-index: 6;
+  width: 100%;
+  margin: 0;
+  animation: panel-pop 0.5s steps(7) both;
+  animation-delay: 0.12s;
+  animation-fill-mode: both;
+}
+
+.fall-eyebrow {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+  line-height: 1.6;
 }
 
 .fall-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: clamp(1.1rem, 5vw, 1.6rem);
+  font-size: clamp(1rem, 4.8vw, 1.45rem);
   color: var(--ink);
-  margin-bottom: 10px;
-  line-height: 1.4;
+  margin: 0 0 8px;
+  line-height: 1.45;
 }
 
-.fall-score {
+.fall-subtitle {
+  margin: 0 0 16px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--ink-soft);
-  margin-bottom: 22px;
-  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 18rem;
+  text-align: center;
+}
+
+.fall-score-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.fall-stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   align-items: center;
+  gap: 4px;
+  padding: 8px 4px 7px;
+  border: 2px solid rgba(90, 97, 108, 0.2);
+  background: rgba(255, 255, 255, 0.42);
 }
 
-.fall-height {
+.fall-stat-label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1.6rem;
+  font-size: 0.34rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  text-transform: lowercase;
+}
+
+.fall-stat-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.72rem;
   color: var(--ink);
   line-height: 1.4;
 }
 
-.fall-meta {
-  font-size: 0.8rem;
+.fall-gap {
+  margin: 0 0 14px;
+  padding: 0.35rem 0.65rem;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  border: 2px dashed rgba(90, 97, 108, 0.24);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.fall-gap--record {
+  color: #c96a52;
+  border-color: rgba(201, 106, 82, 0.35);
+  background: rgba(255, 235, 228, 0.55);
+}
+
+.fall-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.fall-actions .btn {
+  min-width: 11.5rem;
+}
+
+.btn-fall-retry {
+  animation: cta-pulse 1.8s steps(4) infinite;
+}
+
+.btn-fall-home {
+  font-size: 0.55rem;
+  padding: 0.7rem 1.2rem;
+}
+
+.fall-hint {
+  margin: 12px 0 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  line-height: 1.35;
   opacity: 0.85;
 }
 
