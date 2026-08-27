@@ -10,6 +10,7 @@ import { Camera } from './Camera';
 import { Input } from './Input';
 import { Particles } from './Particles';
 import { ShardField } from './platform/ShardVfx';
+import { isSoapBarMaterial } from './platform/soapColors';
 import { PlatformSpawner } from './PlatformSpawner';
 import { Player } from './Player';
 import { REACH } from './physics';
@@ -464,7 +465,7 @@ export class Game {
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
 
-      if (p.material !== 'jelly') {
+      if (p.material !== 'jelly' && !isSoapBarMaterial(p.material)) {
         this.particles.landBurst(
           this.player.x,
           platformTop,
@@ -480,9 +481,11 @@ export class Game {
       // Material-specific juice — cada item tem assinatura própria
       switch (p.material) {
         case 'glycerin':
-        case 'iceSoap':
         case 'lavenderSoap':
         case 'creamSoap':
+          this.particles.soapStepFoam(this.player.x, platformTop, mat.particle, impact, p.w);
+          break;
+        case 'iceSoap':
         case 'whipped':
         case 'bathFoam':
           this.particles.risingBubbles(

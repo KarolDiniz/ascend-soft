@@ -1,5 +1,6 @@
 import type { MaterialId, ParticleStyle } from '../audio/materials';
 import { PASTEL } from '../theme/pastelPalette';
+import { isSoapBarMaterial } from './platform/soapColors';
 
 export type GameplayFx =
   | ParticleStyle
@@ -357,6 +358,7 @@ export class Particles {
     accent: string,
   ): void {
     if (!this.allowContinuous) return;
+    if (isSoapBarMaterial(materialId)) return;
 
     const speed = Math.abs(vx);
     this.footAcc += dt * (speed * 0.08 + 1.2) * this.densityScale;
@@ -463,13 +465,6 @@ export class Particles {
       });
     } else if (materialId === 'honeycomb' && Math.random() < dt * 5.5 * rateBoost) {
       this.drip(x + (Math.random() - 0.5) * 26, surfaceY, color, this.cap(2));
-    } else if (materialId === 'glycerin' && Math.random() < dt * 5 * rateBoost) {
-      this.spawn(x + (Math.random() - 0.5) * 18, surfaceY, accent, 'bubble', {
-        vx: (Math.random() - 0.5) * 12,
-        vy: 20 + Math.random() * 35,
-        life: 0.55,
-        size: 2 + Math.random() * 2.5,
-      });
     } else if (materialId === 'whipped' && Math.random() < dt * 7 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 24, surfaceY, '#ffffff', 'foam', {
         vx: (Math.random() - 0.5) * 14,
@@ -523,16 +518,6 @@ export class Particles {
         life: 0.45,
         size: 2 + Math.random() * 3,
       });
-    } else if (
-      (materialId === 'lavenderSoap' || materialId === 'creamSoap') &&
-      Math.random() < dt * 4.5 * rateBoost
-    ) {
-      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY, accent, 'glitter', {
-        vx: (Math.random() - 0.5) * 14,
-        vy: 12 + Math.random() * 24,
-        life: 0.4,
-        size: 1.5 + Math.random() * 2,
-      });
     } else if (materialId === 'keyboard' && Math.random() < dt * 3.5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 30, surfaceY, color, 'crumb', {
         vx: (Math.random() - 0.5) * 20,
@@ -560,7 +545,7 @@ export class Particles {
     materialId: MaterialId,
   ): void {
     if (!this.allowContinuous) return;
-    if (materialId === 'jelly' || materialId === 'marshmallow') return;
+    if (materialId === 'jelly' || materialId === 'marshmallow' || isSoapBarMaterial(materialId)) return;
     const rates: Partial<Record<MaterialId, number>> = {
       jelly: 2.8,
       butter: 1.8,
@@ -834,6 +819,56 @@ export class Particles {
   foamBurst(x: number, y: number, color: string): void {
     this.burst(x, y, color, 18, 'foamBurst', false);
     this.burst(x, y, '#ffffff', 10, 'bubble', false);
+  }
+
+  /** Sabonete — espuma + bolhas ao pisar */
+  soapStepFoam(x: number, y: number, color: string, impact: number, width: number): void {
+    const spread = width * 0.48;
+    const foamN = this.cap(16 + Math.floor(impact * 14));
+    const bubbleN = this.cap(18 + Math.floor(impact * 16));
+
+    for (let i = 0; i < foamN; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.85;
+      const speed = 22 + Math.random() * (38 + impact * 40);
+      this.spawn(x + (Math.random() - 0.5) * spread, y + Math.random() * 3, '#ffffff', 'foam', {
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed + 18,
+        life: 0.5 + Math.random() * 0.45,
+        size: 3 + Math.random() * 4,
+      });
+    }
+    for (let i = 0; i < Math.floor(foamN * 0.45); i++) {
+      this.spawn(x + (Math.random() - 0.5) * spread * 0.85, y, color, 'foam', {
+        vx: (Math.random() - 0.5) * 42,
+        vy: 14 + Math.random() * 36,
+        life: 0.45 + Math.random() * 0.35,
+        size: 2.5 + Math.random() * 3,
+      });
+    }
+    for (let i = 0; i < bubbleN; i++) {
+      this.spawn(x + (Math.random() - 0.5) * spread, y + Math.random() * 2, color, 'bubble', {
+        vx: (Math.random() - 0.5) * 36,
+        vy: 28 + Math.random() * 72,
+        life: 0.65 + Math.random() * 0.55,
+        size: 2.5 + Math.random() * 4.5,
+      });
+    }
+    for (let i = 0; i < Math.floor(bubbleN * 0.55); i++) {
+      this.spawn(x + (Math.random() - 0.5) * spread * 0.9, y, '#ffffff', 'bubble', {
+        vx: (Math.random() - 0.5) * 28,
+        vy: 32 + Math.random() * 65,
+        life: 0.7 + Math.random() * 0.5,
+        size: 2 + Math.random() * 3.5,
+      });
+    }
+    this.rings.push({
+      x,
+      y,
+      life: 0.35 + impact * 0.12,
+      maxLife: 0.35 + impact * 0.12,
+      color: '#ffffff',
+      kind: 'dust',
+    });
   }
 
   /** Sabonete / espuma — bolhas sobem ao pisar */

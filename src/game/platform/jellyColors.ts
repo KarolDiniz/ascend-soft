@@ -1,5 +1,6 @@
 import { MATERIALS, type MaterialDef, type MaterialId } from '../../audio/materials';
 import { materialDetailStroke, rgba } from '../../theme/pastelPalette';
+import { isSoapBarMaterial, soapColorPreset } from './soapColors';
 /** Cores distintas de gelatina na fase — verde, rosa, branca, etc. */
 const JELLY_FILLS = [
   '#8AD4A8', // verde menta
@@ -79,6 +80,18 @@ export function resolvePlatformMaterial(material: MaterialId, seed: number): Mat
       particle: preset.stripeA,
       stroke: preset.stripeB,
       glow: rgba(preset.stripeA, 0.42),
+      spriteWash: rgba(preset.fill, 0.28),
+    };
+  }
+  if (isSoapBarMaterial(material)) {
+    const preset = soapColorPreset(seed);
+    const base = MATERIALS[material];
+    return {
+      ...base,
+      fill: preset.fill,
+      stroke: materialDetailStroke(preset.fill),
+      particle: preset.particle,
+      glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
     };
   }
