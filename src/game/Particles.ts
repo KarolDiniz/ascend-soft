@@ -11,9 +11,11 @@ interface Particle {
   color: string;
   type: ParticleStyle | 'ring';
   active: boolean;
+  rot?: number;
+  spin?: number;
 }
 
-const POOL = 128;
+const POOL = 180;
 
 export class Particles {
   private items: Particle[] = [];
@@ -51,7 +53,7 @@ export class Particles {
     style: ParticleStyle = 'crumb',
     perfect = false,
   ): void {
-    const n = Math.min(count + (perfect ? 5 : 0), 20);
+    const n = Math.min(count + (perfect ? 5 : 0), 24);
     for (let i = 0; i < n; i++) {
       const p = this.alloc();
       if (!p) break;
@@ -67,9 +69,69 @@ export class Particles {
       p.size = style === 'glitter' || style === 'spark' ? 2 + Math.random() * 2 : 3 + Math.random() * 4;
       p.color = perfect && Math.random() > 0.6 ? '#e8a090' : color;
       p.type = perfect && Math.random() > 0.7 ? 'spark' : style;
+      p.rot = 0;
+      p.spin = (Math.random() - 0.5) * 8;
     }
     if (perfect) {
       this.rings.push({ x, y, life: 0.45, maxLife: 0.45, color: '#e8a090' });
+    }
+  }
+
+  drip(x: number, y: number, color: string, count = 2): void {
+    for (let i = 0; i < count; i++) {
+      const p = this.alloc();
+      if (!p) break;
+      p.active = true;
+      p.x = x + (Math.random() - 0.5) * 24;
+      p.y = y - 2;
+      p.vx = (Math.random() - 0.5) * 12;
+      p.vy = -20 - Math.random() * 40;
+      p.life = 0.5 + Math.random() * 0.4;
+      p.maxLife = p.life;
+      p.size = 2.5 + Math.random() * 2.5;
+      p.color = color;
+      p.type = 'drip';
+    }
+  }
+
+  sandFall(x: number, y: number, color: string, w: number): void {
+    for (let i = 0; i < 4; i++) {
+      const p = this.alloc();
+      if (!p) break;
+      p.active = true;
+      p.x = x + (Math.random() - 0.5) * w;
+      p.y = y;
+      p.vx = (Math.random() - 0.5) * 20;
+      p.vy = -15 - Math.random() * 35;
+      p.life = 0.4 + Math.random() * 0.35;
+      p.maxLife = p.life;
+      p.size = 1.5;
+      p.color = color;
+      p.type = 'sandFall';
+    }
+  }
+
+  foamBurst(x: number, y: number, color: string): void {
+    this.burst(x, y, color, 16, 'foamBurst', true);
+    this.burst(x, y, '#ffffff', 8, 'bubble', false);
+  }
+
+  juiceArc(x: number, y: number, color: string): void {
+    for (let i = 0; i < 8; i++) {
+      const p = this.alloc();
+      if (!p) break;
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
+      const sp = 50 + Math.random() * 70;
+      p.active = true;
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(a) * sp;
+      p.vy = Math.sin(a) * sp + 20;
+      p.life = 0.45 + Math.random() * 0.3;
+      p.maxLife = p.life;
+      p.size = 2 + Math.random() * 2;
+      p.color = color;
+      p.type = 'juice';
     }
   }
 
@@ -103,9 +165,17 @@ export class Particles {
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy -= (p.type === 'foam' || p.type === 'bubble' ? 8 : 22) * dt;
-      p.vx *= 1 - 1.4 * dt;
-      if (p.type === 'sand') p.vx *= 1 - 0.8 * dt;
+      // World +Y is up — gravity pulls down
+      const g =
+        p.type === 'foam' || p.type === 'bubble' || p.type === 'foamBurst'
+          ? 40
+          : p.type === 'drip' || p.type === 'sandFall' || p.type === 'juice'
+            ? 520
+            : 180;
+      p.vy -= g * dt;
+      p.vx *= 1 - 1.2 * dt;
+      if (p.type === 'sand' || p.type === 'sandFall') p.vx *= 1 - 0.6 * dt;
+      if (p.spin) p.rot = (p.rot ?? 0) + p.spin * dt;
     }
     for (let i = this.rings.length - 1; i >= 0; i--) {
       this.rings[i].life -= dt;
@@ -133,7 +203,7 @@ export class Particles {
       const s = toScreen(p.x, p.y);
       const a = Math.max(0, p.life / p.maxLife);
       ctx.globalAlpha = a * 0.88;
-      if (p.type === 'bubble') {
+      if (p.type === 'bubble' || p.type === 'foamBurst') {
         ctx.strokeStyle = p.color;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
@@ -144,16 +214,21 @@ export class Particles {
         ctx.beginPath();
         ctx.arc(s.x, s.y, p.size, 0, Math.PI * 2);
         ctx.fill();
-      } else if (p.type === 'zest') {
+      } else if (p.type === 'zest' || p.type === 'juice') {
         ctx.fillStyle = p.color;
         ctx.save();
         ctx.translate(s.x, s.y);
-        ctx.rotate(p.vx * 0.05);
+        ctx.rotate(p.rot ?? p.vx * 0.05);
         ctx.fillRect(-p.size, -1, p.size * 2, 2);
         ctx.restore();
-      } else if (p.type === 'sand') {
+      } else if (p.type === 'sand' || p.type === 'sandFall') {
         ctx.fillStyle = p.color;
         ctx.fillRect(s.x, s.y, 2, 2);
+      } else if (p.type === 'drip') {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.ellipse(s.x, s.y, p.size * 0.45, p.size, 0, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         ctx.fillStyle = p.color;
         ctx.beginPath();

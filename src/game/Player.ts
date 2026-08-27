@@ -136,6 +136,13 @@ export class Player {
     this.groundedPlatform = platform;
   }
 
+  /** Extra coyote when platform vanishes under feet */
+  grantVanishCoyote(): void {
+    this.coyote = Math.max(this.coyote, 0.14);
+    this.onGround = false;
+    this.groundedPlatform = null;
+  }
+
   applyLandSquash(intensity: number): void {
     this.squash = 1 + intensity * 0.48;
     this.stretch = 1 - intensity * 0.3;

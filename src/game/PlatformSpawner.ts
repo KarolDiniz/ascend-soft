@@ -1,4 +1,5 @@
-import { pickMaterial, type MaterialId } from '../audio/materials';
+import { MATERIALS, pickMaterial, type MaterialId } from '../audio/materials';
+import { getBehaviorDef } from './platform/behaviors';
 import { Platform } from './Platform';
 import { PHYS, REACH } from './physics';
 
@@ -56,6 +57,7 @@ export class PlatformSpawner {
   private worldHalfW = 180;
   private lastWasFading = false;
   private lastDir = 1;
+  private mortalStreak = 0;
 
   constructor(seed = Date.now()) {
     this.rand = mulberry32(seed);
@@ -67,6 +69,7 @@ export class PlatformSpawner {
     this.highestY = 0;
     this.lastWasFading = false;
     this.lastDir = 1;
+    this.mortalStreak = 0;
 
     // Starters: readable vertical + horizontal spacing, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
@@ -168,7 +171,7 @@ export class PlatformSpawner {
       }
     }
 
-    const material = pickMaterial(height, this.rand);
+    const material = this.pickFairMaterial(height);
 
     let moving = height > 380 && this.rand() < 0.1 + difficulty * 0.06;
     let moveAmp = 10 + this.rand() * 8;
@@ -182,7 +185,9 @@ export class PlatformSpawner {
     }
 
     let fading = false;
+    const mortal = getBehaviorDef(material).mortal;
     if (
+      !mortal &&
       height > 650 &&
       !moving &&
       !this.lastWasFading &&
@@ -204,6 +209,28 @@ export class PlatformSpawner {
     );
     this.highestY = y;
     this.lastWasFading = fading;
+    if (mortal) this.mortalStreak += 1;
+    else this.mortalStreak = 0;
+  }
+
+  /** Never 2+ mortals in a row; bias toward elastic early. */
+  private pickFairMaterial(height: number): MaterialId {
+    let material = pickMaterial(height, this.rand);
+    const elasticPool = (['jelly', 'mochi', 'butterSlime'] as MaterialId[]).filter(
+      (id) => MATERIALS[id].unlockAt <= height,
+    );
+
+    if (this.mortalStreak >= 1 && elasticPool.length) {
+      return elasticPool[Math.floor(this.rand() * elasticPool.length)];
+    }
+    // Soft bias: ~40% elastic when available
+    if (this.rand() < 0.4 && elasticPool.length) {
+      return elasticPool[Math.floor(this.rand() * elasticPool.length)];
+    }
+    if (getBehaviorDef(material).mortal && this.mortalStreak >= 1 && elasticPool.length) {
+      return elasticPool[0];
+    }
+    return material;
   }
 
   private pickX(fromX: number, minGapX: number, maxGapX: number, w: number): number {

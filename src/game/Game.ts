@@ -5,10 +5,12 @@ import { BreathSpawner } from './Breaths';
 import { Camera } from './Camera';
 import { Input } from './Input';
 import { Particles } from './Particles';
+import { ShardField } from './platform/ShardVfx';
 import { PlatformSpawner } from './PlatformSpawner';
 import { Player } from './Player';
 import { REACH } from './physics';
 import type { Hud } from '../ui/Hud';
+import type { PlatformEvent } from './Platform';
 
 const BEST_KEY = 'ascend-soft-best';
 const SEEN_KEY = 'ascend-soft-seen-materials';
@@ -34,8 +36,11 @@ export class Game {
   private player = new Player();
   private spawner = new PlatformSpawner();
   private particles = new Particles();
+  private shards = new ShardField();
   private breaths = new BreathSpawner();
   private background = new Background();
+  private mixStreak = 0;
+  private lastReaction = '';
 
   state: GameState = 'title';
   height = 0;
@@ -118,10 +123,13 @@ export class Game {
     this.player.reset(0, 28);
     this.camera.snapTo(this.player.y, this.H * 0.15);
     this.particles.clear();
+    this.shards.clear();
     this.breaths.reset();
     this.height = 0;
     this.breathCount = 0;
     this.perfectStreak = 0;
+    this.mixStreak = 0;
+    this.lastReaction = '';
     this.fallTimer = 0;
     this.time = 0;
     this.floaters.length = 0;
@@ -170,6 +178,7 @@ export class Game {
       this.player.vy -= 200 * dt;
       this.player.y += this.player.vy * dt * 0.3;
       this.particles.update(dt);
+      this.shards.update(dt);
       this.camera.update(dt);
       for (const p of this.spawner.platforms) p.update(dt, this.time);
       return;
@@ -200,9 +209,19 @@ export class Game {
     this.spawner.update(this.player.y, this.camera.y, this.H);
     for (const p of this.spawner.platforms) p.update(dt, this.time);
 
-    // After spring update, glue feet to the live surface
-    if (this.player.groundedPlatform?.alive) {
+    // Behavior juice from platforms
+    for (const p of this.spawner.platforms) {
+      for (const ev of p.consumeEvents()) this.handlePlatformEvent(p, ev);
+    }
+
+    // After spring/melt update, glue feet only if still solid
+    if (this.player.groundedPlatform?.alive && this.player.groundedPlatform.solid) {
       this.player.stickToSurface(this.player.groundedPlatform);
+    } else if (
+      this.player.groundedPlatform &&
+      (!this.player.groundedPlatform.solid || !this.player.groundedPlatform.alive)
+    ) {
+      this.player.grantVanishCoyote();
     }
 
     const plats = this.spawner.platforms;
@@ -223,6 +242,7 @@ export class Game {
     }
 
     this.particles.update(dt);
+    this.shards.update(dt);
 
     this.height = Math.max(0, Math.floor(this.player.y));
     if (this.height > this.best) {
@@ -261,7 +281,7 @@ export class Game {
     let landed: (typeof this.spawner.platforms)[number] | null = null;
 
     for (const p of this.spawner.platforms) {
-      if (!p.alive || p.opacity < 0.25) continue;
+      if (!p.alive || !p.solid || p.opacity < 0.25) continue;
       const withinX = this.player.right > p.left + 4 && this.player.left < p.right - 4;
       if (!withinX) continue;
 
@@ -348,6 +368,80 @@ export class Game {
     }
   }
 
+  private handlePlatformEvent(
+    p: (typeof this.spawner.platforms)[number],
+    ev: PlatformEvent,
+  ): void {
+    const mat = MATERIALS[p.material];
+    switch (ev.type) {
+      case 'meltDrip':
+        this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 2);
+        if (Math.random() > 0.6) this.audio.playMeltDrip();
+        break;
+      case 'meltGone':
+        this.particles.drip(p.x, p.surfaceY, mat.particle, 10);
+        this.audio.playMeltGone();
+        this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#d4a574');
+        break;
+      case 'crack':
+        this.audio.playCrack();
+        this.particles.burst(p.x, p.surfaceY, '#ffffff', 4, 'glitter', false);
+        break;
+      case 'shatter':
+        this.shards.burst(p.x, p.surfaceY, ev.color, 10, p.w * 0.6);
+        this.particles.burst(p.x, p.surfaceY, '#ffffff', 12, 'glitter', true);
+        this.audio.playShatter();
+        this.screenPunch = Math.max(this.screenPunch, 0.4);
+        this.noteReaction(ev.floater, p.x, p.surfaceY + 22, '#a8d8ff');
+        break;
+      case 'crumbleSand':
+        this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w);
+        if (Math.random() > 0.5) this.audio.playCrumbleLoop();
+        break;
+      case 'crumbleGone':
+        this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w * 1.2);
+        this.particles.burst(p.x, p.surfaceY, mat.particle, 14, 'sand', false);
+        this.audio.playCrumbleGone();
+        this.noteReaction(ev.floater, p.x, p.surfaceY + 18, '#c9a88a');
+        break;
+      case 'foamPop':
+        this.particles.foamBurst(p.x, p.surfaceY, mat.particle);
+        this.audio.playFoamPop();
+        this.screenPunch = Math.max(this.screenPunch, 0.35);
+        this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#fff5fa');
+        break;
+      case 'squeeze':
+        this.particles.juiceArc(p.x, p.surfaceY, mat.particle);
+        this.particles.burst(p.x, p.surfaceY, mat.particle, 6, 'zest', false);
+        this.audio.playSqueeze();
+        if (ev.gone && ev.floater) {
+          this.noteReaction(ev.floater, p.x, p.surfaceY + 18, '#ffb84d');
+        }
+        break;
+      case 'vanishUnderPlayer':
+        if (this.player.groundedPlatform === p) {
+          this.player.grantVanishCoyote();
+          this.audio.playSoftVanish();
+        }
+        break;
+    }
+  }
+
+  private noteReaction(text: string, x: number, y: number, color: string): void {
+    if (!text) return;
+    this.addFloater(x, y, text, color);
+    if (this.lastReaction && this.lastReaction !== text) {
+      this.mixStreak += 1;
+      if (this.mixStreak >= 3) {
+        this.hud.showMaterialToast('mix ASMR');
+        this.mixStreak = 0;
+      }
+    } else {
+      this.mixStreak = Math.max(1, this.mixStreak);
+    }
+    this.lastReaction = text;
+  }
+
   private addFloater(x: number, y: number, text: string, color: string): void {
     this.floaters.push({ x, y, text, life: 0.85, color });
   }
@@ -390,6 +484,7 @@ export class Game {
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);
     this.particles.draw(ctx, this.toScreen);
+    this.shards.draw(ctx, this.toScreen);
 
     if (this.state === 'title') {
       this.player.x = Math.sin(this.time * 0.55) * 18;

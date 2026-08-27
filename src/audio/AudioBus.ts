@@ -235,6 +235,83 @@ export class AudioBus {
     });
   }
 
+  playMeltDrip(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.tone(ctx, sfx, 'sine', 140, 70, 0.12, 0.04, t);
+      this.noiseBurst(ctx, sfx, 0.06, 350, 0.03, t);
+    });
+  }
+
+  playMeltGone(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(140);
+      this.tone(ctx, sfx, 'sine', 180, 60, 0.35, 0.1, t);
+      this.noiseBurst(ctx, sfx, 0.2, 400, 0.06, t);
+    });
+  }
+
+  playCrack(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.noiseBurst(ctx, sfx, 0.05, 2400, 0.07, t, 'bandpass');
+      this.tone(ctx, sfx, 'triangle', 900, 400, 0.08, 0.05, t);
+    });
+  }
+
+  playShatter(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(160);
+      this.tone(ctx, sfx, 'sine', 1200, 600, 0.12, 0.06, t);
+      this.noiseBurst(ctx, sfx, 0.18, 2800, 0.1, t, 'bandpass');
+      this.noiseBurst(ctx, sfx, 0.25, 900, 0.07, t + 0.04);
+      this.tone(ctx, sfx, 'sine', 480, 180, 0.3, 0.05, t + 0.06);
+    });
+  }
+
+  playCrumbleLoop(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.noiseBurst(ctx, sfx, 0.08, 700, 0.035, t);
+    });
+  }
+
+  playCrumbleGone(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(120);
+      this.noiseBurst(ctx, sfx, 0.35, 600, 0.1, t);
+      this.tone(ctx, sfx, 'sine', 120, 50, 0.3, 0.06, t);
+    });
+  }
+
+  playFoamPop(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(120);
+      this.tone(ctx, sfx, 'sine', 280, 90, 0.16, 0.12, t);
+      this.noiseBurst(ctx, sfx, 0.12, 1400, 0.09, t, 'highpass');
+      this.tone(ctx, sfx, 'triangle', 420, 160, 0.1, 0.05, t + 0.03);
+    });
+  }
+
+  playSqueeze(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.noiseBurst(ctx, sfx, 0.1, 1800, 0.07, t, 'bandpass');
+      this.tone(ctx, sfx, 'sine', 240, 100, 0.14, 0.08, t);
+    });
+  }
+
+  playSoftVanish(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.tone(ctx, sfx, 'sine', 220, 80, 0.25, 0.04, t);
+    });
+  }
+
   // —— Material one-shots ——
 
   private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number): void {

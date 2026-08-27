@@ -20,7 +20,11 @@ export type ParticleStyle =
   | 'sand'
   | 'zest'
   | 'bubble'
-  | 'spark';
+  | 'spark'
+  | 'juice'
+  | 'foamBurst'
+  | 'sandFall'
+  | 'shard';
 
 export interface MaterialDef {
   id: MaterialId;
