@@ -187,18 +187,31 @@ export class Particles {
   ): void {
     const tint = zoneAccent;
     const secondary = (materialId && MAT_SECONDARY[materialId]) || style;
-    const nA = this.cap(12 + Math.floor(impact * 10) + (perfect ? 6 : 0));
+    const nA = this.cap(18 + Math.floor(impact * 14) + (perfect ? 8 : 0));
 
     // Wave A — impact
     for (let i = 0; i < nA; i++) {
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
-      const speed = 22 + Math.random() * (perfect ? 78 : 48);
-      this.spawn(x + (Math.random() - 0.5) * 20, y + Math.random() * 3, Math.random() > 0.65 ? tint : color, style, {
+      const speed = 26 + Math.random() * (perfect ? 90 : 58);
+      this.spawn(x + (Math.random() - 0.5) * 24, y + Math.random() * 3, Math.random() > 0.6 ? tint : color, style, {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed + 10,
-        life: 0.55 + Math.random() * 0.7,
-        size: style === 'glitter' || style === 'spark' ? 2 + Math.random() * 2 : 3 + Math.random() * 4,
+        life: 0.55 + Math.random() * 0.75,
+        size: style === 'glitter' || style === 'spark' ? 2 + Math.random() * 2.5 : 3 + Math.random() * 4.5,
       });
+    }
+
+    // Extra shard ring on strong impact
+    if (impact > 0.45) {
+      for (let i = 0; i < this.cap(6 + Math.floor(impact * 6)); i++) {
+        const a = (i / 8) * Math.PI * 2;
+        this.spawn(x, y, color, style, {
+          vx: Math.cos(a) * (35 + impact * 40),
+          vy: Math.sin(a) * (25 + impact * 30) + 15,
+          life: 0.4 + Math.random() * 0.35,
+          size: 2 + Math.random() * 2,
+        });
+      }
     }
 
     // Dust ring always on land
@@ -221,7 +234,7 @@ export class Particles {
       wB.color = color;
       wB.tint = tint;
       wB.style = secondary;
-      wB.count = this.cap(8 + Math.floor(impact * 6));
+      wB.count = this.cap(12 + Math.floor(impact * 8));
       wB.mode = 'mist';
     }
 
@@ -229,13 +242,13 @@ export class Particles {
     const wC = this.allocWave();
     if (wC) {
       wC.active = true;
-      wC.t = 0.14 + Math.random() * 0.05;
+      wC.t = 0.12 + Math.random() * 0.05;
       wC.x = x;
       wC.y = y;
       wC.color = color;
       wC.tint = tint;
       wC.style = 'foam';
-      wC.count = this.cap(6 + Math.floor(impact * 4));
+      wC.count = this.cap(10 + Math.floor(impact * 6));
       wC.mode = 'residual';
     }
 
@@ -338,154 +351,209 @@ export class Particles {
     if (!this.allowContinuous) return;
 
     const speed = Math.abs(vx);
-    this.footAcc += dt * (speed * 0.055) * this.densityScale;
+    this.footAcc += dt * (speed * 0.08 + 1.2) * this.densityScale;
     while (this.footAcc >= 1) {
       this.footAcc -= 1;
-      this.spawn(x + (Math.random() - 0.5) * 14, surfaceY + 1, color, 'footSpeck', {
-        vx: -vx * 0.15 + (Math.random() - 0.5) * 25 + this.windX * 0.4,
-        vy: 8 + Math.random() * 25,
-        life: 0.35 + Math.random() * 0.35,
-        size: 1.5 + Math.random() * 2,
+      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY + 1, color, 'footSpeck', {
+        vx: -vx * 0.15 + (Math.random() - 0.5) * 28 + this.windX * 0.4,
+        vy: 8 + Math.random() * 28,
+        life: 0.35 + Math.random() * 0.4,
+        size: 1.5 + Math.random() * 2.2,
       });
     }
 
     const press = Math.max(0, pressAmount) * squash;
-    this.pressAcc += dt * (3 + press * 10) * this.densityScale;
+    this.pressAcc += dt * (4.5 + press * 14) * this.densityScale;
     while (this.pressAcc >= 1) {
       this.pressAcc -= 1;
-      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, Math.random() > 0.6 ? accent : color, 'pressAura', {
-        vx: (Math.random() - 0.5) * 18,
-        vy: 12 + Math.random() * 28,
-        life: 0.4 + Math.random() * 0.35,
-        size: 2 + Math.random() * 2.5,
+      this.spawn(x + (Math.random() - 0.5) * 26, surfaceY, Math.random() > 0.55 ? accent : color, 'pressAura', {
+        vx: (Math.random() - 0.5) * 22,
+        vy: 12 + Math.random() * 32,
+        life: 0.4 + Math.random() * 0.4,
+        size: 2 + Math.random() * 3,
       });
     }
 
     // Behavior-specific continuous juice
     if (behavior === 'melt') {
-      if (Math.random() < dt * 18) {
-        this.drip(x + (Math.random() - 0.5) * 30, surfaceY - 2, color, this.cap(2 + Math.floor(press * 2)));
+      if (Math.random() < dt * 26) {
+        this.drip(x + (Math.random() - 0.5) * 32, surfaceY - 2, color, this.cap(3 + Math.floor(press * 2)));
         this.meltRibbon(x, surfaceY, color);
       }
-      if (Math.random() < dt * 8) {
-        this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, accent, 'foam', {
-          vx: (Math.random() - 0.5) * 15,
-          vy: 30 + Math.random() * 40,
-          life: 0.5,
+      if (Math.random() < dt * 12) {
+        this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, accent, 'foam', {
+          vx: (Math.random() - 0.5) * 18,
+          vy: 30 + Math.random() * 45,
+          life: 0.55,
           size: 4 + Math.random() * 6,
         });
       }
     } else if (behavior === 'crumble') {
-      if (Math.random() < dt * 16) {
-        this.sandFall(x + (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 20), surfaceY, color, 8);
+      if (Math.random() < dt * 22) {
+        this.sandFall(x + (Math.random() < 0.5 ? -1 : 1) * (18 + Math.random() * 24), surfaceY, color, 10);
       }
     } else if (behavior === 'foamPop') {
-      if (Math.random() < dt * 14) {
-        this.spawn(x + (Math.random() - 0.5) * 28, surfaceY, '#ffffff', 'bubble', {
-          vx: (Math.random() - 0.5) * 12,
-          vy: 25 + Math.random() * 45,
-          life: 0.6 + Math.random() * 0.4,
-          size: 2 + Math.random() * 4,
+      if (Math.random() < dt * 20) {
+        this.spawn(x + (Math.random() - 0.5) * 30, surfaceY, '#ffffff', 'bubble', {
+          vx: (Math.random() - 0.5) * 14,
+          vy: 28 + Math.random() * 50,
+          life: 0.65 + Math.random() * 0.45,
+          size: 2 + Math.random() * 4.5,
         });
       }
     } else if (behavior === 'squeeze') {
       this.squeezeAcc += dt;
-      if (this.squeezeAcc >= 0.28) {
+      if (this.squeezeAcc >= 0.2) {
         this.squeezeAcc = 0;
-        this.spawn(x + (Math.random() - 0.5) * 16, surfaceY, color, 'zest', {
-          vx: (Math.random() - 0.5) * 50,
-          vy: 20 + Math.random() * 40,
-          life: 0.4,
-          size: 2 + Math.random() * 2,
-          spin: (Math.random() - 0.5) * 10,
-        });
+        for (let i = 0; i < this.cap(2); i++) {
+          this.spawn(x + (Math.random() - 0.5) * 18, surfaceY, color, 'zest', {
+            vx: (Math.random() - 0.5) * 55,
+            vy: 20 + Math.random() * 45,
+            life: 0.4,
+            size: 2 + Math.random() * 2.5,
+            spin: (Math.random() - 0.5) * 12,
+          });
+        }
       }
     } else if (behavior === 'shatter') {
-      if (Math.random() < dt * 10) this.crackSpark(x, surfaceY, accent);
+      if (Math.random() < dt * 14) this.crackSpark(x, surfaceY, accent);
     } else if (behavior === 'elastic') {
-      if (Math.random() < dt * 5) {
-        this.spawn(x + (Math.random() - 0.5) * 24, surfaceY, color, _style, {
-          vx: (Math.random() - 0.5) * 20,
-          vy: 10 + Math.random() * 22,
-          life: 0.35 + Math.random() * 0.3,
-          size: 1.5 + Math.random() * 2,
+      if (Math.random() < dt * 9) {
+        this.spawn(x + (Math.random() - 0.5) * 26, surfaceY, color, _style, {
+          vx: (Math.random() - 0.5) * 24,
+          vy: 10 + Math.random() * 26,
+          life: 0.4 + Math.random() * 0.3,
+          size: 1.5 + Math.random() * 2.5,
         });
       }
     } else if (behavior === 'sticky') {
-      if (Math.random() < dt * 9) {
-        this.spawn(x + (Math.random() - 0.5) * 18, surfaceY - 1, color, 'foam', {
-          vx: (Math.random() - 0.5) * 25,
-          vy: 8 + Math.random() * 18,
-          life: 0.45 + Math.random() * 0.25,
-          size: 2 + Math.random() * 2.5,
+      if (Math.random() < dt * 14) {
+        this.spawn(x + (Math.random() - 0.5) * 20, surfaceY - 1, color, 'foam', {
+          vx: (Math.random() - 0.5) * 28,
+          vy: 8 + Math.random() * 20,
+          life: 0.5 + Math.random() * 0.3,
+          size: 2 + Math.random() * 3,
         });
       }
     }
 
-    // Material accents while standing
-    if (materialId === 'citrus' && Math.random() < dt * 3.5) {
+    // Material accents while standing — denser
+    const rateBoost = 1 + press * 0.8;
+    if (materialId === 'citrus' && Math.random() < dt * 6 * rateBoost) {
       this.spawn(x, surfaceY, color, 'zest', {
-        vx: (Math.random() - 0.5) * 40,
-        vy: 15 + Math.random() * 30,
-        life: 0.35,
-        size: 2,
-      });
-    } else if (materialId === 'jelly' && Math.random() < dt * 4) {
-      this.drip(x + (Math.random() - 0.5) * 22, surfaceY, color, 1);
-    } else if (materialId === 'butter' && Math.random() < dt * 3) {
-      this.spawn(x + (Math.random() - 0.5) * 26, surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 18,
-        vy: 6 + Math.random() * 16,
-        life: 0.3 + Math.random() * 0.25,
-        size: 1.5 + Math.random() * 1.5,
-      });
-    } else if (materialId === 'mochi' && Math.random() < dt * 3.5) {
-      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY - 2, color, 'foam', {
-        vx: (Math.random() - 0.5) * 14,
-        vy: 12 + Math.random() * 20,
+        vx: (Math.random() - 0.5) * 45,
+        vy: 15 + Math.random() * 35,
         life: 0.4,
-        size: 2 + Math.random() * 2,
+        size: 2 + Math.random(),
       });
-    } else if (materialId === 'honeycomb' && Math.random() < dt * 3) {
-      this.drip(x + (Math.random() - 0.5) * 24, surfaceY, color, 1);
-    } else if (materialId === 'glycerin' && Math.random() < dt * 2.5) {
-      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY, accent, 'bubble', {
-        vx: (Math.random() - 0.5) * 10,
-        vy: 18 + Math.random() * 30,
-        life: 0.5,
-        size: 2 + Math.random() * 2,
+    } else if (materialId === 'jelly' && Math.random() < dt * 7 * rateBoost) {
+      this.drip(x + (Math.random() - 0.5) * 24, surfaceY, color, this.cap(2));
+    } else if (materialId === 'butter' && Math.random() < dt * 5.5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 28, surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 20,
+        vy: 6 + Math.random() * 18,
+        life: 0.35 + Math.random() * 0.3,
+        size: 1.5 + Math.random() * 2,
       });
-    } else if (materialId === 'whipped' && Math.random() < dt * 4) {
-      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, '#ffffff', 'foam', {
+    } else if (materialId === 'mochi' && Math.random() < dt * 6 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY - 2, color, 'foam', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: 12 + Math.random() * 24,
+        life: 0.45,
+        size: 2 + Math.random() * 2.5,
+      });
+    } else if (materialId === 'honeycomb' && Math.random() < dt * 5.5 * rateBoost) {
+      this.drip(x + (Math.random() - 0.5) * 26, surfaceY, color, this.cap(2));
+    } else if (materialId === 'glycerin' && Math.random() < dt * 5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 18, surfaceY, accent, 'bubble', {
         vx: (Math.random() - 0.5) * 12,
-        vy: 14 + Math.random() * 24,
-        life: 0.35,
-        size: 1.5 + Math.random() * 2,
+        vy: 20 + Math.random() * 35,
+        life: 0.55,
+        size: 2 + Math.random() * 2.5,
       });
-    } else if (materialId === 'iceSoap' && Math.random() < dt * 2.5) {
-      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, accent, 'glitter', {
-        vx: (Math.random() - 0.5) * 16,
-        vy: 10 + Math.random() * 18,
-        life: 0.3 + Math.random() * 0.2,
-        size: 1.5 + Math.random() * 1.5,
-      });
-    } else if (materialId === 'clearSlime' && Math.random() < dt * 4) {
-      this.spawn(x + (Math.random() - 0.5) * 14, surfaceY, color, 'foam', {
-        vx: (Math.random() - 0.5) * 22,
-        vy: 6 + Math.random() * 14,
+    } else if (materialId === 'whipped' && Math.random() < dt * 7 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 24, surfaceY, '#ffffff', 'foam', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 16 + Math.random() * 28,
         life: 0.4,
-        size: 2 + Math.random() * 2,
+        size: 1.5 + Math.random() * 2.5,
       });
-    } else if (materialId === 'butterSlime' && Math.random() < dt * 3) {
-      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 16,
-        vy: 8 + Math.random() * 14,
-        life: 0.35,
+    } else if (materialId === 'iceSoap' && Math.random() < dt * 5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 18,
+        vy: 10 + Math.random() * 22,
+        life: 0.35 + Math.random() * 0.25,
         size: 1.5 + Math.random() * 2,
       });
-    } else if (materialId === 'chocolate' && press > 0.2 && Math.random() < dt * 2.5) {
-      this.drip(x + (Math.random() - 0.5) * 18, surfaceY, color, 1);
+    } else if (materialId === 'clearSlime' && Math.random() < dt * 7 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY, color, 'foam', {
+        vx: (Math.random() - 0.5) * 26,
+        vy: 6 + Math.random() * 16,
+        life: 0.45,
+        size: 2 + Math.random() * 2.5,
+      });
+    } else if (materialId === 'butterSlime' && Math.random() < dt * 5.5 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 18,
+        vy: 8 + Math.random() * 16,
+        life: 0.4,
+        size: 1.5 + Math.random() * 2.2,
+      });
+    } else if (materialId === 'chocolate' && Math.random() < dt * 4.5 * rateBoost) {
+      this.drip(x + (Math.random() - 0.5) * 20, surfaceY, color, 1);
+    } else if (materialId === 'kinetic' && Math.random() < dt * 6 * rateBoost) {
+      this.sandFall(x + (Math.random() - 0.5) * 28, surfaceY, color, 8);
     }
+  }
+
+  /** Soft idle aura from platforms near the camera / player */
+  emitPlatformIdle(
+    dt: number,
+    x: number,
+    surfaceY: number,
+    color: string,
+    style: ParticleStyle,
+    materialId: MaterialId,
+  ): void {
+    if (!this.allowContinuous) return;
+    const rates: Partial<Record<MaterialId, number>> = {
+      jelly: 2.8,
+      butter: 1.8,
+      mochi: 2.2,
+      chocolate: 1.6,
+      citrus: 2.4,
+      honeycomb: 2.6,
+      glycerin: 2.0,
+      whipped: 2.5,
+      kinetic: 2.2,
+      iceSoap: 2.8,
+      clearSlime: 2.4,
+      butterSlime: 1.8,
+    };
+    const rate = rates[materialId] ?? 1.5;
+    if (Math.random() > dt * rate * this.densityScale) return;
+
+    const kind: ParticleStyle =
+      style === 'drip'
+        ? 'drip'
+        : style === 'glitter'
+          ? 'glitter'
+          : style === 'zest'
+            ? 'zest'
+            : style === 'sand'
+              ? 'sand'
+              : style === 'bubble'
+                ? 'bubble'
+                : style === 'foamBurst'
+                  ? 'foam'
+                  : 'foam';
+
+    this.spawn(x + (Math.random() - 0.5) * 36, surfaceY + (Math.random() - 0.3) * 8, color, kind, {
+      vx: (Math.random() - 0.5) * 14 + this.windX * 0.3,
+      vy: kind === 'drip' ? -12 - Math.random() * 20 : 8 + Math.random() * 22,
+      life: 0.45 + Math.random() * 0.4,
+      size: 1.5 + Math.random() * 2.2,
+    });
   }
 
   emitAirTrail(dt: number, x: number, y: number, color: string): void {

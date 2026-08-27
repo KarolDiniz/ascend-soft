@@ -304,6 +304,16 @@ export class Game {
       this.particles.emitAirTrail(dt, this.player.x, this.player.y, this.player.trailColor);
     }
 
+    // Idle aura from nearby platforms (even when not standing)
+    const camY = this.camera.y;
+    for (const p of this.spawner.platforms) {
+      if (!p.alive || p.opacity < 0.3) continue;
+      if (Math.abs(p.y - camY) > this.H * 0.85) continue;
+      if (Math.abs(p.x - this.player.x) > this.worldHalfW + 40) continue;
+      const mat = MATERIALS[p.material];
+      this.particles.emitPlatformIdle(dt, p.x, p.surfaceY, mat.particle, mat.particleStyle, p.material);
+    }
+
     this.spawner.update(this.player.y, this.camera.y, this.H);
     for (const p of this.spawner.platforms) p.update(dt, this.time);
 
@@ -440,32 +450,39 @@ export class Game {
             this.player.x,
             platformTop,
             mat.particle,
-            p.material === 'whipped' ? 20 : 14,
+            p.material === 'whipped' ? 28 : 20,
           );
           break;
         case 'clearSlime':
           this.particles.gumStretch(this.player.x, platformTop, mat.particle);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'foam', false);
           this.addFloater(this.player.x, platformTop + 16, 'gruda!', mat.particle);
           break;
         case 'mochi':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
           this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
           break;
         case 'butter':
         case 'chocolate':
         case 'honeycomb':
-          this.particles.drip(this.player.x, platformTop, mat.particle, 5);
+          this.particles.drip(this.player.x, platformTop, mat.particle, 8);
+          this.particles.meltRibbon(this.player.x, platformTop, mat.particle);
           break;
         case 'jelly':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'drip', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 16, 'drip', false);
+          this.particles.drip(this.player.x, platformTop, mat.particle, 4);
           break;
         case 'citrus':
           this.particles.juiceArc(this.player.x, platformTop, mat.particle);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'zest', false);
           break;
         case 'kinetic':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'sand', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 18, 'sand', false);
+          this.particles.sandFall(this.player.x, platformTop, mat.particle, 14);
           break;
         case 'butterSlime':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'foam', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
           break;
         default:
           break;
