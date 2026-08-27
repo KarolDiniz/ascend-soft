@@ -202,7 +202,7 @@ export class Player {
     drawPlayerPixelShadow(ctx, bw, bh);
 
     // Body — stepped oval (cute pixel slime)
-    drawPlayerPixelBody(ctx, bw, bh);
+    drawPlayerPixelBody(ctx, bw, bh, this.animT);
 
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: this.facing,
