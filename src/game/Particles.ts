@@ -770,41 +770,52 @@ export class Particles {
     }
   }
 
-  /** Esguicho de água ao espremer esponja */
+  /** Esguicho forte de água ao espremer esponja — cai para baixo */
   waterSquirt(x: number, y: number, platformW: number, impact = 1): void {
-    const spread = Math.max(32, platformW * 0.95);
-    const water = PASTEL.sky;
-    const mist = '#E8F4FC';
-    const count = this.cap(14 + Math.floor(impact * 12));
+    const spread = Math.max(40, platformW * 1.05);
+    const water = '#72C4F0';
+    const waterDeep = '#4898D8';
+    const mist = '#B8E4FC';
+    const imp = 0.85 + Math.min(1.4, impact) * 0.55;
 
-    for (let i = 0; i < count; i++) {
-      const t = count > 1 ? i / (count - 1) - 0.5 : 0;
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.35;
-      const sp = 95 + Math.random() * 110 * impact;
-      this.spawn(x + t * spread + (Math.random() - 0.5) * 12, y, i % 3 === 0 ? mist : water, 'juice', {
-        vx: Math.cos(a) * sp + t * 35,
-        vy: Math.sin(a) * sp - 25,
-        life: 0.38 + Math.random() * 0.32,
-        size: 2.5 + Math.random() * 3,
+    const streamCount = this.cap(28 + Math.floor(imp * 16));
+    for (let i = 0; i < streamCount; i++) {
+      const t = (Math.random() - 0.5) * spread;
+      this.spawn(x + t, y + Math.random() * 8, i % 3 === 0 ? waterDeep : water, 'drip', {
+        vx: (Math.random() - 0.5) * 55,
+        vy: 90 + Math.random() * 140 * imp,
+        life: 0.65 + Math.random() * 0.55,
+        size: 3.5 + Math.random() * 4,
+      });
+    }
+
+    const jetCount = this.cap(14 + Math.floor(imp * 10));
+    for (let i = 0; i < jetCount; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      this.spawn(x + side * spread * (0.18 + Math.random() * 0.28), y + 2, mist, 'juice', {
+        vx: side * (25 + Math.random() * 55),
+        vy: 70 + Math.random() * 110 * imp,
+        life: 0.55 + Math.random() * 0.45,
+        size: 3 + Math.random() * 3.5,
+      });
+    }
+
+    for (let i = 0; i < this.cap(12); i++) {
+      const t = (Math.random() - 0.5) * spread * 0.7;
+      this.spawn(x + t, y + 4, water, 'drip', {
+        vx: t * 0.35,
+        vy: 120 + Math.random() * 160 * imp,
+        life: 0.75 + Math.random() * 0.55,
+        size: 4 + Math.random() * 3.5,
       });
     }
 
     for (let i = 0; i < this.cap(8); i++) {
-      const side = i % 2 === 0 ? -1 : 1;
-      this.spawn(x + side * spread * 0.38, y, water, 'drip', {
-        vx: side * (35 + Math.random() * 45),
-        vy: -55 - Math.random() * 70 * impact,
-        life: 0.45 + Math.random() * 0.35,
+      this.spawn(x + (Math.random() - 0.5) * spread * 0.5, y + 6, waterDeep, 'drip', {
+        vx: (Math.random() - 0.5) * 30,
+        vy: 150 + Math.random() * 120,
+        life: 0.85 + Math.random() * 0.45,
         size: 3 + Math.random() * 2.5,
-      });
-    }
-
-    for (let i = 0; i < this.cap(6); i++) {
-      this.spawn(x + (Math.random() - 0.5) * spread * 0.6, y, '#ffffff', 'foam', {
-        vx: (Math.random() - 0.5) * 50,
-        vy: -30 - Math.random() * 55,
-        life: 0.3 + Math.random() * 0.25,
-        size: 2 + Math.random() * 2,
       });
     }
   }

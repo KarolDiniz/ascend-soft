@@ -7,6 +7,7 @@ import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
 import { drawSpongeFlies } from './spongeFlies';
+import { drawButterJar, isButterJar } from './butterVisual';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -593,14 +594,39 @@ function drawJelly(a: DrawArgs): void {
   drawDebris(a, 5, mat.particle);
 }
 
-/** Manteiga — laje larga, cantos retos, marcas de faca, derrete */
+/** Manteiga — laje ou pote, tons variados por seed */
 function drawButter(a: DrawArgs): void {
+  const press = a.overlay?.pressAmount ?? 0;
+  if (isButterJar(a.seed)) {
+    drawButterJar({
+      ctx: a.ctx,
+      cx: a.cx,
+      sy: a.sy,
+      w: a.w,
+      h: a.h,
+      mat: a.mat,
+      u: a.u,
+      seed: a.seed,
+      time: a.time,
+      wobble: a.wobble,
+      melt: a.melt,
+      press,
+    });
+    drawPressIndent(a);
+    drawAmbientSpecks(a, 4, a.mat.particle);
+    return;
+  }
+  drawButterSlab(a);
+}
+
+/** Taveta de manteiga — laje larga, marcas de faca */
+function drawButterSlab(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, mat, u, melt, seed, time, wobble } = a;
   const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
 
   fillPx(ctx, x, sy, w, h, mat.fill);
-  fillPx(ctx, x, sy, w, u, rgba(PASTEL.white, 0.55));
+  fillPx(ctx, x, sy, w, u, rgba(mat.particle, 0.55));
   fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
   fillPx(ctx, x, sy, u, h, mat.stroke);
   fillPx(ctx, x + w - u, sy, u, h, mat.stroke);
@@ -1169,27 +1195,64 @@ function drawMarshmallow(a: DrawArgs): void {
   drawAmbientSpecks(a, 5, mat.fill);
 }
 
-/** Esponja — bloco amarelo com poros */
+/** Esponja — amarela porosa + lado verde abrasivo */
 function drawSponge(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
   const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
-  fillPx(ctx, x, sy, w, h, mat.fill);
-  fillPx(ctx, x, sy, w, u, rgba(PASTEL.white, 0.4));
-  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
-  fillPx(ctx, x, sy, u, h, mat.stroke);
-  fillPx(ctx, x + w - u, sy, u, h, mat.stroke);
-  for (let i = 0; i < 20; i++) {
-    const px0 = x + u * 2 + (i % 5) * (w / 5.2);
-    const py = sy + u * 2 + Math.floor(i / 5) * (h / 4.5);
-    fillPx(ctx, px0, py, u * (1 + (i % 2)), u * (1 + (i % 2)), rgba(mat.stroke, 0.45));
-    if (seeded(seed, i) > 0.55) fillPx(ctx, px0 + u, py + u, u, u, rgba(PASTEL.white, 0.25));
-  }
-  if (press > 0.15) {
-    for (let i = 0; i < 4; i++) {
-      fillPx(ctx, cx + (seeded(seed, i + 40) - 0.5) * w * 0.5, sy - u, u, u, mat.particle);
+  const squash = press * u * 0.9;
+
+  const yellow = mat.fill;
+  const yellowDark = mat.particle;
+  const green = mat.stroke;
+  const greenDark = '#1E6838';
+  const greenFiber = '#3AA858';
+
+  const padH = Math.max(u * 3, h * 0.24);
+  const bodyTop = sy + padH - squash * 0.25;
+  const bodyH = Math.max(u * 3, h - padH + squash * 0.4);
+
+  fillPx(ctx, x + u, bodyTop, w - u * 2, bodyH, yellow);
+  fillPx(ctx, x, bodyTop + u, w, bodyH - u, yellow);
+  fillPx(ctx, x + u, bodyTop + bodyH - u, w - u * 2, u, yellowDark);
+
+  for (let i = 0; i < 26; i++) {
+    const px0 = x + u * 2 + seeded(seed, i) * (w - u * 6);
+    const py = bodyTop + u * 2 + seeded(seed, i + 10) * Math.max(u * 2, bodyH - u * 4);
+    const hole = u * (1 + (i % 2));
+    fillPx(ctx, px0, py, hole, hole, yellowDark);
+    if (seeded(seed, i + 20) > 0.45) {
+      fillPx(ctx, px0 + u * 0.5, py + u * 0.5, u, u, rgba(yellowDark, 0.55));
     }
   }
+
+  fillPx(ctx, x + u * 0.5, sy - squash * 0.15, w - u, padH + squash * 0.15, green);
+  fillPx(ctx, x, sy, w, padH, greenDark);
+  for (let i = 0; i < 20; i++) {
+    const fx = x + u + seeded(seed, i + 30) * (w - u * 4);
+    const fy = sy + u * 0.4 + seeded(seed, i + 40) * Math.max(u, padH - u * 1.5);
+    fillPx(ctx, fx, fy, u, u, i % 3 === 0 ? greenDark : greenFiber);
+    if (seeded(seed, i + 50) > 0.55) {
+      fillPx(ctx, fx + u * 0.5, fy + u, u, u, greenDark);
+    }
+  }
+  fillPx(ctx, x + u * 2, sy + u * 0.5, w - u * 4, u, rgba(greenFiber, 0.6));
+  fillPx(ctx, x, bodyTop - u * 0.5, w, u, greenDark);
+
+  if (press > 0.12) {
+    for (let i = 0; i < 4 + Math.floor(press * 5); i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      fillPx(
+        ctx,
+        cx + side * (w * 0.42 + u),
+        bodyTop + bodyH * 0.35 + i * u * 0.5,
+        u,
+        u,
+        PASTEL.sky,
+      );
+    }
+  }
+
   drawSpongeFlies(
     ctx,
     u,
@@ -1203,10 +1266,7 @@ function drawSponge(a: DrawArgs): void {
     a.overlay?.spongeFlyScatterY ?? 0,
   );
   drawPressIndent(a);
-  drawSurfaceGrain(a, 6, mat.particle, 0.3);
-  drawEdgeFlecks(a, 5, mat.particle);
-  drawDebris(a, 5, mat.particle);
-  drawAmbientSpecks(a, 4, mat.particle);
+  drawAmbientSpecks(a, 4, yellowDark);
 }
 
 /** Bolha de sabão — orbe translúcida irisada */

@@ -100,7 +100,7 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
   butter: matColors(
     '#FFE08A',
     rgba(PASTEL.butter, 0.45),
-    '#FFF0B8',
+    '#FFD858',
     rgba(PASTEL.butter, 0.32),
   ),
   mochi: matColors(
@@ -170,10 +170,10 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     rgba(PASTEL.white, 0.28),
   ),
   sponge: matColors(
-    '#F2C878',
-    rgba(PASTEL.butter, 0.4),
-    '#FFE8A8',
-    rgba(PASTEL.butter, 0.3),
+    '#F0D018',
+    rgba('#2E8848', 0.45),
+    '#D8B810',
+    rgba('#3AA858', 0.32),
   ),
   soapBubble: matColors(
     '#C8E8F8',

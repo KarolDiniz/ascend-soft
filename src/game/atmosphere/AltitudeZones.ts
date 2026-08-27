@@ -23,7 +23,7 @@ export type AltitudeZone = ThemedPhaseZone;
 /** Smooth blend at each phase boundary (240 units total). */
 export const ZONE_BLEND = PHASE_BLEND;
 
-/** 20 themed phases — one material per ~700 altitude units, cycling. */
+/** 20 themed phases — one material per ~400 altitude units, cycling. */
 export const ALTITUDE_ZONES: AltitudeZone[] = buildThemedZones();
 
 export function zoneIndexAt(height: number): number {
