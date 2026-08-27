@@ -353,6 +353,22 @@ export class AudioBus {
     });
   }
 
+  /** Abelhas saindo do favo de mel */
+  playHoneyBeeBuzz(): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(85);
+      const t = ctx.currentTime;
+      for (let i = 0; i < 14; i++) {
+        const f = 220 + ((i * 73) % 180);
+        this.noiseBurst(ctx, sfx, 0.014, f, 0.038, t + i * 0.018, 'bandpass');
+      }
+      this.tone(ctx, sfx, 'sine', 320, 260, 0.045, 0.042, t);
+      this.tone(ctx, sfx, 'triangle', 420, 340, 0.035, 0.032, t + 0.035);
+      this.tone(ctx, sfx, 'sine', 280, 220, 0.03, 0.025, t + 0.07);
+      this.softNoise(ctx, sfx, 0.06, 3200, 0.04, t + 0.025, 'highpass');
+    });
+  }
+
   playFall(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;

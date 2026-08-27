@@ -7,6 +7,7 @@ import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
 import { drawButterGarnish, drawButterKnife } from './butterVisual';
+import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
 import { drawSpongeFlies } from './spongeFlies';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
@@ -24,6 +25,8 @@ export interface PixelPlatformOverlay {
   cheeseMouseFleeY?: number;
   spongeFlyScatterT?: number;
   spongeFlyScatterY?: number;
+  honeyBeeScatterT?: number;
+  honeyBeeScatterY?: number;
 }
 
 function parseTone(c: string): [number, number, number] {
@@ -823,7 +826,7 @@ function drawCitrus(a: DrawArgs): void {
 
 /** Mel — borda dentada hex + células */
 function drawHoney(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, melt, seed, time } = a;
+  const { ctx, cx, sy, w, h, mat, u, melt, seed, time, wobble } = a;
   const x = cx - w / 2;
   for (let i = 0; i < 7; i++) {
     const bx = x + (i / 6) * (w - u * 4);
@@ -843,6 +846,19 @@ function drawHoney(a: DrawArgs): void {
       fillPx(ctx, hx + u, hy + u, u, u, rgba(PASTEL.white, 0.35 + seeded(seed, i) * 0.2));
     }
   }
+  drawHoneyPooh(ctx, u, seed, time, x, sy, w);
+  drawHoneyBees(
+    ctx,
+    u,
+    seed,
+    time,
+    wobble,
+    cx,
+    sy,
+    w,
+    a.overlay?.honeyBeeScatterT ?? 0,
+    a.overlay?.honeyBeeScatterY ?? 0,
+  );
   drawIdleDrip(a, mat.particle, 0);
   drawIdleDrip(a, mat.particle, 1.1);
   drawIdleDrip(a, mat.particle, 2.3);

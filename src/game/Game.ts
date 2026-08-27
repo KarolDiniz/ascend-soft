@@ -594,6 +594,9 @@ export class Game {
       case 'spongeFlyBuzz':
         this.audio.playSpongeFlyBuzz();
         break;
+      case 'honeyBeeBuzz':
+        this.audio.playHoneyBeeBuzz();
+        break;
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);
         this.particles.meltRibbon(p.x, p.surfaceY, mat.particle);

@@ -10,6 +10,7 @@ import {
 import { MATERIAL_LEDGE } from './platform/ledgeSizes';
 import { renderPixelPlatform } from './platform/PixelPlatformRenderer';
 import { hasCheeseMouse, isCheeseMouseFleeDone } from './platform/cheeseMouse';
+import { isHoneyBeeScatterDone } from './platform/honeyBees';
 import { hasSpongeFlies, isSpongeFlyScatterDone } from './platform/spongeFlies';
 import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
 import { pickVariant } from './platform/PlatformVariant';
@@ -30,7 +31,8 @@ export type PlatformEvent =
   | { type: 'squeeze'; floater?: string; gone: boolean }
   | { type: 'vanishUnderPlayer' }
   | { type: 'mouseSqueak' }
-  | { type: 'spongeFlyBuzz' };
+  | { type: 'spongeFlyBuzz' }
+  | { type: 'honeyBeeBuzz' };
 
 export class Platform {
   x: number;
@@ -87,6 +89,9 @@ export class Platform {
   spongeFlyScatterT = 0;
   spongeFlyScatterVy = 0;
   spongeFlyScatterY = 0;
+  honeyBeeScatterT = 0;
+  honeyBeeScatterVy = 0;
+  honeyBeeScatterY = 0;
   private wobble = Math.random() * Math.PI * 2;
   private events: PlatformEvent[] = [];
   private sandEmit = 0;
@@ -193,6 +198,12 @@ export class Platform {
           this.spongeFlyScatterY = 0;
           this.emit({ type: 'spongeFlyBuzz' });
         }
+        if (this.material === 'honeycomb' && this.honeyBeeScatterT === 0) {
+          this.honeyBeeScatterT = 0.001;
+          this.honeyBeeScatterVy = -8;
+          this.honeyBeeScatterY = 0;
+          this.emit({ type: 'honeyBeeBuzz' });
+        }
         if (this.fading) {
           this.fadeArmed = true;
           this.fadeLife = Math.min(this.fadeLife, 1.8);
@@ -297,6 +308,15 @@ export class Platform {
       this.spongeFlyScatterY += this.spongeFlyScatterVy * dt;
       if (isSpongeFlyScatterDone(this.spongeFlyScatterT)) {
         this.spongeFlyScatterT = -1;
+      }
+    }
+
+    if (this.honeyBeeScatterT > 0) {
+      this.honeyBeeScatterT += dt;
+      this.honeyBeeScatterVy += 15 * dt;
+      this.honeyBeeScatterY += this.honeyBeeScatterVy * dt;
+      if (isHoneyBeeScatterDone(this.honeyBeeScatterT)) {
+        this.honeyBeeScatterT = -1;
       }
     }
 
@@ -527,6 +547,7 @@ export class Platform {
 
     const fleeScreenY = this.cheeseMouseFleeY * (screenH / Math.max(1, this.h));
     const flyScatterScreenY = -this.spongeFlyScatterY * (screenH / Math.max(1, this.h));
+    const beeScatterScreenY = -this.honeyBeeScatterY * (screenH / Math.max(1, this.h));
 
     renderPixelPlatform(ctx, this.material, this.variant, mat, state, {
       crackLevel: this.crackLevel,
@@ -542,6 +563,8 @@ export class Platform {
       cheeseMouseFleeY: fleeScreenY,
       spongeFlyScatterT: this.spongeFlyScatterT,
       spongeFlyScatterY: flyScatterScreenY,
+      honeyBeeScatterT: this.honeyBeeScatterT,
+      honeyBeeScatterY: beeScatterScreenY,
     });
   }
 }
