@@ -79,6 +79,7 @@ export class Player {
     else this.coyote = Math.max(0, this.coyote - dt);
 
     if (input.consumeJump() && (this.onGround || this.coyote > 0)) {
+      const leaving = this.groundedPlatform;
       this.vy = this.jumpVel;
       this.onGround = false;
       this.coyote = 0;
@@ -86,6 +87,7 @@ export class Player {
       this.stretch = 1.32;
       this.squash = 0.78;
       jumped = true;
+      if (leaving) leaving.setPressed(false);
     }
 
     if (!input.jumpHeld && this.vy > 90) {
@@ -116,13 +118,22 @@ export class Player {
     return jumped;
   }
 
-  landOn(platform: Platform, sink: number): void {
-    this.y = platform.top + this.h / 2 - sink;
+  landOn(platform: Platform, _sinkHint = 0): void {
+    // Feet on current surface (top already accounts for press sink after update)
+    this.y = platform.surfaceY + this.h / 2;
     this.vy = 0;
     this.onGround = true;
     this.groundedPlatform = platform;
     this.squash = 1.38;
     this.stretch = 0.72;
+  }
+
+  /** Keep feet glued to platform surface while standing. */
+  stickToSurface(platform: Platform): void {
+    this.y = platform.surfaceY + this.h / 2;
+    this.vy = 0;
+    this.onGround = true;
+    this.groundedPlatform = platform;
   }
 
   applyLandSquash(intensity: number): void {

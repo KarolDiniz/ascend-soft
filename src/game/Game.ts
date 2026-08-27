@@ -175,6 +175,7 @@ export class Game {
       return;
     }
 
+    const prevPlat = this.player.groundedPlatform;
     const prevBottom = this.player.bottom;
     const jumped = this.player.update(dt, this.input);
     if (jumped) this.audio.playJump();
@@ -191,8 +192,18 @@ export class Game {
 
     this.resolveCollisions(prevBottom);
 
+    // Walk-off / fall-off: release press on previous platform
+    if (prevPlat && this.player.groundedPlatform !== prevPlat) {
+      prevPlat.setPressed(false);
+    }
+
     this.spawner.update(this.player.y, this.camera.y, this.H);
     for (const p of this.spawner.platforms) p.update(dt, this.time);
+
+    // After spring update, glue feet to the live surface
+    if (this.player.groundedPlatform?.alive) {
+      this.player.stickToSurface(this.player.groundedPlatform);
+    }
 
     const plats = this.spawner.platforms;
     const topPlatY = plats.length ? plats[plats.length - 1].y : this.player.y;
@@ -237,6 +248,10 @@ export class Game {
 
   private resolveCollisions(prevBottom: number): void {
     if (this.player.vy > 0) {
+      // Rising — leave any pressed platform
+      if (this.player.groundedPlatform) {
+        this.player.groundedPlatform.setPressed(false);
+      }
       this.player.onGround = false;
       this.player.groundedPlatform = null;
       return;
@@ -250,13 +265,13 @@ export class Game {
       const withinX = this.player.right > p.left + 4 && this.player.left < p.right - 4;
       if (!withinX) continue;
 
-      const platformTop = p.top - p.sink;
+      const platformTop = p.surfaceY;
       const crossing =
         prevBottom >= platformTop - 6 && this.player.bottom <= platformTop + 12;
       const resting =
         wasGrounded &&
         this.player.groundedPlatform === p &&
-        Math.abs(this.player.bottom - platformTop) < 14;
+        Math.abs(this.player.bottom - platformTop) < 16;
 
       if (crossing || resting) {
         landed = p;
@@ -271,20 +286,19 @@ export class Game {
     }
 
     const p = landed;
-    const platformTop = p.top - p.sink;
-    const justLanded = !wasGrounded;
+    const platformTop = p.surfaceY;
+    const justLanded = !wasGrounded || this.player.groundedPlatform !== p;
 
     if (justLanded) {
       const impact = Math.min(1.25, Math.abs(this.player.vy) / 420);
       const centerDist = Math.abs(this.player.x - p.x) / (p.w / 2);
       const perfect = centerDist < 0.15;
       const mat = MATERIALS[p.material];
-      const sink = 2 + impact * 5 * mat.squash;
 
-      this.player.landOn(p, sink * 0.4);
+      p.setPressed(true, impact * (perfect ? 1.2 : 1));
+      this.player.landOn(p);
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
-      p.land(impact * (perfect ? 1.25 : 1));
 
       const count = 8 + Math.floor(impact * 8);
       this.particles.burst(
@@ -329,10 +343,8 @@ export class Game {
         }
       }
     } else {
-      this.player.y = platformTop + this.player.h / 2 - p.sink * 0.4;
-      this.player.vy = 0;
-      this.player.onGround = true;
-      this.player.groundedPlatform = p;
+      p.setPressed(true);
+      this.player.stickToSurface(p);
     }
   }
 
@@ -342,6 +354,9 @@ export class Game {
 
   private triggerFall(): void {
     if (this.state !== 'playing') return;
+    if (this.player.groundedPlatform) {
+      this.player.groundedPlatform.setPressed(false);
+    }
     this.state = 'falling';
     this.fallTimer = 0;
     this.perfectStreak = 0;

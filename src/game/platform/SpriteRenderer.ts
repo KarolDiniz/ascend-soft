@@ -8,19 +8,31 @@ import {
 } from '../../assets/platforms/spriteConfig';
 import type { PlatformDrawState } from './types';
 
-export function pickSpriteFrame(squash: number, landAnim: number): number {
-  if (landAnim > 0.05) {
-    const t = 1 - landAnim;
-    return Math.min(
-      SPRITE_FRAMES - 1,
-      Math.max(SPRITE_FRAME.squash1, Math.floor(t * (SPRITE_FRAMES - 1))),
-    );
+/**
+ * Map press spring → sprite frame.
+ * pressAmount > 0 → squash frames; rebound on release / negative overshoot.
+ */
+export function pickSpriteFrame(
+  pressAmount: number,
+  pressVel: number,
+  releaseTimer: number,
+): number {
+  const pressed = Math.max(0, pressAmount);
+
+  if (pressed > 0.12) {
+    // Prefer mid squash frames — avoid max flat look
+    const t = Math.min(1, (pressed - 0.12) / 0.95);
+    const idx = SPRITE_FRAME.squash1 + Math.floor(t * 2.2);
+    return Math.min(SPRITE_FRAME.squash3, idx);
   }
-  if (squash > 0.08) {
-    return Math.min(SPRITE_FRAME.squash4, Math.floor(squash * 10) + SPRITE_FRAME.squash1);
+
+  // Rebound at peak of release (stretching past idle)
+  if (releaseTimer > 0.04 || pressAmount < -0.04 || pressVel < -2.5) {
+    return SPRITE_FRAME.rebound;
   }
+
   const breathe = Math.sin(performance.now() * 0.002) * 0.5 + 0.5;
-  return breathe > 0.92 ? SPRITE_FRAME.rebound : SPRITE_FRAME.idle;
+  return breathe > 0.94 ? SPRITE_FRAME.rebound : SPRITE_FRAME.idle;
 }
 
 export function drawPlatformSprite(
@@ -28,26 +40,27 @@ export function drawPlatformSprite(
   sheet: MaterialSprite,
   _material: MaterialId,
   state: PlatformDrawState,
-  squash: number,
-  landAnim: number,
+  pressAmount: number,
+  pressVel: number,
+  releaseTimer: number,
   visualDepthMul: number,
   visualSpreadMul: number,
 ): void {
-  const frame = pickSpriteFrame(squash, landAnim);
+  const frame = pickSpriteFrame(pressAmount, pressVel, releaseTimer);
   const img = sheet.image;
 
-  const spread = state.w * visualSpreadMul;
-  const depth = state.h * visualDepthMul * 2.2;
+  const pressed = Math.max(0, pressAmount);
+  // Flattened frames read shorter — mild height reduction while pressed
+  const heightMul = 1 - pressed * 0.06;
+  const spread = state.w * visualSpreadMul * (1 + pressed * 0.03);
+  const depth = state.h * visualDepthMul * 2.2 * heightMul;
   const drawW = spread * 1.08;
-  const drawH = depth + state.h * 0.5;
+  const drawH = (depth + state.h * 0.5) * heightMul;
 
   const anchorX = state.cx;
-  // Landing surface = visual TOP of the object (player stands here)
+  // Landing surface = visual TOP — player stands here
   const anchorY = state.surfaceY;
 
-  // Frames are bottom-weighted (transparent padding on top ~15–25%).
-  // Place the sheet so the opaque top sits on the collision surface,
-  // with the body hanging downward — not straddling the player.
   const topPad = 0.16;
   const dx = anchorX - drawW / 2;
   const dy = anchorY - drawH * topPad;
@@ -55,7 +68,6 @@ export function drawPlatformSprite(
   ctx.save();
   ctx.globalAlpha = state.opacity;
 
-  // Contact shadow under the object (near visual bottom)
   const shadowY = dy + drawH - 2;
   const contactShadow = ctx.createRadialGradient(
     anchorX,
@@ -72,14 +84,14 @@ export function drawPlatformSprite(
   ctx.ellipse(anchorX, shadowY, drawW * 0.38, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Squash around the landing surface (top), so the top stays put
+  // Scale around TOP so feet stay planted while body flattens downward
   ctx.translate(anchorX, anchorY);
   ctx.scale(state.squashX, state.squashY);
   ctx.translate(-anchorX, -anchorY);
 
   ctx.drawImage(
     img,
-    frame * SPRITE_FRAME_W,
+    Math.min(frame, SPRITE_FRAMES - 1) * SPRITE_FRAME_W,
     0,
     SPRITE_FRAME_W,
     SPRITE_FRAME_H,
@@ -89,9 +101,9 @@ export function drawPlatformSprite(
     drawH,
   );
 
-  if (sheet.source === 'ai' && squash > 0.2) {
+  if (sheet.source === 'ai' && pressed > 0.25) {
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = state.opacity * Math.min(0.35, squash * 0.25);
+    ctx.globalAlpha = state.opacity * Math.min(0.35, pressed * 0.28);
     ctx.fillStyle = 'rgba(255, 220, 180, 0.6)';
     ctx.beginPath();
     ctx.ellipse(anchorX, anchorY + drawH * 0.08, drawW * 0.25, drawH * 0.06, 0, 0, Math.PI * 2);
