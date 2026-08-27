@@ -56,14 +56,14 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   jelly: 'foam',
   mochi: 'foam',
   whipped: 'foamBurst',
-  clearSlime: 'bubble',
+  clearSlime: 'foam',
   butterSlime: 'foam',
   butter: 'drip',
   chocolate: 'drip',
   honeycomb: 'drip',
   kinetic: 'sand',
-  iceSoap: 'glitter',
-  glycerin: 'glitter',
+  iceSoap: 'bubble',
+  glycerin: 'bubble',
   citrus: 'zest',
 };
 
@@ -568,6 +568,40 @@ export class Particles {
     this.burst(x, y, '#ffffff', 10, 'bubble', false);
   }
 
+  /** Sabonete / espuma — bolhas sobem ao pisar */
+  risingBubbles(x: number, y: number, color: string, count = 14): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      this.spawn(x + (Math.random() - 0.5) * 28, y + Math.random() * 4, color, 'bubble', {
+        vx: (Math.random() - 0.5) * 18,
+        vy: 35 + Math.random() * 70,
+        life: 0.7 + Math.random() * 0.55,
+        size: 2 + Math.random() * 3.5,
+      });
+    }
+    // Foam flecks
+    for (let i = 0; i < this.cap(Math.floor(n * 0.5)); i++) {
+      this.spawn(x + (Math.random() - 0.5) * 22, y, '#ffffff', 'foam', {
+        vx: (Math.random() - 0.5) * 30,
+        vy: 20 + Math.random() * 40,
+        life: 0.45 + Math.random() * 0.35,
+        size: 2 + Math.random() * 2,
+      });
+    }
+  }
+
+  /** Chiclete — fiapos/pedaços grudentos */
+  gumStretch(x: number, y: number, color: string): void {
+    for (let i = 0; i < this.cap(8); i++) {
+      this.spawn(x + (Math.random() - 0.5) * 16, y, color, 'foam', {
+        vx: (Math.random() - 0.5) * 40,
+        vy: 15 + Math.random() * 35,
+        life: 0.5 + Math.random() * 0.35,
+        size: 2 + Math.random() * 2,
+      });
+    }
+  }
+
   juiceArc(x: number, y: number, color: string): void {
     for (let i = 0; i < this.cap(10); i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
@@ -696,30 +730,20 @@ export class Particles {
     ctx: CanvasRenderingContext2D,
     toScreen: (x: number, y: number) => { x: number; y: number },
   ): void {
+    ctx.imageSmoothingEnabled = false;
     for (const ring of this.rings) {
       const s = toScreen(ring.x, ring.y);
       const t = 1 - ring.life / ring.maxLife;
-      if (ring.kind === 'shock') {
-        ctx.globalAlpha = (1 - t) * 0.45;
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 8 + t * 48, -Math.PI * 0.85, -Math.PI * 0.15);
-        ctx.stroke();
-      } else if (ring.kind === 'dust') {
-        ctx.globalAlpha = (1 - t) * 0.35;
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.ellipse(s.x, s.y, 10 + t * 42, 4 + t * 10, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      } else {
-        ctx.globalAlpha = (1 - t) * 0.7;
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 12 + t * 36, 0, Math.PI * 2);
-        ctx.stroke();
+      ctx.globalAlpha = (1 - t) * (ring.kind === 'land' ? 0.75 : 0.4);
+      ctx.fillStyle = ring.color;
+      const r = Math.round(8 + t * (ring.kind === 'shock' ? 40 : 32));
+      // Pixel ring as 8 points on octagon
+      const pts = 8;
+      for (let i = 0; i < pts; i++) {
+        const a = (i / pts) * Math.PI * 2;
+        const x = Math.round(s.x + Math.cos(a) * r);
+        const y = Math.round(s.y + Math.sin(a) * r * (ring.kind === 'dust' ? 0.45 : 1));
+        ctx.fillRect(x, y, 2, 2);
       }
     }
 
@@ -727,50 +751,31 @@ export class Particles {
       if (!p.active) continue;
       const s = toScreen(p.x, p.y);
       const a = Math.max(0, p.life / p.maxLife);
-      ctx.globalAlpha = a * (p.type === 'pressAura' || p.type === 'footSpeck' ? 0.55 : 0.9);
+      ctx.globalAlpha = a * (p.type === 'pressAura' || p.type === 'footSpeck' ? 0.55 : 0.92);
+      ctx.fillStyle = p.color;
+      const sz = Math.max(2, Math.round(p.size));
 
       if (p.type === 'bubble' || p.type === 'foamBurst') {
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, p.size, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (p.type === 'glitter' || p.type === 'spark' || p.type === 'crackSpark' || p.type === 'shockSoft') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(Math.round(s.x) - sz, Math.round(s.y) - 1, sz * 2, 2);
+        ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - sz, 2, sz * 2);
+      } else if (
+        p.type === 'glitter' ||
+        p.type === 'spark' ||
+        p.type === 'crackSpark' ||
+        p.type === 'shockSoft'
+      ) {
+        ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.max(2, sz), Math.max(2, sz));
       } else if (p.type === 'zest' || p.type === 'juice' || p.type === 'meltRibbon') {
-        ctx.fillStyle = p.color;
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(p.rot);
+        ctx.fillRect(Math.round(s.x) - sz, Math.round(s.y), sz * 2, 2);
         if (p.type === 'meltRibbon') {
-          ctx.beginPath();
-          ctx.ellipse(0, 0, p.size * 0.35, p.size * 1.3, 0, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-p.size, -1, p.size * 2, 2);
+          ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - sz, 2, sz * 2);
         }
-        ctx.restore();
       } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
-        ctx.fillStyle = p.color;
-        ctx.fillRect(s.x, s.y, 2, 2);
+        ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       } else if (p.type === 'drip') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.ellipse(s.x, s.y, p.size * 0.45, p.size, 0, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.type === 'releasePuff' || p.type === 'pressAura') {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.ellipse(s.x, s.y, p.size * 0.9, p.size * 0.55, p.rot, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, sz + 1);
       } else {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.ellipse(s.x, s.y, p.size * 0.7, p.size, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(Math.round(s.x - sz * 0.5), Math.round(s.y - sz * 0.5), sz, sz);
       }
     }
     ctx.globalAlpha = 1;

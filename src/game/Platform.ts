@@ -1,4 +1,3 @@
-import { spriteAtlas } from '../assets/platforms/SpriteAtlas';
 import { MATERIALS, type MaterialId } from '../audio/materials';
 import { REACH } from './physics';
 import {
@@ -7,9 +6,9 @@ import {
   type BehaviorPhase,
   type PlatformBehavior,
 } from './platform/behaviors';
-import { renderPlatform } from './platform/MaterialRenderer';
+import { MATERIAL_LEDGE } from './platform/ledgeSizes';
+import { renderPixelPlatform } from './platform/PixelPlatformRenderer';
 import { pickVariant } from './platform/PlatformVariant';
-import { drawPlatformSprite } from './platform/SpriteRenderer';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
 
 const SINK_MAX = 5.2;
@@ -94,6 +93,12 @@ export class Platform {
     this.material = opts.material;
     this.seed = opts.seed ?? Math.random() * 10000;
     this.variantDef = pickVariant(this.material, makeRand(this.seed));
+    const ledge = MATERIAL_LEDGE[this.material];
+    this.variantDef = {
+      ...this.variantDef,
+      visualDepth: ledge.visualDepth,
+      visualSpread: ledge.visualSpread,
+    };
     this.variant = this.variantDef.id;
     this.behaviorDef = getBehaviorDef(this.material);
     this.behavior = this.behaviorDef.behavior;
@@ -148,8 +153,8 @@ export class Platform {
 
       if (fresh) {
         this.pressHold = hold;
-        this.pressAmount = Math.max(this.pressAmount, 0.32 + impact * 0.35);
-        this.pressVel += (1.8 + impact * 2.4) * mat.squash;
+        this.pressAmount = Math.max(this.pressAmount, 0.38 + impact * 0.42);
+        this.pressVel += (2.4 + impact * 2.8) * mat.squash;
         this.landedOnce = true;
         this.landCount += 1;
         this.onLandBehavior(impact);
@@ -165,8 +170,8 @@ export class Platform {
       if (this.phase === 'idle') this.phase = 'pressed';
     } else if (this.pressTarget > 0.5) {
       this.pressTarget = 0;
-      this.pressVel -= (5.5 + this.pressHold * 3) * mat.squash;
-      this.releaseTimer = 0.26;
+      this.pressVel -= (7.2 + this.pressHold * 3.5) * mat.squash;
+      this.releaseTimer = 0.34;
       if (this.phase === 'pressed' && this.integrity >= 1) this.phase = 'idle';
     }
   }
@@ -234,7 +239,7 @@ export class Platform {
   }
 
   update(dt: number, time: number): void {
-    this.wobble += dt * 2.2;
+    this.wobble += dt * (this.behavior === 'elastic' || this.behavior === 'sticky' ? 3.4 : 2.4);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 8);
 
     if (this.moving && this.solid) {
@@ -243,21 +248,26 @@ export class Platform {
 
     if (this.releaseTimer > 0) this.releaseTimer = Math.max(0, this.releaseTimer - dt);
 
-    // Press spring
+    // Press spring — softer, bouncier for fluid satisfying squash
     const mat = MATERIALS[this.material];
     const target = this.pressTarget * this.pressHold;
-    const k = this.pressTarget > 0.5 ? 155 : 175;
-    const d = this.pressTarget > 0.5 ? 14 : 11;
+    const soft =
+      this.behavior === 'elastic' ||
+      this.behavior === 'foamPop' ||
+      this.behavior === 'melt' ||
+      this.behavior === 'sticky';
+    const k = this.pressTarget > 0.5 ? (soft ? 118 : 145) : soft ? 132 : 165;
+    const d = this.pressTarget > 0.5 ? (soft ? 9.5 : 12) : soft ? 8.2 : 10;
     const force = (target - this.pressAmount) * k - this.pressVel * d;
     this.pressVel += force * dt;
     this.pressAmount += this.pressVel * dt;
-    if (this.pressAmount > 1.45) {
-      this.pressAmount = 1.45;
-      this.pressVel *= 0.4;
+    if (this.pressAmount > 1.55) {
+      this.pressAmount = 1.55;
+      this.pressVel *= 0.35;
     }
-    if (this.pressAmount < -0.35) {
-      this.pressAmount = -0.35;
-      this.pressVel *= 0.45;
+    if (this.pressAmount < -0.42) {
+      this.pressAmount = -0.42;
+      this.pressVel *= 0.4;
     }
 
     // Behavior while pressed
@@ -373,41 +383,65 @@ export class Platform {
   ): void {
     if (!this.alive && this.opacity <= 0) return;
     const mat = MATERIALS[this.material];
-    // Per-behavior live deform — each material "feels" different underfoot
+    // Per-behavior live deform — exaggerated for addictive juice
     const idleAmt = 1 - Math.min(1, Math.abs(this.pressAmount));
     let softWobble = 0;
-    if (this.behavior === 'elastic') {
+    if (this.behavior === 'elastic' || this.behavior === 'sticky') {
       const amp =
-        this.material === 'mochi' ? 0.055 : this.material === 'butterSlime' ? 0.048 : 0.04;
-      softWobble = Math.sin(this.wobble) * amp * idleAmt;
+        this.material === 'mochi'
+          ? 0.055
+          : this.behavior === 'sticky'
+            ? 0.045
+            : this.material === 'butterSlime'
+              ? 0.06
+              : 0.05;
+      softWobble =
+        Math.sin(this.wobble) * amp * idleAmt +
+        Math.sin(this.wobble * 2.3) * amp * 0.3 * idleAmt;
     } else if (this.behavior === 'foamPop') {
-      softWobble = Math.sin(this.wobble * 1.4) * 0.025 * idleAmt;
+      softWobble = Math.sin(this.wobble * 1.6) * 0.035 * idleAmt;
+    } else if (this.behavior === 'melt' && this.meltProgress < 0.15) {
+      softWobble = Math.sin(this.wobble * 0.8) * 0.02 * idleAmt;
+    }
+
+    // Queijo: leve pulinho idle
+    let cheeseHop = 0;
+    if (this.material === 'mochi' && this.pressTarget < 0.5) {
+      cheeseHop = Math.sin(this.wobble * 0.95) * 0.07;
     }
 
     const pressed = Math.max(0, this.pressAmount);
     const stretch = Math.max(0, -this.pressAmount);
     const pressMulX =
       this.behavior === 'melt'
-        ? 0.18
+        ? 0.24
         : this.behavior === 'shatter'
-          ? 0.05
-          : this.behavior === 'squeeze'
-            ? 0.14
-            : 0.12;
+          ? 0.06
+          : this.behavior === 'sticky'
+            ? 0.2
+            : this.behavior === 'squeeze'
+              ? 0.16
+              : this.behavior === 'foamPop'
+                ? 0.2
+                : 0.16;
     const pressMulY =
       this.behavior === 'melt'
-        ? 0.32
+        ? 0.4
         : this.behavior === 'shatter'
-          ? 0.1
-          : this.behavior === 'foamPop'
-            ? 0.28
-            : 0.22;
+          ? 0.12
+          : this.behavior === 'sticky'
+            ? 0.3
+            : this.behavior === 'foamPop'
+              ? 0.34
+              : this.behavior === 'elastic'
+                ? 0.26
+                : 0.24;
     const squashX =
-      (1 + pressed * pressMulX + softWobble - stretch * 0.06) * this.deformX;
+      (1 + pressed * pressMulX + softWobble - stretch * 0.08) * this.deformX;
     const squashY =
-      (1 - pressed * pressMulY - softWobble * 0.5 + stretch * 0.14) *
-      Math.max(0.2, this.deformY);
-    const cy = this.y - this.sink;
+      (1 - pressed * pressMulY - softWobble * 0.55 + stretch * 0.18 - cheeseHop * 0.5) *
+      Math.max(0.18, this.deformY);
+    const cy = this.y - this.sink + cheeseHop * 2.5;
 
     const hitHw = (this.w / 2) * Math.max(0.85, squashX);
     const hitHh = (this.h / 2) * Math.max(0.4, squashY);
@@ -433,47 +467,13 @@ export class Platform {
       squashY,
     };
 
-    const sheet = spriteAtlas.get(this.material);
-    if (sheet?.ready) {
-      drawPlatformSprite(
-        ctx,
-        sheet,
-        this.material,
-        state,
-        this.pressAmount,
-        this.pressVel,
-        this.releaseTimer,
-        this.variantDef.visualDepth,
-        this.variantDef.visualSpread,
-        {
-          crackLevel: this.crackLevel,
-          meltProgress: this.meltProgress,
-          flash: this.flash,
-          integrity: this.integrity,
-          behavior: this.behavior,
-          pressTime: this.pressTime,
-          phase: this.phase,
-        },
-      );
-    } else {
-      renderPlatform(ctx, this.variant, mat, state);
-      this.drawOverlaysFallback(ctx, state);
-    }
-  }
-
-  private drawOverlaysFallback(ctx: CanvasRenderingContext2D, s: PlatformDrawState): void {
-    if (this.crackLevel > 0.05) {
-      ctx.save();
-      ctx.globalAlpha = s.opacity * this.crackLevel;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(s.cx - s.w * 0.3, s.surfaceY + s.h * 0.2);
-      ctx.lineTo(s.cx, s.surfaceY + s.h * 0.55);
-      ctx.lineTo(s.cx + s.w * 0.25, s.surfaceY + s.h * 0.3);
-      ctx.stroke();
-      ctx.restore();
-    }
+    renderPixelPlatform(ctx, this.material, this.variant, mat, state, {
+      crackLevel: this.crackLevel,
+      meltProgress: this.meltProgress,
+      flash: this.flash,
+      integrity: this.integrity,
+      behavior: this.behavior,
+    });
   }
 }
 

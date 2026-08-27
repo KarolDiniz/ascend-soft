@@ -14,6 +14,7 @@ import { Player } from './Player';
 import { REACH } from './physics';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
+import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 
 const BEST_KEY = 'ascend-soft-best';
 const SEEN_KEY = 'ascend-soft-seen-materials';
@@ -424,6 +425,24 @@ export class Game {
         this.atmosphere.getAccent(),
         p.material,
       );
+
+      // Material-specific juice
+      if (p.material === 'glycerin' || p.material === 'iceSoap' || p.material === 'whipped') {
+        this.particles.risingBubbles(
+          this.player.x,
+          platformTop,
+          mat.particle,
+          p.material === 'whipped' ? 18 : 12,
+        );
+      }
+      if (p.behavior === 'sticky') {
+        this.particles.gumStretch(this.player.x, platformTop, mat.particle);
+        this.addFloater(this.player.x, platformTop + 16, 'gruda!', mat.particle);
+      }
+      if (p.material === 'mochi') {
+        this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'foam', false);
+      }
+
       this.audio.playLand(p.material, perfect, this.perfectStreak);
 
       if (perfect) {
@@ -569,20 +588,26 @@ export class Game {
     this.hud.showFall(this.height, this.best);
   }
 
-  private toScreen = (x: number, y: number) =>
-    this.camera.worldToScreen(x, y, this.W, this.H);
+  private toScreen = (x: number, y: number) => {
+    const s = this.camera.worldToScreen(x, y, this.W, this.H);
+    return snapPt(s.x, s.y);
+  };
 
   private draw(): void {
     const ctx = this.ctx;
+    enablePixelMode(ctx);
     ctx.clearRect(0, 0, this.W, this.H);
 
     const punch = 1 + this.screenPunch * 0.012 + this.camera.punch * 0.008;
     ctx.save();
     if (punch !== 1) {
       ctx.translate(this.W / 2, this.H / 2);
-      ctx.scale(punch, punch);
+      // Quantize punch so scale feels stepped/pixel
+      const p = Math.round(punch * 64) / 64;
+      ctx.scale(p, p);
       ctx.translate(-this.W / 2, -this.H / 2);
     }
+    enablePixelMode(ctx);
 
     this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
     this.scenery.drawFar(ctx, this.W, this.H, this.camera.y, this.atmosphere);
@@ -591,7 +616,7 @@ export class Game {
 
     const left = this.toScreen(-this.worldHalfW - 30, this.camera.y);
     const right = this.toScreen(this.worldHalfW + 30, this.camera.y);
-    ctx.fillStyle = 'rgba(255,255,255,0.035)';
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fillRect(0, 0, Math.max(0, left.x), this.H);
     ctx.fillRect(right.x, 0, Math.max(0, this.W - right.x), this.H);
 
@@ -616,8 +641,12 @@ export class Game {
       const s = this.toScreen(f.x, f.y);
       ctx.globalAlpha = Math.min(1, f.life * 1.4);
       ctx.fillStyle = f.color;
-      ctx.font = "600 22px 'Fraunces', Georgia, serif";
+      ctx.font = PIXEL.font;
       ctx.textAlign = 'center';
+      // Pixel text shadow
+      ctx.fillStyle = 'rgba(90,97,108,0.35)';
+      ctx.fillText(f.text, s.x + 2, s.y + 2);
+      ctx.fillStyle = f.color;
       ctx.fillText(f.text, s.x, s.y);
     }
     ctx.globalAlpha = 1;

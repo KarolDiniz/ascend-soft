@@ -18,13 +18,14 @@ export class Background {
     if (atm) this.grainAlpha = atm.grainAlpha;
   }
 
-  /** Layer 1: sky + shafts + enter flash */
+  /** Layer 1: banded pixel sky + soft flash */
   drawSky(
     ctx: CanvasRenderingContext2D,
     w: number,
     h: number,
     atm?: Atmosphere,
   ): void {
+    ctx.imageSmoothingEnabled = false;
     const period = atm?.breathPeriod ?? 11;
     const breath = (Math.sin(this.time * ((Math.PI * 2) / period)) + 1) * 0.5;
     const pal = atm?.getPalette();
@@ -34,54 +35,49 @@ export class Background {
     const midA = pal?.mid ?? '#efe6c8';
     const botA = pal?.bottom ?? '#f3d5c8';
 
-    const g = ctx.createLinearGradient(0, 0, w * 0.12, h);
-    g.addColorStop(0, this.lerpColor(topA, this.shift(topA, 10 + flash * 20), breath));
-    g.addColorStop(0.42, this.lerpColor(midA, this.shift(midA, -6 + flash * 16), 1 - breath));
-    g.addColorStop(1, this.lerpColor(botA, this.shift(botA, 8 + flash * 18), breath));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
+    // Horizontal color bands (classic pixel sky)
+    const bands = 12;
+    for (let i = 0; i < bands; i++) {
+      const t = i / (bands - 1);
+      const c =
+        t < 0.42
+          ? this.lerpColor(topA, midA, t / 0.42)
+          : this.lerpColor(midA, botA, (t - 0.42) / 0.58);
+      const breatheShift = this.lerpColor(c, this.shift(c, breath * 8 + flash * 12), 0.35);
+      const y0 = Math.floor((h * i) / bands);
+      const y1 = Math.floor((h * (i + 1)) / bands);
+      ctx.fillStyle = breatheShift;
+      ctx.fillRect(0, y0, w, Math.max(1, y1 - y0));
+    }
 
     if (flash > 0) {
-      ctx.fillStyle = `rgba(255,252,245,${flash * 0.12})`;
+      ctx.fillStyle = `rgba(255,252,245,${flash * 0.14})`;
       ctx.fillRect(0, 0, w, h);
     }
 
-    // Soft god-ray / light band
-    const bandY = h * (0.22 + breath * 0.1);
-    const shaft = ctx.createLinearGradient(0, bandY - 50, 0, bandY + 100);
-    shaft.addColorStop(0, 'rgba(255,255,255,0)');
-    shaft.addColorStop(0.45, `rgba(255, 250, 240, ${0.07 + breath * 0.05 + flash * 0.06})`);
-    shaft.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = shaft;
-    ctx.fillRect(0, bandY - 50, w, 150);
-
-    // Extra soft angled shaft (garden/ether feel)
-    ctx.save();
-    ctx.globalAlpha = 0.045 + breath * 0.025;
-    ctx.translate(w * 0.7, 0);
-    ctx.rotate(0.35);
-    const ray = ctx.createLinearGradient(0, 0, 0, h);
-    ray.addColorStop(0, 'rgba(255,255,240,0.5)');
-    ray.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = ray;
-    ctx.fillRect(-40, 0, 80, h * 1.2);
-    ctx.restore();
+    // Pixel light band
+    const bandY = Math.floor(h * (0.22 + breath * 0.08));
+    ctx.fillStyle = `rgba(255, 250, 240, ${0.08 + breath * 0.05})`;
+    ctx.fillRect(0, bandY, w, 6);
+    ctx.fillStyle = `rgba(255, 250, 240, ${0.04 + breath * 0.03})`;
+    ctx.fillRect(0, bandY + 6, w, 10);
   }
 
-  /** Soft light shafts between mid ambient and world */
+  /** Soft light — pixel rect wash */
   drawLightOverlay(
     ctx: CanvasRenderingContext2D,
     w: number,
     h: number,
     atm?: Atmosphere,
   ): void {
+    ctx.imageSmoothingEnabled = false;
     const breath = (Math.sin(this.time * 0.4) + 1) * 0.5;
     const accent = atm?.getAccent() ?? '#fff8e8';
     const rgb = this.hex(accent);
-    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.03 + breath * 0.025})`;
-    ctx.beginPath();
-    ctx.ellipse(w * 0.5, h * 0.35, w * 0.45, h * 0.18, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.04 + breath * 0.03})`;
+    const bw = Math.floor(w * 0.7);
+    const bh = Math.floor(h * 0.22);
+    ctx.fillRect(Math.floor(w * 0.15), Math.floor(h * 0.28), bw, bh);
   }
 
   /** Weather / cinematic overlays after near particles */
@@ -107,19 +103,21 @@ export class Background {
     h: number,
     atm?: Atmosphere,
   ): void {
-    const vig = ctx.createRadialGradient(w / 2, h * 0.45, h * 0.18, w / 2, h / 2, h * 0.9);
-    vig.addColorStop(0, 'rgba(255,255,255,0)');
-    const frostish = atm?.primaryId === 'frost' ? 0.16 : 0.11;
-    vig.addColorStop(1, `rgba(70, 60, 55, ${frostish})`);
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = false;
+    const frostish = atm?.primaryId === 'frost' ? 0.2 : 0.14;
+    // Pixel vignette — edge bands instead of soft radial
+    ctx.fillStyle = `rgba(70, 60, 55, ${frostish})`;
+    ctx.fillRect(0, 0, w, 8);
+    ctx.fillRect(0, h - 10, w, 10);
+    ctx.fillRect(0, 0, 8, h);
+    ctx.fillRect(w - 8, 0, 8, h);
+    ctx.fillStyle = `rgba(70, 60, 55, ${frostish * 0.5})`;
+    ctx.fillRect(0, 8, w, 6);
+    ctx.fillRect(0, h - 16, w, 6);
 
     if (atm?.primaryId === 'ether') {
-      const bloom = ctx.createRadialGradient(w / 2, h * 0.4, 20, w / 2, h * 0.4, h * 0.55);
-      bloom.addColorStop(0, 'rgba(255, 235, 200, 0.08)');
-      bloom.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = bloom;
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(255, 235, 200, 0.08)';
+      ctx.fillRect(Math.floor(w * 0.3), Math.floor(h * 0.3), Math.floor(w * 0.4), Math.floor(h * 0.2));
     }
 
     this.drawGrain(ctx, w, h);

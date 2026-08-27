@@ -6,62 +6,57 @@ export type PlatformBehavior =
   | 'shatter'
   | 'crumble'
   | 'foamPop'
-  | 'squeeze';
+  | 'squeeze'
+  | 'sticky';
 
-/** Lifecycle phase for destructive behaviors */
 export type BehaviorPhase =
   | 'idle'
   | 'pressed'
   | 'anticipate'
-  | 'active' // melting / crumbling / cracking
-  | 'payoff' // shatter burst / pop / final drip
+  | 'active'
+  | 'payoff'
   | 'gone';
 
 export interface BehaviorDef {
   behavior: PlatformBehavior;
-  /** Seconds of press time until destruction (melt/crumble/foam) */
   lifetime: number;
-  /** Lands before shatter/squeeze destroy */
   maxLands: number;
-  /** Impact above this triggers instant shatter (chocolate/ice) */
   shatterImpact: number;
-  /** Floater label in PT-BR */
   floater: string;
   mortal: boolean;
+  /** Extra jump multiplier when leaving this platform (sticky gum) */
+  jumpBoost: number;
 }
 
+const immortal = (
+  behavior: PlatformBehavior,
+  jumpBoost = 1,
+): BehaviorDef => ({
+  behavior,
+  lifetime: Infinity,
+  maxLands: Infinity,
+  shatterImpact: 99,
+  floater: '',
+  mortal: false,
+  jumpBoost,
+});
+
 export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
-  jelly: {
-    behavior: 'elastic',
-    lifetime: Infinity,
-    maxLands: Infinity,
-    shatterImpact: 99,
-    floater: '',
-    mortal: false,
-  },
-  mochi: {
-    behavior: 'elastic',
-    lifetime: Infinity,
-    maxLands: Infinity,
-    shatterImpact: 99,
-    floater: '',
-    mortal: false,
-  },
-  butterSlime: {
-    behavior: 'elastic',
-    lifetime: Infinity,
-    maxLands: Infinity,
-    shatterImpact: 99,
-    floater: '',
-    mortal: false,
-  },
+  jelly: immortal('elastic'),
+  /** queijo — bounce leve */
+  mochi: immortal('elastic', 1.06),
+  butterSlime: immortal('elastic'),
+  /** chiclete — gruda e ajuda a subir */
+  clearSlime: immortal('sticky', 1.32),
+
   butter: {
     behavior: 'melt',
-    lifetime: 1.35,
+    lifetime: 1.45,
     maxLands: Infinity,
     shatterImpact: 99,
     floater: 'derreteu!',
     mortal: true,
+    jumpBoost: 1,
   },
   chocolate: {
     behavior: 'melt',
@@ -70,6 +65,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 1.05,
     floater: 'derreteu!',
     mortal: true,
+    jumpBoost: 1,
   },
   honeycomb: {
     behavior: 'melt',
@@ -78,6 +74,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 99,
     floater: 'escorreu!',
     mortal: true,
+    jumpBoost: 1,
   },
   iceSoap: {
     behavior: 'shatter',
@@ -86,6 +83,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 0.95,
     floater: 'quebra!',
     mortal: true,
+    jumpBoost: 1,
   },
   glycerin: {
     behavior: 'shatter',
@@ -94,6 +92,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 1.1,
     floater: 'quebra!',
     mortal: true,
+    jumpBoost: 1,
   },
   kinetic: {
     behavior: 'crumble',
@@ -102,6 +101,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 99,
     floater: 'desmanchou!',
     mortal: true,
+    jumpBoost: 1,
   },
   whipped: {
     behavior: 'foamPop',
@@ -110,14 +110,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 99,
     floater: 'pop!',
     mortal: true,
-  },
-  clearSlime: {
-    behavior: 'foamPop',
-    lifetime: 1.1,
-    maxLands: Infinity,
-    shatterImpact: 99,
-    floater: 'estourou!',
-    mortal: true,
+    jumpBoost: 1,
   },
   citrus: {
     behavior: 'squeeze',
@@ -126,11 +119,12 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     shatterImpact: 99,
     floater: 'espremeu!',
     mortal: true,
+    jumpBoost: 1,
   },
 };
 
 export function isMortalBehavior(b: PlatformBehavior): boolean {
-  return b !== 'elastic';
+  return b !== 'elastic' && b !== 'sticky';
 }
 
 export function getBehaviorDef(material: MaterialId): BehaviorDef {

@@ -1,5 +1,6 @@
 import { MATERIALS, pickMaterial, type MaterialId } from '../audio/materials';
 import { getBehaviorDef } from './platform/behaviors';
+import { rollLedgeWidth } from './platform/ledgeSizes';
 import { Platform } from './Platform';
 import { PHYS, REACH } from './physics';
 
@@ -73,9 +74,9 @@ export class PlatformSpawner {
 
     // Starters: readable vertical + horizontal spacing, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
-      { x: 0, y: 0, w: 140, material: 'butter' },
+      { x: 0, y: 0, w: 132, material: 'butter' },
       { x: -48, y: 58, w: 100, material: 'jelly' },
-      { x: 52, y: 118, w: 96, material: 'mochi' },
+      { x: 52, y: 118, w: 104, material: 'mochi' },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
@@ -108,7 +109,8 @@ export class PlatformSpawner {
 
     const wMin = 70 - difficulty * 8;
     const wMax = 112 - difficulty * 18;
-    const w = Math.max(64, wMin + this.rand() * (wMax - wMin));
+    // Placeholder width for reach calc — replaced after material pick
+    let w = Math.max(64, wMin + this.rand() * (wMax - wMin));
 
     const maxGapX = maxReachableCenterGap(last.w, w, gapY);
     const minGapX = Math.min(minCenterGapX(last.w, w, gapY), maxGapX * 0.92);
@@ -130,7 +132,6 @@ export class PlatformSpawner {
       }
       if (!crowded) break;
 
-      // Prefer more vertical room first (still ≤ max jump), then nudge X
       gapY = Math.min(REACH.maxGapY, gapY + 4 + this.rand() * 6);
       y = this.highestY + gapY;
       const maxX2 = maxReachableCenterGap(last.w, w, gapY);
@@ -140,7 +141,7 @@ export class PlatformSpawner {
     }
 
     // Hard guarantee: reachable from previous platform
-    const finalMaxX = maxReachableCenterGap(last.w, w, y - last.y);
+    let finalMaxX = maxReachableCenterGap(last.w, w, y - last.y);
     if (Math.abs(x - last.x) > finalMaxX) {
       x = last.x + Math.sign(x - last.x || this.lastDir) * finalMaxX * 0.9;
     }
@@ -152,7 +153,7 @@ export class PlatformSpawner {
     }
 
     // Ensure min horizontal separation from last after clamps
-    const needMinX = Math.min(minCenterGapX(last.w, w, y - last.y), finalMaxX * 0.9);
+    let needMinX = Math.min(minCenterGapX(last.w, w, y - last.y), finalMaxX * 0.9);
     if (Math.abs(x - last.x) < needMinX) {
       x = last.x + this.lastDir * needMinX;
       const margin = Math.max(w / 2 + 8, 36);
@@ -165,13 +166,28 @@ export class PlatformSpawner {
         this.lastDir = 1;
       }
       x = Math.max(-maxX, Math.min(maxX, x));
-      // If still unreachable after wall bounce, pull back toward last within max
       if (Math.abs(x - last.x) > finalMaxX) {
         x = last.x + Math.sign(x - last.x) * finalMaxX * 0.88;
       }
     }
 
     const material = this.pickFairMaterial(height);
+    // Distinct ledge width per material identity
+    w = rollLedgeWidth(material, this.rand);
+    // Re-clamp X for new width
+    finalMaxX = maxReachableCenterGap(last.w, w, y - last.y);
+    needMinX = Math.min(minCenterGapX(last.w, w, y - last.y), finalMaxX * 0.9);
+    if (Math.abs(x - last.x) > finalMaxX) {
+      x = last.x + Math.sign(x - last.x || this.lastDir) * finalMaxX * 0.88;
+    }
+    if (Math.abs(x - last.x) < needMinX) {
+      x = last.x + this.lastDir * needMinX;
+    }
+    {
+      const margin = Math.max(w / 2 + 8, 36);
+      const maxX = this.worldHalfW - margin;
+      x = Math.max(-maxX, Math.min(maxX, x));
+    }
 
     let moving = height > 380 && this.rand() < 0.1 + difficulty * 0.06;
     let moveAmp = 10 + this.rand() * 8;
@@ -216,7 +232,7 @@ export class PlatformSpawner {
   /** Never 2+ mortals in a row; bias toward elastic early. */
   private pickFairMaterial(height: number): MaterialId {
     let material = pickMaterial(height, this.rand);
-    const elasticPool = (['jelly', 'mochi', 'butterSlime'] as MaterialId[]).filter(
+    const elasticPool = (['jelly', 'mochi', 'butterSlime', 'clearSlime'] as MaterialId[]).filter(
       (id) => MATERIALS[id].unlockAt <= height,
     );
 

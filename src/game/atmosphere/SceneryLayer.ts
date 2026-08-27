@@ -169,6 +169,7 @@ export class SceneryLayer {
     cameraY: number,
     atm: Atmosphere,
   ): void {
+    ctx.imageSmoothingEnabled = false;
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'far', 0.07);
     this.drawProps(ctx, w, h, cameraY, 0, 1);
   }
@@ -180,6 +181,7 @@ export class SceneryLayer {
     cameraY: number,
     atm: Atmosphere,
   ): void {
+    ctx.imageSmoothingEnabled = false;
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'mid', 0.18);
     this.drawProps(ctx, w, h, cameraY, 2, 3);
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'accent', 0.22);

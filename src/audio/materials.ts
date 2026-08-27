@@ -70,16 +70,16 @@ function mat(
 export const MATERIALS: Record<MaterialId, MaterialDef> = {
   jelly: mat('jelly', 'gelatina', 'drip', 1.35, 1, 0),
   butter: mat('butter', 'manteiga', 'crumb', 1.2, 1, 0),
-  mochi: mat('mochi', 'mochi', 'foam', 1.55, 1.1, 80),
-  chocolate: mat('chocolate', 'ganache', 'drip', 0.95, 1.15, 160),
-  citrus: mat('citrus', 'casca cítrica', 'zest', 0.75, 1.2, 250),
+  mochi: mat('mochi', 'queijo', 'foam', 1.25, 1.1, 80),
+  chocolate: mat('chocolate', 'chocolate', 'drip', 0.95, 1.15, 160),
+  citrus: mat('citrus', 'cítrico', 'zest', 0.75, 1.2, 250),
   honeycomb: mat('honeycomb', 'mel', 'drip', 0.85, 1.25, 350),
-  glycerin: mat('glycerin', 'sabonete glicerina', 'glitter', 0.9, 1.3, 450),
-  whipped: mat('whipped', 'sabonete batido', 'foam', 1.4, 1.25, 550),
-  kinetic: mat('kinetic', 'areia cinética', 'sand', 1.1, 1.2, 700),
+  glycerin: mat('glycerin', 'sabonete', 'bubble', 0.9, 1.2, 200),
+  whipped: mat('whipped', 'espuma', 'foamBurst', 1.4, 1.25, 320),
+  kinetic: mat('kinetic', 'areia', 'sand', 1.1, 1.2, 700),
   iceSoap: mat('iceSoap', 'sabonete gelo', 'glitter', 0.5, 1.4, 850),
-  clearSlime: mat('clearSlime', 'slime cristal', 'bubble', 1.45, 1.45, 1000),
-  butterSlime: mat('butterSlime', 'butter slime', 'foam', 1.5, 1.5, 1200),
+  clearSlime: mat('clearSlime', 'chiclete', 'foam', 1.35, 1.3, 280),
+  butterSlime: mat('butterSlime', 'massa', 'foam', 1.5, 1.5, 1200),
 };
 
 export const MATERIAL_ORDER: MaterialId[] = [

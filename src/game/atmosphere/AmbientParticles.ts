@@ -650,129 +650,83 @@ export class AmbientParticles {
     rot: number,
     phase: number,
   ): void {
+    ctx.imageSmoothingEnabled = false;
+    const px = Math.round(x);
+    const py = Math.round(y);
+    const sz = Math.max(2, Math.round(size));
+    ctx.fillStyle = color;
+
     switch (type) {
       case 'bubbleFloat': {
-        const pulse = 1 + Math.sin(phase * 2.2) * 0.06;
-        const r = size * pulse;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.beginPath();
-        ctx.arc(x - r * 0.32, y - r * 0.32, r * 0.22, 0, Math.PI * 2);
-        ctx.fill();
+        const r = Math.max(2, Math.round(sz * (1 + Math.sin(phase * 2.2) * 0.06)));
+        ctx.fillRect(px - r, py - 1, r * 2, 2);
+        ctx.fillRect(px - 1, py - r, 2, r * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillRect(px - r + 1, py - r + 1, 2, 2);
         break;
       }
       case 'steam': {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.ellipse(x, y, size, size * 0.5, rot, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha *= 0.45;
-        ctx.beginPath();
-        ctx.ellipse(x + size * 0.2, y - size * 0.15, size * 0.7, size * 0.35, rot + 0.3, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(px - sz, py, sz * 2, 2);
+        ctx.globalAlpha *= 0.5;
+        ctx.fillRect(px - sz + 2, py - 3, sz, 2);
         break;
       }
       case 'foamSpeck': {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.arc(x + size * 0.6, y - size * 0.2, size * 0.7, 0, Math.PI * 2);
-        ctx.arc(x - size * 0.4, y + size * 0.3, size * 0.55, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(px - sz, py - 1, sz * 2, 2);
+        ctx.fillRect(px + 1, py - sz, 2, sz);
+        ctx.fillRect(px - sz - 1, py + 1, 2, 2);
         break;
       }
       case 'frost': {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.1;
-        ctx.lineCap = 'round';
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(rot);
-        for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(Math.cos(a) * size, Math.sin(a) * size);
-          ctx.stroke();
+        for (let i = 0; i < 4; i++) {
+          const a = rot + (i / 4) * Math.PI * 2;
+          ctx.fillRect(
+            px + Math.round(Math.cos(a) * sz),
+            py + Math.round(Math.sin(a) * sz),
+            2,
+            2,
+          );
         }
-        ctx.restore();
+        ctx.fillRect(px, py, 2, 2);
         break;
       }
       case 'lightOrb':
       case 'emberSoft':
       case 'pollen': {
-        const pulse = 1 + Math.sin(phase * 1.8) * 0.1;
-        const r = size * pulse * (type === 'pollen' ? 1.6 : 1);
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, type === 'pollen' ? color : 'rgba(255,248,235,0.75)');
-        g.addColorStop(0.5, color);
-        g.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
+        const r = Math.max(2, Math.round(sz * (type === 'pollen' ? 1.4 : 1)));
+        ctx.fillRect(px - Math.floor(r / 2), py - 1, r, 2);
+        ctx.fillRect(px - 1, py - Math.floor(r / 2), 2, r);
         break;
       }
       case 'petal': {
-        ctx.fillStyle = color;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(rot);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, size * 1.5, size * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha *= 0.55;
-        ctx.beginPath();
-        ctx.ellipse(0, size * 0.15, size * 1.1, size * 0.28, 0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.fillRect(px - sz, py - 1, sz * 2, 2);
+        ctx.fillRect(px - 1, py - Math.floor(sz / 2), 2, sz);
         break;
       }
       case 'sugarDust': {
-        ctx.fillStyle = color;
         for (let i = 0; i < 4; i++) {
-          const ox = Math.sin(phase + i * 1.7) * size * 1.2;
-          const oy = Math.cos(phase * 0.8 + i) * size;
-          ctx.beginPath();
-          ctx.arc(x + ox, y + oy, 0.8 + (i % 2) * 0.6, 0, Math.PI * 2);
-          ctx.fill();
+          const ox = Math.round(Math.sin(phase + i * 1.7) * size * 1.2);
+          const oy = Math.round(Math.cos(phase * 0.8 + i) * size);
+          ctx.fillRect(px + ox, py + oy, 2, 2);
         }
         break;
       }
       case 'sprinkle': {
-        ctx.fillStyle = color;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(rot);
-        ctx.fillRect(-size * 0.35, -size * 1.2, size * 0.7, size * 2.4);
-        ctx.restore();
+        ctx.fillRect(px - 1, py - sz, 2, sz * 2);
         break;
       }
       case 'dripAmbient': {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.ellipse(x, y, size * 0.4, size * 1.1, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(px, py, 2, sz + 2);
         break;
       }
       case 'snowMote': {
-        ctx.fillStyle = color;
         ctx.globalAlpha *= 0.65 + Math.sin(phase * 4) * 0.35;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(px, py, Math.max(2, sz), Math.max(2, sz));
         break;
       }
       default: {
-        const tw = 0.55 + Math.sin(phase * 5.5) * 0.45;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, size * tw, 0, Math.PI * 2);
-        ctx.fill();
+        const tw = Math.max(2, Math.round(sz * (0.55 + Math.sin(phase * 5.5) * 0.45)));
+        ctx.fillRect(px, py, tw, tw);
       }
     }
   }

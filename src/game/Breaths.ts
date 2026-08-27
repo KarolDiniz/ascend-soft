@@ -1,3 +1,6 @@
+import { PASTEL, rgba } from '../theme/pastelPalette';
+import { PIXEL, fillPx, px, snapPt } from '../theme/pixel';
+
 export class BreathOrb {
   x: number;
   y: number;
@@ -30,21 +33,23 @@ export class BreathOrb {
   ): void {
     if (this.collected) return;
     const bob = Math.sin(this.phase + time) * 4;
-    const s = toScreen(this.x, this.y + bob);
-    const pulse = 1 + Math.sin(time * 3 + this.phase) * 0.08;
+    const raw = toScreen(this.x, this.y + bob);
+    const s = snapPt(raw.x, raw.y);
+    const pulse = 1 + Math.sin(time * 3 + this.phase) * 0.1;
+    const r = px(this.r * pulse);
+    const u = PIXEL.unit;
 
     ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.shadowColor = 'rgba(232, 160, 144, 0.55)';
-    ctx.shadowBlur = 12;
-    const g = ctx.createRadialGradient(s.x - 2, s.y - 2, 1, s.x, s.y, this.r * pulse);
-    g.addColorStop(0, 'rgba(255, 245, 235, 0.95)');
-    g.addColorStop(0.5, 'rgba(232, 176, 160, 0.75)');
-    g.addColorStop(1, 'rgba(212, 165, 116, 0.15)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, this.r * pulse, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    // Diamond / plus sparkle orb
+    fillPx(ctx, s.x - r / 2, s.y - u, r, u * 2, PASTEL.peach);
+    fillPx(ctx, s.x - u, s.y - r / 2, u * 2, r, PASTEL.butter);
+    fillPx(ctx, s.x - u, s.y - u, u * 2, u * 2, PASTEL.white);
+    // Twinkle corners
+    if (Math.sin(time * 5 + this.phase) > 0.5) {
+      fillPx(ctx, s.x + r / 2 + u, s.y - u, u, u, rgba(PASTEL.coral, 0.8));
+      fillPx(ctx, s.x - r / 2 - u * 2, s.y, u, u, rgba(PASTEL.coral, 0.7));
+    }
     ctx.restore();
   }
 }
