@@ -425,7 +425,7 @@ export class Particles {
       }
     } else if (behavior === 'shatter') {
       if (Math.random() < dt * 14) this.crackSpark(x, surfaceY, accent);
-    } else if (behavior === 'elastic') {
+    } else if (behavior === 'elastic' && materialId !== 'jelly') {
       if (Math.random() < dt * 9) {
         this.spawn(x + (Math.random() - 0.5) * 26, surfaceY, color, _style, {
           vx: (Math.random() - 0.5) * 24,
@@ -454,21 +454,12 @@ export class Particles {
         life: 0.4,
         size: 2 + Math.random(),
       });
-    } else if (materialId === 'jelly' && Math.random() < dt * 7 * rateBoost) {
-      this.drip(x + (Math.random() - 0.5) * 24, surfaceY, color, this.cap(2));
     } else if (materialId === 'butter' && Math.random() < dt * 5.5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 28, surfaceY, color, 'crumb', {
         vx: (Math.random() - 0.5) * 20,
         vy: 6 + Math.random() * 18,
         life: 0.35 + Math.random() * 0.3,
         size: 1.5 + Math.random() * 2,
-      });
-    } else if (materialId === 'mochi' && Math.random() < dt * 6 * rateBoost) {
-      this.spawn(x + (Math.random() - 0.5) * 22, surfaceY - 2, color, 'foam', {
-        vx: (Math.random() - 0.5) * 16,
-        vy: 12 + Math.random() * 24,
-        life: 0.45,
-        size: 2 + Math.random() * 2.5,
       });
     } else if (materialId === 'honeycomb' && Math.random() < dt * 5.5 * rateBoost) {
       this.drip(x + (Math.random() - 0.5) * 26, surfaceY, color, this.cap(2));
@@ -576,6 +567,7 @@ export class Particles {
     materialId: MaterialId,
   ): void {
     if (!this.allowContinuous) return;
+    if (materialId === 'jelly') return;
     const rates: Partial<Record<MaterialId, number>> = {
       jelly: 2.8,
       butter: 1.8,
@@ -757,6 +749,30 @@ export class Particles {
         vy: -20 - Math.random() * 40,
         life: 0.5 + Math.random() * 0.4,
         size: 2.5 + Math.random() * 2.5,
+      });
+    }
+  }
+
+  /** Gotas melecosas de gelatina caindo ao pisar */
+  jellySlimeDrops(x: number, y: number, color: string, platformW: number, impact = 1): void {
+    const spread = Math.max(28, platformW * 0.9);
+    const count = this.cap(10 + Math.floor(impact * 10));
+    for (let i = 0; i < count; i++) {
+      const t = count > 1 ? i / (count - 1) - 0.5 : 0;
+      this.spawn(x + t * spread + (Math.random() - 0.5) * 14, y + 2, color, 'drip', {
+        vx: (Math.random() - 0.5) * 22 + t * 8,
+        vy: -45 - Math.random() * 75 * impact,
+        life: 0.7 + Math.random() * 0.75,
+        size: 3.5 + Math.random() * 5,
+      });
+    }
+    for (let i = 0; i < this.cap(5); i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      this.spawn(x + side * spread * 0.42 + (Math.random() - 0.5) * 10, y, color, 'drip', {
+        vx: side * (10 + Math.random() * 20),
+        vy: -35 - Math.random() * 55,
+        life: 0.85 + Math.random() * 0.55,
+        size: 4 + Math.random() * 3.5,
       });
     }
   }
@@ -982,7 +998,11 @@ export class Particles {
       } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       } else if (p.type === 'drip') {
-        ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, sz + 1);
+        const blobW = Math.max(2, Math.round(sz * 0.9));
+        ctx.fillRect(Math.round(s.x), Math.round(s.y), blobW, sz + 2);
+        if (sz >= 4) {
+          ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) + sz + 1, blobW + 2, 2);
+        }
       } else {
         ctx.fillRect(Math.round(s.x - sz * 0.5), Math.round(s.y - sz * 0.5), sz, sz);
       }

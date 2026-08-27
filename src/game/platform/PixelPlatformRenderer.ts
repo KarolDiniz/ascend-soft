@@ -5,6 +5,7 @@ import { MATERIAL_LEDGE } from './ledgeSizes';
 import type { PlatformBehavior } from './behaviors';
 import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
+import { drawCheeseMouse } from './cheeseMouse';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -17,6 +18,8 @@ export interface PixelPlatformOverlay {
   squashX: number;
   squashY: number;
   personality?: PlatformPersonality;
+  cheeseMouseFleeT?: number;
+  cheeseMouseFleeY?: number;
 }
 
 function parseTone(c: string): [number, number, number] {
@@ -185,7 +188,7 @@ export function renderPixelPlatform(
   drawPersonalityTopProfile(args);
 
   drawShelfFrontFace(args);
-  drawHangingDetails(args);
+  if (material !== 'mochi' && material !== 'jelly') drawHangingDetails(args);
   drawRelaxSparkles(args);
 
   // Shared crack overlay for shatter materials
@@ -582,13 +585,9 @@ function drawJelly(a: DrawArgs): void {
   fillPx(ctx, x + u, sy + h - u, w - u * 2, u, mat.stroke);
 
   drawPressIndent(a);
-  drawIdleDrip(a, mat.particle, 0);
-  drawIdleDrip(a, mat.particle, 1.2);
-  drawIdleDrip(a, mat.particle, 2.4);
   drawSurfaceGrain(a, 10, mat.particle, 0.25);
   drawEdgeFlecks(a, 6, mat.particle);
   drawDebris(a, 5, mat.particle);
-  drawAmbientSpecks(a, 8, mat.particle);
 }
 
 /** Manteiga — laje larga, cantos retos, marcas de faca, derrete */
@@ -683,9 +682,23 @@ function drawCheese(a: DrawArgs): void {
     const hy = sy + h * ny + hop;
     fillPx(ctx, hx, hy, u * r, u * r, '#F7E8C8');
     fillPx(ctx, hx + u, hy + u, u * Math.max(1, r - 1), u * Math.max(1, r - 1), rgba(mat.stroke, 0.35));
-    // Hole rim crumb
     fillPx(ctx, hx - u, hy + u, u, u, rgba(mat.particle, 0.5));
   }
+  drawCheeseMouse(
+    ctx,
+    u,
+    seed,
+    time,
+    wobble,
+    x,
+    w,
+    sy,
+    h,
+    hop,
+    holes,
+    a.overlay?.cheeseMouseFleeT ?? 0,
+    a.overlay?.cheeseMouseFleeY ?? 0,
+  );
   const puff = Math.sin(time * 2.5 + wobble) * u;
   for (let i = 0; i < 8; i++) {
     fillPx(

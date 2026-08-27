@@ -9,6 +9,7 @@ import {
 } from './platform/behaviors';
 import { MATERIAL_LEDGE } from './platform/ledgeSizes';
 import { renderPixelPlatform } from './platform/PixelPlatformRenderer';
+import { hasCheeseMouse, isCheeseMouseFleeDone } from './platform/cheeseMouse';
 import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
 import { pickVariant } from './platform/PlatformVariant';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
@@ -74,6 +75,10 @@ export class Platform {
   /** Collision active (false during payoff shards) */
   solid = true;
   opacity = 1;
+  /** Ratinho no queijo: 0=espreita, >0=fugindo, -1=foi embora */
+  cheeseMouseFleeT = 0;
+  cheeseMouseFleeVy = 0;
+  cheeseMouseFleeY = 0;
   private wobble = Math.random() * Math.PI * 2;
   private events: PlatformEvent[] = [];
   private sandEmit = 0;
@@ -168,6 +173,11 @@ export class Platform {
         this.landedOnce = true;
         this.landCount += 1;
         this.onLandBehavior(impact);
+        if (this.material === 'mochi' && hasCheeseMouse(this.seed) && this.cheeseMouseFleeT === 0) {
+          this.cheeseMouseFleeT = 0.001;
+          this.cheeseMouseFleeVy = -6.5;
+          this.cheeseMouseFleeY = 0;
+        }
         if (this.fading) {
           this.fadeArmed = true;
           this.fadeLife = Math.min(this.fadeLife, 1.8);
@@ -251,6 +261,15 @@ export class Platform {
   update(dt: number, time: number): void {
     this.wobble += dt * (this.behavior === 'elastic' || this.behavior === 'sticky' ? 3.4 : 2.4);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 8);
+
+    if (this.cheeseMouseFleeT > 0) {
+      this.cheeseMouseFleeT += dt;
+      this.cheeseMouseFleeVy += 38 * dt;
+      this.cheeseMouseFleeY += this.cheeseMouseFleeVy * dt;
+      if (isCheeseMouseFleeDone(this.cheeseMouseFleeT, this.cheeseMouseFleeY, this.h)) {
+        this.cheeseMouseFleeT = -1;
+      }
+    }
 
     if (this.moving && this.solid) {
       this.x = this.baseX + Math.sin(time * this.moveSpeed + this.movePhase) * this.moveAmp;
@@ -477,6 +496,8 @@ export class Platform {
       squashY,
     };
 
+    const fleeScreenY = this.cheeseMouseFleeY * (screenH / Math.max(1, this.h));
+
     renderPixelPlatform(ctx, this.material, this.variant, mat, state, {
       crackLevel: this.crackLevel,
       meltProgress: this.meltProgress,
@@ -487,6 +508,8 @@ export class Platform {
       squashX,
       squashY,
       personality: this.personality,
+      cheeseMouseFleeT: this.cheeseMouseFleeT,
+      cheeseMouseFleeY: fleeScreenY,
     });
   }
 }

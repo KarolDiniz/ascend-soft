@@ -464,16 +464,18 @@ export class Game {
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
 
-      this.particles.landBurst(
-        this.player.x,
-        platformTop,
-        mat.particle,
-        mat.particleStyle,
-        impact,
-        perfect,
-        this.atmosphere.getAccent(),
-        p.material,
-      );
+      if (p.material !== 'jelly') {
+        this.particles.landBurst(
+          this.player.x,
+          platformTop,
+          mat.particle,
+          mat.particleStyle,
+          impact,
+          perfect,
+          this.atmosphere.getAccent(),
+          p.material,
+        );
+      }
 
       // Material-specific juice — cada item tem assinatura própria
       switch (p.material) {
@@ -518,8 +520,7 @@ export class Game {
           this.particles.meltRibbon(this.player.x, platformTop, mat.particle);
           break;
         case 'jelly':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 16, 'drip', false);
-          this.particles.drip(this.player.x, platformTop, mat.particle, 4);
+          this.particles.jellySlimeDrops(this.player.x, platformTop, mat.particle, p.w, impact);
           break;
         case 'citrus':
           this.particles.juiceArc(this.player.x, platformTop, mat.particle);
