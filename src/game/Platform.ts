@@ -8,6 +8,7 @@ import {
 } from './platform/behaviors';
 import { MATERIAL_LEDGE } from './platform/ledgeSizes';
 import { renderPixelPlatform } from './platform/PixelPlatformRenderer';
+import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
 import { pickVariant } from './platform/PlatformVariant';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
 
@@ -34,6 +35,7 @@ export class Platform {
   material: MaterialId;
   variant: PlatformVariant;
   variantDef: VariantDef;
+  personality: PlatformPersonality;
   behavior: PlatformBehavior;
   behaviorDef: BehaviorDef;
   moving: boolean;
@@ -92,6 +94,7 @@ export class Platform {
     this.h = 16;
     this.material = opts.material;
     this.seed = opts.seed ?? Math.random() * 10000;
+    this.personality = buildPlatformPersonality(this.seed, this.material);
     this.variantDef = pickVariant(this.material, makeRand(this.seed));
     const ledge = MATERIAL_LEDGE[this.material];
     this.variantDef = {
@@ -476,6 +479,7 @@ export class Platform {
       pressAmount: Math.max(0, this.pressAmount),
       squashX,
       squashY,
+      personality: this.personality,
     });
   }
 }

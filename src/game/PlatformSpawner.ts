@@ -72,10 +72,10 @@ export class PlatformSpawner {
     this.lastDir = 1;
 
     // Starters: butter-only intro — cozy, readable, always reachable
-    const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
-      { x: 0, y: 0, w: 62, material: 'butter' },
-      { x: -40, y: 56, w: 56, material: 'butter' },
-      { x: 38, y: 112, w: 58, material: 'butter' },
+    const starters: { x: number; y: number; w: number; material: MaterialId; seed: number }[] = [
+      { x: 0, y: 0, w: 62, material: 'butter', seed: 101 },
+      { x: -40, y: 56, w: 56, material: 'butter', seed: 202 },
+      { x: 38, y: 112, w: 58, material: 'butter', seed: 303 },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
@@ -222,6 +222,7 @@ export class PlatformSpawner {
         moving,
         fading,
         moveAmp: moving ? moveAmp : 0,
+        seed: height * 31.7 + this.platforms.length * 997 + material.charCodeAt(0),
       }),
     );
     this.highestY = y;

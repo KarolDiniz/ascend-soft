@@ -3,6 +3,7 @@ import { PASTEL, rgba } from '../../theme/pastelPalette';
 import { PIXEL, fillPx, px } from '../../theme/pixel';
 import { MATERIAL_LEDGE } from './ledgeSizes';
 import type { PlatformBehavior } from './behaviors';
+import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -14,11 +15,34 @@ export interface PixelPlatformOverlay {
   pressAmount: number;
   squashX: number;
   squashY: number;
+  personality?: PlatformPersonality;
 }
 
-function seeded(seed: number, i: number): number {
-  const x = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
-  return x - Math.floor(x);
+function parseTone(c: string): [number, number, number] {
+  if (c.startsWith('#')) {
+    const n = parseInt(c.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (m) return [+m[1], +m[2], +m[3]];
+  return [200, 200, 200];
+}
+
+function shiftTone(color: string, shift: number): string {
+  const [r, g, b] = parseTone(color);
+  const a = shift * 32;
+  return `rgb(${Math.max(0, Math.min(255, Math.round(r + a)))},${Math.max(0, Math.min(255, Math.round(g + a * 0.92)))},${Math.max(0, Math.min(255, Math.round(b + a * 0.78)))})`;
+}
+
+function tonedMat(mat: MaterialDef, shift: number): MaterialDef {
+  if (Math.abs(shift) < 0.01) return mat;
+  return {
+    ...mat,
+    fill: shiftTone(mat.fill, shift),
+    stroke: shiftTone(mat.stroke, shift * 0.85),
+    particle: shiftTone(mat.particle, shift * 0.7),
+    glow: mat.glow,
+  };
 }
 
 /**
@@ -36,6 +60,7 @@ export function renderPixelPlatform(
   const u = PIXEL.unit;
   const melt = overlay?.meltProgress ?? 0;
   const integrity = overlay?.integrity ?? 1;
+  const personality = overlay?.personality;
   const ledge = MATERIAL_LEDGE[material];
   const cx = s.cx;
   const sy = s.surfaceY;
@@ -54,10 +79,25 @@ export function renderPixelPlatform(
   ctx.globalAlpha = s.opacity;
   ctx.imageSmoothingEnabled = false;
 
-  // Shadow (shape-aware width)
-  fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, rgba(PASTEL.inkSoft, 0.22));
+  const shadowA = personality ? 0.28 + Math.abs(personality.toneShift) * 0.12 : 0.22;
+  fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, rgba(PASTEL.inkSoft, shadowA));
 
-  const args = { ctx, cx, sy, w, h, mat, u, seed: s.seed, time: s.time, wobble: s.wobble, overlay, melt };
+  const matT = tonedMat(mat, personality?.toneShift ?? 0);
+  const args = {
+    ctx,
+    cx,
+    sy,
+    w,
+    h,
+    mat: matT,
+    u,
+    seed: s.seed,
+    time: s.time,
+    wobble: s.wobble,
+    overlay,
+    melt,
+    personality,
+  };
 
   switch (material) {
     case 'jelly':
@@ -124,6 +164,10 @@ export function renderPixelPlatform(
       drawButter(args);
   }
 
+  drawShelfFrontFace(args);
+  drawHangingDetails(args);
+  drawRelaxSparkles(args);
+
   // Shared crack overlay for shatter materials
   const crack = overlay?.crackLevel ?? 0;
   if (
@@ -168,39 +212,151 @@ type DrawArgs = {
   wobble: number;
   overlay?: PixelPlatformOverlay;
   melt: number;
+  personality?: PlatformPersonality;
 };
 
-/** Static debris chips at base — shift slightly when pressed */
-function drawDebris(a: DrawArgs, count: number, color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, wobble } = a;
-  const press = a.overlay?.pressAmount ?? 0;
-  const baseY = sy + h;
+/** Front lip + under-shelf shadow for depth */
+function drawShelfFrontFace(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, u, mat, personality } = a;
+  const lip = u * (2 + (personality?.lipDepth ?? 1) * 1.5);
+  const x = cx - w / 2;
+  fillPx(ctx, x, sy + h - lip, w, lip, rgba(mat.stroke, 0.55));
+  fillPx(ctx, x + u, sy + h - lip + u * 0.5, w - u * 2, u, rgba(mat.fill, 0.75));
+  fillPx(ctx, x, sy + h, w, u, rgba(PASTEL.inkSoft, 0.18));
+}
+
+/** Penduricalhos únicos por prateleira */
+function drawHangingDetails(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
+  if (!personality) return;
+
+  const count = personality.hangCount;
+  const style = personality.hangStyle;
+  const lenMul = personality.hangLength;
+  const bias = personality.edgeBias;
+
   for (let i = 0; i < count; i++) {
-    const side = seeded(seed, i + 40) > 0.45 ? 1 : -1;
-    const spread = w * (0.22 + seeded(seed, i + 50) * 0.32);
-    const push = press * u * (2.5 + i * 0.6);
-    const fx = cx + side * spread + push * side;
-    const bob = Math.sin(time * 3.1 + i * 1.3 + wobble) * u * 0.45;
-    const sz = u * (1 + Math.floor(seeded(seed, i + 60) * 2.5));
-    fillPx(ctx, fx, baseY + u * 0.5 + bob, sz, sz, color);
-    // Micro satellite fleck
-    if (seeded(seed, i + 62) > 0.45) {
-      fillPx(ctx, fx + side * u * 2, baseY + u + bob, u, u, rgba(color, 0.55));
+    const t = (i + 0.5) / count + bias * 0.08 * (seeded(seed, i + 300) - 0.5);
+    const hx = cx - w * 0.42 + t * w * 0.84;
+    const sway = Math.sin(time * 2.2 + wobble + personality.wobblePhase + i * 1.4) * u * 1.8;
+    const baseY = sy + h + u;
+    const strandLen = u * (3 + Math.floor(seeded(seed, i + 310) * 5) * lenMul);
+
+    switch (style) {
+      case 0: {
+        // Gotas penduradas
+        fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
+        fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
+        if (Math.sin(time * 3 + i) > 0.2) {
+          fillPx(ctx, hx + sway, baseY + strandLen + u, u, u, rgba(mat.particle, 0.65));
+        }
+        break;
+      }
+      case 1: {
+        // Fios elásticos (chiclete / slime)
+        const pull = Math.sin(wobble * 1.5 + i) * u;
+        fillPx(ctx, hx + sway, baseY, u, strandLen + pull, mat.particle);
+        fillPx(ctx, hx + sway - u, baseY + strandLen + pull, u * 2, u, mat.stroke);
+        fillPx(ctx, hx + sway - u * 0.5, baseY + strandLen + pull + u, u, u, mat.fill);
+        break;
+      }
+      case 2: {
+        // Migalhas / pedacinhos
+        fillPx(ctx, hx + sway - u, baseY + u, u * 2, u, mat.particle);
+        fillPx(ctx, hx + sway + u * 0.5, baseY + u * 2, u, u * 2, mat.fill);
+        fillPx(ctx, hx + sway, baseY + u * 3 + Math.sin(time + i) * u, u, u, rgba(mat.stroke, 0.6));
+        break;
+      }
+      case 3: {
+        // Bolhinhas
+        const by = baseY + Math.sin(time * 1.8 + i) * u;
+        fillPx(ctx, hx + sway - u, by, u * 3, u * 3, rgba(mat.particle, 0.55));
+        fillPx(ctx, hx + sway, by + u, u, u, rgba(PASTEL.white, 0.65));
+        fillPx(ctx, hx + sway - u / 2, by + u * 3, u, u * 2, rgba(mat.particle, 0.4));
+        break;
+      }
+      case 4: {
+        // Pontas de espuma / nuvem
+        for (let row = 0; row < 3; row++) {
+          const tw = u * (2 + row);
+          fillPx(ctx, hx + sway - tw / 2, baseY + row * u, tw, u, row === 0 ? PASTEL.white : mat.fill);
+        }
+        fillPx(ctx, hx + sway - u, baseY - u, u * 2, u, rgba(PASTEL.white, 0.5));
+        break;
+      }
     }
   }
 }
 
-/** Twinkling 1px floaters around the platform (idle juice) */
-function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, wobble } = a;
+/** Partículas relaxantes bem visíveis ao redor da prateleira */
+function drawRelaxSparkles(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
+  const mul = personality?.sparkleMul ?? 1;
+  const count = scaledCount(14, mul, 8);
+
   for (let i = 0; i < count; i++) {
-    const phase = time * 3.6 + i * 2.1 + wobble;
-    if (Math.sin(phase) < -0.25) continue;
-    const fx = cx + (seeded(seed, i + 70) - 0.5) * w * 1.15;
-    const fy = sy - u * 2 - seeded(seed, i + 80) * h * 0.7 + Math.sin(phase * 1.5) * u * 1.6;
-    fillPx(ctx, fx, fy, u, u, rgba(color, 0.4 + seeded(seed, i + 90) * 0.5));
-    if (Math.sin(phase * 1.7) > 0.55) {
-      fillPx(ctx, fx + u, fy - u, u, u, rgba(PASTEL.white, 0.55));
+    const phase = time * 2.8 + i * 1.7 + wobble + (personality?.wobblePhase ?? 0);
+    const vis = 0.45 + (Math.sin(phase) + 1) * 0.28;
+    if (vis < 0.35) continue;
+
+    const side = seeded(seed, i + 400) > 0.5 ? 1 : -1;
+    const fx = cx + (seeded(seed, i + 410) - 0.5) * w * 1.2 + side * u * 2;
+    const drift = Math.sin(phase * 0.7) * u * 2.5;
+    const fy = sy - u * 2 - seeded(seed, i + 420) * h * 0.5 + drift;
+    const sz = u * (1 + (i % 3 === 0 ? 1 : 0));
+
+    fillPx(ctx, fx, fy, sz, sz, rgba(mat.particle, vis));
+    if (Math.sin(phase * 1.3) > 0.15) {
+      fillPx(ctx, fx + side * u, fy - u, u, u, rgba(PASTEL.white, vis * 0.85));
+    }
+
+    // Motes caindo devagar — ASMR relaxante
+    const fallT = (time * 0.35 + seeded(seed, i + 430)) % 1;
+    const fallY = sy + h + u * 2 + fallT * u * (6 + (i % 4));
+    fillPx(ctx, fx + Math.sin(phase) * u, fallY, u, u, rgba(mat.particle, (1 - fallT) * 0.55));
+  }
+}
+
+function seeded(seed: number, i: number): number {
+  const x = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/** Static debris chips at base — shift slightly when pressed */
+function drawDebris(a: DrawArgs, count: number, color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, time, wobble, personality } = a;
+  const press = a.overlay?.pressAmount ?? 0;
+  const n = scaledCount(count, personality?.debrisMul ?? 1, 3);
+  const baseY = sy + h;
+  for (let i = 0; i < n; i++) {
+    const side = seeded(seed, i + 40) > 0.45 ? 1 : -1;
+    const spread = w * (0.22 + seeded(seed, i + 50) * 0.38);
+    const push = press * u * (2.5 + i * 0.6);
+    const fx = cx + side * spread + push * side;
+    const bob = Math.sin(time * 3.1 + i * 1.3 + wobble) * u * 0.65;
+    const sz = u * (1 + Math.floor(seeded(seed, i + 60) * 3));
+    fillPx(ctx, fx, baseY + u * 0.5 + bob, sz, sz, color);
+    fillPx(ctx, fx + side * u * 1.5, baseY + u * 1.5 + bob, u, u, rgba(color, 0.65));
+    if (seeded(seed, i + 62) > 0.35) {
+      fillPx(ctx, fx + side * u * 2.5, baseY + u * 2 + bob, u, u, rgba(color, 0.5));
+    }
+  }
+}
+
+/** Twinkling floaters around the platform (idle juice) */
+function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, time, wobble, personality } = a;
+  const n = scaledCount(count, personality?.sparkleMul ?? 1, Math.max(5, count - 2));
+  for (let i = 0; i < n; i++) {
+    const phase = time * 3.6 + i * 2.1 + wobble + (personality?.wobblePhase ?? 0);
+    if (Math.sin(phase) < -0.45) continue;
+    const fx = cx + (seeded(seed, i + 70) - 0.5) * w * 1.25;
+    const fy = sy - u * 2 - seeded(seed, i + 80) * h * 0.85 + Math.sin(phase * 1.5) * u * 2.2;
+    const alpha = 0.55 + seeded(seed, i + 90) * 0.42;
+    fillPx(ctx, fx, fy, u, u, rgba(color, alpha));
+    if (Math.sin(phase * 1.7) > 0.35) {
+      fillPx(ctx, fx + u, fy - u, u, u, rgba(PASTEL.white, 0.72));
+      fillPx(ctx, fx - u * 0.5, fy + u * 0.5, u, u, rgba(color, alpha * 0.65));
     }
   }
 }
@@ -223,12 +379,18 @@ function drawSurfaceGrain(a: DrawArgs, count: number, color: string, alpha = 0.4
 
 /** Side flecks / rim crumbs on left+right edges */
 function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time } = a;
-  for (let i = 0; i < count; i++) {
+  const { ctx, cx, sy, w, h, u, seed, time, personality } = a;
+  const n = scaledCount(count, (personality?.debrisMul ?? 1) * 0.9, 4);
+  const bias = personality?.edgeBias ?? 0;
+  for (let i = 0; i < n; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const fy = sy + u * 2 + seeded(seed, i + 140) * (h - u * 4);
-    const bob = Math.sin(time * 2.2 + i) * u * 0.3;
-    fillPx(ctx, cx + side * (w * 0.48 + u), fy + bob, u, u, rgba(color, 0.5));
+    const bob = Math.sin(time * 2.2 + i) * u * 0.45;
+    const inset = w * 0.48 + bias * side * u * 2;
+    fillPx(ctx, cx + side * inset, fy + bob, u, u, rgba(color, 0.62));
+    if (seeded(seed, i + 145) > 0.4) {
+      fillPx(ctx, cx + side * (inset + u * 2), fy + u + bob, u, u, rgba(color, 0.45));
+    }
   }
 }
 
@@ -271,15 +433,16 @@ function drawPressIndent(a: DrawArgs): void {
 
 /** Animated drip strand from bottom edge */
 function drawIdleDrip(a: DrawArgs, color: string, phase = 0): void {
-  const { ctx, cx, sy, w, h, u, time, melt } = a;
+  const { ctx, cx, sy, w, h, u, time, melt, personality } = a;
   const press = a.overlay?.pressAmount ?? 0;
-  const pulse = 0.5 + Math.sin(time * 4.5 + phase) * 0.5;
-  const len = u * (2 + Math.floor((melt + pulse * 0.4 + press * 0.5) * 5));
-  const ox = cx + w * (0.08 + phase * 0.16);
+  const dripMul = personality?.dripMul ?? 1;
+  const pulse = 0.5 + Math.sin(time * 4.5 + phase + (personality?.wobblePhase ?? 0)) * 0.5;
+  const len = u * (2 + Math.floor((melt + pulse * 0.4 + press * 0.5) * 5 * dripMul));
+  const ox = cx + w * (0.08 + phase * 0.16) + (personality?.edgeBias ?? 0) * u * 2;
   fillPx(ctx, ox - u / 2, sy + h - u, u, len, color);
   fillPx(ctx, ox - u, sy + h - u + len, u * 2, u, color);
-  // Secondary bead falling
-  if (pulse > 0.65) {
+  fillPx(ctx, ox - u * 0.5, sy + h + len, u, u, rgba(color, 0.75));
+  if (pulse > 0.55) {
     fillPx(ctx, ox, sy + h + len + u, u, u, rgba(color, 0.7));
   }
 }
