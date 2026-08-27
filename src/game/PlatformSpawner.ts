@@ -74,9 +74,9 @@ export class PlatformSpawner {
 
     // Starters: readable vertical + horizontal spacing, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
-      { x: 0, y: 0, w: 132, material: 'butter' },
-      { x: -48, y: 58, w: 100, material: 'jelly' },
-      { x: 52, y: 118, w: 104, material: 'mochi' },
+      { x: 0, y: 0, w: 58, material: 'butter' },
+      { x: -42, y: 58, w: 48, material: 'jelly' },
+      { x: 44, y: 118, w: 50, material: 'mochi' },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
