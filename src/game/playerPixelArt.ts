@@ -85,6 +85,31 @@ export function drawPlayerDefeatCloud(
   fillPx(ctx, -u * 2, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.45));
 }
 
+/** Galo rosado na cabeça — machucado de queda, só tela game over */
+export function drawPlayerDefeatHeadBump(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT = 0,
+): void {
+  const wobble = Math.sin(animT * 4.5) * u * 0.2;
+  const bx = bw * 0.08 + wobble;
+  const by = -bh * 0.41;
+  const bruise = rgba(PASTEL.rose, 0.96);
+  const bruiseHi = rgba('#F8D0D8', 0.92);
+  const bruiseLo = rgba('#C97A8A', 0.94);
+  const bruiseInk = rgba('#B86A7A', 0.55);
+
+  fillPx(ctx, bx - u * 2, by + u, u * 4, u * 2, bruiseLo);
+  fillPx(ctx, bx - u * 2.5, by - u * 0.5, u * 5, u * 3, bruise);
+  fillPx(ctx, bx - u * 2, by - u * 1.5, u * 4, u * 2, bruise);
+  fillPx(ctx, bx - u * 1.5, by - u * 2.5, u * 3, u * 2, bruiseHi);
+  fillPx(ctx, bx - u * 0.5, by - u * 2, u, u, rgba(PASTEL.white, 0.48));
+  fillPx(ctx, bx - u * 2.5, by + u, u, u, bruiseInk);
+  fillPx(ctx, bx + u * 1.5, by, u, u, bruiseInk);
+  fillPx(ctx, bx - u * 3, by + u * 0.5, u * 2, u, rgba(PASTEL.coral, 0.35));
+}
+
 function bodyColorForRow(index: number, total: number): string {
   if (index <= 1) return PLAYER_PASTEL.bodyTop;
   if (index >= total - 2) return PLAYER_PASTEL.bodyBot;
@@ -230,8 +255,6 @@ export function drawPlayerPixelFace(
   fillPx(ctx, u * 4, blushY + u, u, u, blush);
 
   if (defeatSad) {
-    fillPx(ctx, eyeOff - u * 5 + look, eyeY - u * 2, u * 3, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u * 2, u * 3, u, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff - u * 3 + look, eyeY, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
