@@ -19,6 +19,25 @@ export interface SpriteOverlay {
   behavior: PlatformBehavior;
 }
 
+/** Isolated buffer so pastel wash never paints a box onto the world canvas */
+let tintCanvas: HTMLCanvasElement | null = null;
+let tintCtx: CanvasRenderingContext2D | null = null;
+
+function ensureTintBuffer(w: number, h: number): CanvasRenderingContext2D {
+  const cw = Math.max(1, Math.ceil(w));
+  const ch = Math.max(1, Math.ceil(h));
+  if (!tintCanvas) {
+    tintCanvas = document.createElement('canvas');
+    tintCtx = tintCanvas.getContext('2d');
+  }
+  if (!tintCtx) throw new Error('2d unavailable');
+  if (tintCanvas.width < cw || tintCanvas.height < ch) {
+    tintCanvas.width = cw;
+    tintCanvas.height = ch;
+  }
+  return tintCtx;
+}
+
 export function pickSpriteFrame(
   pressAmount: number,
   pressVel: number,
@@ -95,39 +114,58 @@ export function drawPlatformSprite(
   ctx.scale(state.squashX, state.squashY);
   ctx.translate(-anchorX, -anchorY);
 
-  ctx.drawImage(
+  // Compose sprite + washes offscreen so alpha stays sprite-shaped
+  const tctx = ensureTintBuffer(drawW, drawH);
+  tctx.setTransform(1, 0, 0, 1, 0, 0);
+  tctx.clearRect(0, 0, Math.ceil(drawW), Math.ceil(drawH));
+  tctx.globalCompositeOperation = 'source-over';
+  tctx.globalAlpha = 1;
+  tctx.drawImage(
     img,
     Math.min(frame, SPRITE_FRAMES - 1) * SPRITE_FRAME_W,
     0,
     SPRITE_FRAME_W,
     SPRITE_FRAME_H,
-    dx,
-    dy,
+    0,
+    0,
     drawW,
     drawH,
   );
 
-  // Soft pastel wash — only on opaque sprite pixels (no bounding-box square)
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.globalAlpha = state.opacity * 0.4;
-  ctx.fillStyle = mat.spriteWash;
-  ctx.fillRect(dx, dy, drawW, drawH);
-  ctx.globalAlpha = state.opacity * 0.14;
-  ctx.fillStyle = rgba(PASTEL.cream, 0.9);
-  ctx.fillRect(dx, dy, drawW, drawH);
-  ctx.globalCompositeOperation = 'source-over';
+  tctx.globalCompositeOperation = 'source-atop';
+  tctx.globalAlpha = 0.4;
+  tctx.fillStyle = mat.spriteWash;
+  tctx.fillRect(0, 0, drawW, drawH);
+  tctx.globalAlpha = 0.14;
+  tctx.fillStyle = rgba(PASTEL.cream, 0.9);
+  tctx.fillRect(0, 0, drawW, drawH);
 
   if (melt > 0.05) {
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = state.opacity * melt * 0.45;
-    const g = ctx.createLinearGradient(dx, dy, dx, dy + drawH);
+    tctx.globalAlpha = melt * 0.45;
+    const g = tctx.createLinearGradient(0, 0, 0, drawH);
     g.addColorStop(0, rgba(PASTEL.butter, 0.65));
     g.addColorStop(0.5, rgba(PASTEL.peach, 0.2));
     g.addColorStop(1, rgba(PASTEL.caramel, 0.12));
-    ctx.fillStyle = g;
-    ctx.fillRect(dx, dy, drawW, drawH);
-    ctx.globalCompositeOperation = 'source-over';
+    tctx.fillStyle = g;
+    tctx.fillRect(0, 0, drawW, drawH);
   }
+
+  if (overlay?.behavior === 'crumble' && (overlay.integrity ?? 1) < 0.95) {
+    tctx.globalAlpha = (1 - overlay.integrity) * 0.28;
+    tctx.fillStyle = rgba(PASTEL.caramelDeep, 0.45);
+    tctx.fillRect(0, 0, drawW, drawH);
+  }
+
+  if ((overlay?.flash ?? 0) > 0.05) {
+    tctx.globalAlpha = overlay!.flash * 0.65;
+    tctx.fillStyle = PASTEL.white;
+    tctx.fillRect(0, 0, drawW, drawH);
+  }
+
+  tctx.globalCompositeOperation = 'source-over';
+  tctx.globalAlpha = 1;
+
+  ctx.drawImage(tintCanvas!, 0, 0, drawW, drawH, dx, dy, drawW, drawH);
 
   const crack = overlay?.crackLevel ?? 0;
   if (crack > 0.05) {
@@ -145,22 +183,6 @@ export function drawPlatformSprite(
       ctx.lineTo(anchorX - drawW * 0.32, anchorY + drawH * 0.55);
     }
     ctx.stroke();
-  }
-
-  if (overlay?.behavior === 'crumble' && (overlay.integrity ?? 1) < 0.95) {
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = state.opacity * (1 - overlay.integrity) * 0.28;
-    ctx.fillStyle = rgba(PASTEL.caramelDeep, 0.45);
-    ctx.fillRect(dx, dy, drawW, drawH);
-    ctx.globalCompositeOperation = 'source-over';
-  }
-
-  if ((overlay?.flash ?? 0) > 0.05) {
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = state.opacity * overlay!.flash * 0.65;
-    ctx.fillStyle = PASTEL.white;
-    ctx.fillRect(dx, dy, drawW, drawH);
-    ctx.globalCompositeOperation = 'source-over';
   }
 
   if (sheet.source === 'ai' && pressed > 0.25 && melt < 0.3) {
