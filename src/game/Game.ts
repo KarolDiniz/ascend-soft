@@ -13,6 +13,7 @@ import { ShardField } from './platform/ShardVfx';
 import { PlatformSpawner } from './PlatformSpawner';
 import { Player } from './Player';
 import { REACH } from './physics';
+import { materialMood } from './ThemedPhases';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
@@ -121,6 +122,11 @@ export class Game {
     this.resetRun();
     this.state = 'playing';
     this.hud.showPlaying(this.best);
+    const z = this.atmosphere.getPrimaryZone();
+    const pal = this.atmosphere.getPalette();
+    this.hud.showPhaseToast(z.label, z.quote);
+    this.hud.setPhaseStrip(z.label, pal.accent);
+    this.hud.setAmbientColors(pal.top, pal.mid);
   }
 
   retry(): void {
@@ -137,7 +143,7 @@ export class Game {
     this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
-    this.atmosphere.update(0, 0);
+    this.atmosphere.resetForHeight(0);
     this.height = 0;
     this.breathCount = 0;
     this.perfectStreak = 0;
@@ -201,11 +207,29 @@ export class Game {
 
     if (this.atmosphere.biomeEntered && this.state === 'playing') {
       const z = this.atmosphere.getPrimaryZone();
+      const pal = this.atmosphere.getPalette();
       this.ambient.biomeBurst(this.player.x, this.player.y, this.atmosphere);
-      this.addFloater(this.player.x, this.player.y + 50, z.label, this.atmosphere.getAccent());
-      this.hud.showMaterialToast(z.label);
+      this.addFloater(this.player.x, this.player.y + 50, z.quote, this.atmosphere.getAccent());
+      this.hud.showPhaseToast(z.label, z.quote);
+      this.hud.setPhaseStrip(z.label, this.atmosphere.getAccent());
+      this.hud.setAmbientColors(pal.top, pal.mid);
       this.audio.playBiomeEnter(z.id);
-      this.screenPunch = Math.max(this.screenPunch, 0.25);
+      this.screenPunch = Math.max(this.screenPunch, 0.32);
+      this.particles.burst(
+        this.player.x,
+        this.player.y + 30,
+        this.atmosphere.getAccent(),
+        14,
+        'glitter',
+        false,
+      );
+    }
+
+    if (this.state === 'playing') {
+      const z = this.atmosphere.getPrimaryZone();
+      const pal = this.atmosphere.getPalette();
+      this.hud.setPhaseStrip(z.label, pal.accent);
+      this.hud.setAmbientColors(pal.top, pal.mid);
     }
 
     if (this.screenPunch > 0) this.screenPunch = Math.max(0, this.screenPunch - dt * 4);
@@ -551,7 +575,7 @@ export class Game {
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);
         this.particles.meltRibbon(p.x, p.surfaceY, mat.particle);
-        if (this.atmosphere.primaryId === 'bakery' || this.atmosphere.primaryId === 'spa') {
+        if (materialMood(this.atmosphere.primaryId) === 'food' || materialMood(this.atmosphere.primaryId) === 'soap') {
           this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 3, 'foam', false);
         }
         if (Math.random() > 0.6) this.audio.playMeltDrip();
@@ -569,7 +593,7 @@ export class Game {
       case 'shatter':
         this.shards.burst(p.x, p.surfaceY, ev.color, 16, p.w * 0.65);
         this.particles.shatterFollowThrough(p.x, p.surfaceY, mat.particle, this.atmosphere.getAccent());
-        if (this.atmosphere.primaryId === 'frost') {
+        if (materialMood(this.atmosphere.primaryId) === 'frost') {
           this.particles.burst(p.x, p.surfaceY, '#d0e8f8', 10, 'glitter', false);
         }
         this.audio.playShatter();
@@ -598,7 +622,7 @@ export class Game {
       case 'squeeze':
         this.particles.juiceArc(p.x, p.surfaceY, mat.particle);
         this.particles.burst(p.x, p.surfaceY, mat.particle, 6, 'zest', false, this.atmosphere.getAccent());
-        if (this.atmosphere.primaryId === 'garden' || this.atmosphere.primaryId === 'bakery') {
+        if (materialMood(this.atmosphere.primaryId) === 'food') {
           this.particles.burst(p.x, p.surfaceY + 8, '#ffd0e0', 3, 'foam', false);
         }
         this.audio.playSqueeze();

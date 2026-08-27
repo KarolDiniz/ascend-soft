@@ -1,4 +1,5 @@
 import type { MaterialId } from './materials';
+import { PHASE_ORDER } from '../game/ThemedPhases';
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -463,20 +464,13 @@ export class AudioBus {
     });
   }
 
-  /** Soft whoosh / chime when entering a new altitude biome */
-  playBiomeEnter(zoneId: string): void {
+  /** Soft whoosh / chime when entering a new themed phase */
+  playBiomeEnter(zoneId: MaterialId): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const base =
-        zoneId === 'garden'
-          ? 392
-          : zoneId === 'bakery'
-            ? 440
-            : zoneId === 'spa'
-              ? 494
-              : zoneId === 'frost'
-                ? 523
-                : 349;
+      const idx = PHASE_ORDER.indexOf(zoneId);
+      const step = idx >= 0 ? idx : 0;
+      const base = 349 + step * 18;
       this.noiseBurst(ctx, sfx, 0.18, 900, 0.045, t, 'bandpass');
       this.tone(ctx, sfx, 'sine', base, base * 1.5, 0.35, 0.06, t);
       this.tone(ctx, sfx, 'triangle', base * 1.5, base * 2, 0.28, 0.035, t + 0.04);

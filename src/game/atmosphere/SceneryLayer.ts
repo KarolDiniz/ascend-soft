@@ -1,7 +1,7 @@
 import { ALTITUDE_ZONES, type DecorKind, type ZoneId } from './AltitudeZones';
 import type { Atmosphere } from './Atmosphere';
+import { materialSceneryColors } from '../ThemedPhases';
 import { drawDecor } from './BiomeDecor';
-import { BIOME_PASTEL } from '../../theme/pastelPalette';
 
 interface SceneryProp {
   zoneId: ZoneId;
@@ -25,11 +25,12 @@ interface BiomeSpriteSet {
 }
 
 const PARALLAX = [0.05, 0.1, 0.18, 0.26];
-const PROP_COUNT = 60;
+const PROP_COUNT = 80;
 const FADE_SPEED = 1.15;
+const START_ZONE: ZoneId = 'butter';
 
 function zoneColors(id: ZoneId): string[] {
-  return BIOME_PASTEL[id].scenery;
+  return materialSceneryColors(id);
 }
 
 export class SceneryLayer {
@@ -49,7 +50,7 @@ export class SceneryLayer {
     this.props.length = 0;
     let i = 0;
     for (const zone of ALTITUDE_ZONES) {
-      const perZone = Math.floor(PROP_COUNT / ALTITUDE_ZONES.length);
+      const perZone = Math.max(3, Math.floor(PROP_COUNT / ALTITUDE_ZONES.length));
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
         const layer = (k % 4) as 0 | 1 | 2 | 3;
@@ -58,19 +59,18 @@ export class SceneryLayer {
           zoneId: zone.id,
           kind,
           nx: (i * 0.17 + k * 0.23 + Math.random() * 0.1) % 1,
-          ny: (0.12 + ((i * 0.31 + k * 0.19) % 0.76)),
+          ny: 0.12 + ((i * 0.31 + k * 0.19) % 0.76),
           scale: layer < 2 ? 70 + Math.random() * 90 : 40 + Math.random() * 55,
           layer,
           phase: Math.random() * Math.PI * 2,
           speed: 0.35 + Math.random() * 0.55,
           color: colors[k % colors.length],
-          alpha: zone.id === 'garden' ? 0.85 : 0,
-          targetAlpha: zone.id === 'garden' ? 0.85 : 0,
+          alpha: zone.id === START_ZONE ? 0.85 : 0,
+          targetAlpha: zone.id === START_ZONE ? 0.85 : 0,
         });
         i++;
       }
     }
-    // Hero midground props (1–2 large per zone)
     for (const zone of ALTITUDE_ZONES) {
       const hero = zone.scenery[0];
       const colors = zoneColors(zone.id);
@@ -84,8 +84,8 @@ export class SceneryLayer {
         phase: Math.random() * 10,
         speed: 0.25 + Math.random() * 0.2,
         color: colors[0],
-        alpha: zone.id === 'garden' ? 0.9 : 0,
-        targetAlpha: zone.id === 'garden' ? 0.9 : 0,
+        alpha: zone.id === START_ZONE ? 0.9 : 0,
+        targetAlpha: zone.id === START_ZONE ? 0.9 : 0,
       });
       this.props.push({
         zoneId: zone.id,
@@ -97,8 +97,8 @@ export class SceneryLayer {
         phase: Math.random() * 10,
         speed: 0.3 + Math.random() * 0.25,
         color: colors[1],
-        alpha: zone.id === 'garden' ? 0.85 : 0,
-        targetAlpha: zone.id === 'garden' ? 0.85 : 0,
+        alpha: zone.id === START_ZONE ? 0.85 : 0,
+        targetAlpha: zone.id === START_ZONE ? 0.85 : 0,
       });
     }
   }
@@ -136,7 +136,7 @@ export class SceneryLayer {
     for (const p of this.props) {
       const w = weights.get(p.zoneId) ?? 0;
       const layerMul = this.skipFar && p.layer < 2 ? 0 : 1;
-      p.targetAlpha = w * 0.9 * layerMul;
+      p.targetAlpha = w * 0.95 * layerMul;
       const diff = p.targetAlpha - p.alpha;
       p.alpha += Math.sign(diff) * Math.min(Math.abs(diff), FADE_SPEED * dt);
       p.phase += dt * p.speed;
@@ -229,12 +229,11 @@ export class SceneryLayer {
       const band = h + p.scale * 2;
       const y = ((((p.ny * h + scroll + bob) % band) + band) % band) - p.scale;
 
-      // Early out roughly offscreen
       if (y < -p.scale * 2 || y > h + p.scale * 2) continue;
       if (x < -p.scale * 2 || x > w + p.scale * 2) continue;
 
       ctx.save();
-      ctx.globalAlpha = p.alpha * (0.55 + p.layer * 0.1);
+      ctx.globalAlpha = p.alpha * (0.62 + p.layer * 0.1);
       drawDecor(ctx, p.kind, x, y, p.scale, p.phase, p.color);
       ctx.restore();
     }

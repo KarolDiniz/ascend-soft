@@ -30,13 +30,14 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg-a);
+  background: linear-gradient(180deg, var(--bg-a) 0%, var(--bg-b) 100%);
   color: var(--ink);
   font-family: 'Nunito', system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
   user-select: none;
   image-rendering: pixelated;
+  transition: background 0.8s ease;
 }
 
 #app {
@@ -147,17 +148,93 @@ body {
 .material-toast {
   position: absolute;
   left: 50%;
-  top: calc(22% + var(--safe-top));
+  top: calc(18% + var(--safe-top));
   transform: translateX(-50%);
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.65rem;
-  color: var(--ink);
-  padding: 0.55rem 0.9rem;
-  background: rgba(255, 250, 245, 0.88);
+  max-width: min(92vw, 420px);
+  text-align: center;
+  padding: 0.65rem 1rem 0.75rem;
+  background: rgba(255, 250, 245, 0.92);
   border: 3px solid var(--ink);
   box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.25);
   pointer-events: none;
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+.toast-phase {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  color: var(--ink);
+  margin-bottom: 0.45rem;
+  text-transform: lowercase;
+}
+
+.toast-quote {
+  display: block;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+.toast-quote.hidden {
+  display: none;
+}
+
+.phase-strip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + var(--safe-bottom));
+  transform: translateX(-50%);
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 252, 248, 0.78);
+  border: 2px solid var(--phase-accent, var(--butter));
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.18);
+  pointer-events: none;
+  transition:
+    border-color 0.6s ease,
+    background 0.6s ease;
+}
+
+.phase-strip-name {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.material-toast.toast-in {
+  animation: toast-in 0.35s steps(6) both;
+}
+
+.material-toast.toast-out {
+  animation: toast-out 0.4s steps(5) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
 }
 
 /* —— Title / overlays —— */

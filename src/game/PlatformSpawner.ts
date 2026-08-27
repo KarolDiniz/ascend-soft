@@ -1,4 +1,5 @@
-import { MATERIALS, pickMaterial, type MaterialId } from '../audio/materials';
+import type { MaterialId } from '../audio/materials';
+import { pickPhaseMaterial, phaseDifficultyScale } from './ThemedPhases';
 import { getBehaviorDef } from './platform/behaviors';
 import { rollLedgeWidth } from './platform/ledgeSizes';
 import { Platform } from './Platform';
@@ -58,7 +59,6 @@ export class PlatformSpawner {
   private worldHalfW = 180;
   private lastWasFading = false;
   private lastDir = 1;
-  private mortalStreak = 0;
 
   constructor(seed = Date.now()) {
     this.rand = mulberry32(seed);
@@ -70,18 +70,17 @@ export class PlatformSpawner {
     this.highestY = 0;
     this.lastWasFading = false;
     this.lastDir = 1;
-    this.mortalStreak = 0;
 
-    // Starters: readable vertical + horizontal spacing, always reachable
+    // Starters: butter-only intro — cozy, readable, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
-      { x: 0, y: 0, w: 58, material: 'butter' },
-      { x: -42, y: 58, w: 48, material: 'jelly' },
-      { x: 44, y: 118, w: 50, material: 'mochi' },
+      { x: 0, y: 0, w: 62, material: 'butter' },
+      { x: -40, y: 56, w: 56, material: 'butter' },
+      { x: 38, y: 112, w: 58, material: 'butter' },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
     }
-    this.highestY = 118;
+    this.highestY = 112;
   }
 
   update(playerY: number, cameraY: number, viewH: number): void {
@@ -96,7 +95,7 @@ export class PlatformSpawner {
 
   private spawnNext(): void {
     const height = this.highestY;
-    const difficulty = Math.min(1, height / 3200);
+    const difficulty = phaseDifficultyScale(height);
     const last = this.platforms[this.platforms.length - 1];
 
     const gapYMin = REACH.minGapY;
@@ -171,7 +170,7 @@ export class PlatformSpawner {
       }
     }
 
-    const material = this.pickFairMaterial(height);
+    const material = pickPhaseMaterial(height, this.rand);
     // Distinct ledge width per material identity
     w = rollLedgeWidth(material, this.rand);
     // Re-clamp X for new width
@@ -189,7 +188,8 @@ export class PlatformSpawner {
       x = Math.max(-maxX, Math.min(maxX, x));
     }
 
-    let moving = height > 380 && this.rand() < 0.1 + difficulty * 0.06;
+    let moving =
+      height > 380 && difficulty > 0.45 && this.rand() < 0.1 + difficulty * 0.06;
     let moveAmp = 10 + this.rand() * 8;
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
@@ -205,6 +205,7 @@ export class PlatformSpawner {
     if (
       !mortal &&
       height > 650 &&
+      difficulty > 0.5 &&
       !moving &&
       !this.lastWasFading &&
       this.rand() < 0.07 + difficulty * 0.04
@@ -225,28 +226,6 @@ export class PlatformSpawner {
     );
     this.highestY = y;
     this.lastWasFading = fading;
-    if (mortal) this.mortalStreak += 1;
-    else this.mortalStreak = 0;
-  }
-
-  /** Never 2+ mortals in a row; bias toward elastic early. */
-  private pickFairMaterial(height: number): MaterialId {
-    let material = pickMaterial(height, this.rand);
-    const elasticPool = (
-      ['jelly', 'mochi', 'marshmallow', 'sponge', 'butterSlime', 'clearSlime', 'keyboard'] as MaterialId[]
-    ).filter((id) => MATERIALS[id].unlockAt <= height);
-
-    if (this.mortalStreak >= 1 && elasticPool.length) {
-      return elasticPool[Math.floor(this.rand() * elasticPool.length)];
-    }
-    // Soft bias: ~40% elastic when available
-    if (this.rand() < 0.4 && elasticPool.length) {
-      return elasticPool[Math.floor(this.rand() * elasticPool.length)];
-    }
-    if (getBehaviorDef(material).mortal && this.mortalStreak >= 1 && elasticPool.length) {
-      return elasticPool[0];
-    }
-    return material;
   }
 
   private pickX(fromX: number, minGapX: number, maxGapX: number, w: number): number {

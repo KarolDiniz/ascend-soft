@@ -10,6 +10,10 @@ export class Hud {
   private fallScore: HTMLElement;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
+  private toastPhaseEl: HTMLElement;
+  private toastQuoteEl: HTMLElement;
+  private phaseStripEl: HTMLElement;
+  private phaseStripNameEl: HTMLElement;
   private toastTimer = 0;
   private leaveTimer = 0;
 
@@ -25,6 +29,10 @@ export class Hud {
     this.fallScore = document.getElementById('fall-score')!;
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
+    this.toastPhaseEl = document.getElementById('toast-phase')!;
+    this.toastQuoteEl = document.getElementById('toast-quote')!;
+    this.phaseStripEl = document.getElementById('phase-strip')!;
+    this.phaseStripNameEl = document.getElementById('phase-strip-name')!;
   }
 
   showTitle(best: number): void {
@@ -32,11 +40,11 @@ export class Hud {
     this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
+    this.phaseStripEl.classList.add('hidden');
     document.getElementById('app')?.classList.add('is-title');
     this.setTitleBest(best);
   }
 
-  /** Fade title out, then run callback (start run). */
   leaveTitle(onDone: () => void): void {
     if (this.titleScreen.classList.contains('hidden')) {
       onDone();
@@ -77,6 +85,7 @@ export class Hud {
     document.getElementById('app')?.classList.remove('is-title');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
+    this.phaseStripEl.classList.remove('hidden');
     this.bestEl.textContent = String(best);
     this.heightEl.textContent = '0';
     this.breathsEl.textContent = '0';
@@ -86,6 +95,7 @@ export class Hud {
 
   showFall(height: number, best: number): void {
     this.fallScreen.classList.remove('hidden');
+    this.phaseStripEl.classList.add('hidden');
     this.fallScore.innerHTML = `<span class="fall-height">${height}</span><span class="fall-meta">melhor ${best}</span>`;
   }
 
@@ -101,16 +111,35 @@ export class Hud {
     }
   }
 
+  /** Faixa persistente com o mundo atual */
+  setPhaseStrip(name: string, accent: string): void {
+    this.phaseStripNameEl.textContent = name;
+    this.phaseStripEl.style.setProperty('--phase-accent', accent);
+  }
+
+  /** Sincroniza cor da borda da página com a fase */
+  setAmbientColors(top: string, mid: string): void {
+    document.documentElement.style.setProperty('--bg-a', top);
+    document.documentElement.style.setProperty('--bg-b', mid);
+  }
+
   showMaterialToast(name: string): void {
-    this.toastEl.textContent = name;
+    this.showPhaseToast(name, '');
+  }
+
+  /** Toast de entrada de fase: nome + frase motivacional */
+  showPhaseToast(phaseName: string, quote: string): void {
+    this.toastPhaseEl.textContent = phaseName;
+    this.toastQuoteEl.textContent = quote;
+    this.toastQuoteEl.classList.toggle('hidden', !quote);
     this.toastEl.classList.remove('hidden', 'toast-out');
     this.toastEl.classList.add('toast-in');
     window.clearTimeout(this.toastTimer);
     this.toastTimer = window.setTimeout(() => {
       this.toastEl.classList.remove('toast-in');
       this.toastEl.classList.add('toast-out');
-      window.setTimeout(() => this.toastEl.classList.add('hidden'), 400);
-    }, 1400);
+      window.setTimeout(() => this.toastEl.classList.add('hidden'), 450);
+    }, quote ? 3200 : 1400);
   }
 
   setMuteLabel(muted: boolean): void {

@@ -1,3 +1,4 @@
+import { cyclicHeight } from '../ThemedPhases';
 import {
   ALTITUDE_ZONES,
   ZONE_BLEND,
@@ -49,8 +50,8 @@ export class Atmosphere {
   breathPeriod = 11;
   grainAlpha = 0.04;
   particleBudget = 180;
-  primaryId: ZoneId = 'garden';
-  private lastPrimary: ZoneId = 'garden';
+  primaryId: ZoneId = 'butter';
+  private lastPrimary: ZoneId = 'butter';
   /** True for one frame when crossing into a new primary zone */
   biomeEntered: ZoneId | null = null;
   /** Brightness flash 0→1 on biome enter */
@@ -59,6 +60,16 @@ export class Atmosphere {
   gustStrength = 0;
   private gustTimer = 3.5 + Math.random() * 2.5;
   private gustRemain = 0;
+
+  resetForHeight(h: number): void {
+    this.height = Math.max(0, h);
+    this.biomeEntered = null;
+    this.enterFlash = 0;
+    this.weights = this.computeWeights(this.height);
+    const primary = this.weights.reduce((a, b) => (b.weight > a.weight ? b : a)).zone;
+    this.primaryId = primary.id;
+    this.lastPrimary = primary.id;
+  }
 
   update(dt: number, height: number): void {
     this.height = Math.max(0, height);
@@ -118,14 +129,19 @@ export class Atmosphere {
   }
 
   private computeWeights(h: number): ZoneWeight[] {
+    const ch = cyclicHeight(h);
     const idx = zoneIndexAt(h);
     const cur = ALTITUDE_ZONES[idx];
-    const next = ALTITUDE_ZONES[idx + 1];
-    if (!next) return [{ zone: cur, weight: 1 }];
+    const nextIdx = (idx + 1) % ALTITUDE_ZONES.length;
+    const next = ALTITUDE_ZONES[nextIdx];
 
     const boundary = cur.maxY;
-    const t = Math.min(1, Math.max(0, (h - (boundary - ZONE_BLEND)) / (ZONE_BLEND * 2)));
+    const isLast = idx >= ALTITUDE_ZONES.length - 1;
+    const blendStart = isLast ? boundary - ZONE_BLEND * 2 : boundary - ZONE_BLEND;
+    const blendEnd = isLast ? boundary : boundary + ZONE_BLEND;
+    const t = Math.min(1, Math.max(0, (ch - blendStart) / (blendEnd - blendStart)));
     const s = t * t * (3 - 2 * t);
+
     if (s <= 0.02) return [{ zone: cur, weight: 1 }];
     if (s >= 0.98) return [{ zone: next, weight: 1 }];
     return [
@@ -192,4 +208,4 @@ export class Atmosphere {
     return this.weights.map((w) => `${w.zone.id}:${w.weight.toFixed(2)}`).join(' ');
   }
 }
-
+

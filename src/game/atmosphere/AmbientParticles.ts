@@ -1,3 +1,4 @@
+import { materialMood } from '../ThemedPhases';
 import type { Atmosphere } from './Atmosphere';
 import type { AmbientType } from './AltitudeZones';
 import { AMBIENT_PASTEL } from '../../theme/pastelPalette';
@@ -162,6 +163,7 @@ export class AmbientParticles {
     if (this.microAcc < 1) return;
     this.microAcc = 0;
     const id = atm.primaryId;
+    const mood = materialMood(id);
     const n = Math.floor(18 * this.densityScale);
     for (let i = 0; i < n; i++) {
       const p = this.allocScreen();
@@ -175,30 +177,21 @@ export class AmbientParticles {
       p.life = 0.7 + Math.random() * 0.5;
       p.maxLife = p.life;
       p.alpha = 0.4;
-      if (id === 'garden') {
-        p.type = Math.random() > 0.4 ? 'pollen' : 'petal';
-        p.color = p.type === 'pollen' ? AMBIENT_PASTEL.pollen : AMBIENT_PASTEL.petal;
-        p.y = viewH * 0.7 + Math.random() * 40;
-        p.vx = (Math.random() - 0.5) * 40;
-        p.vy = -50 - Math.random() * 40;
-        p.size = 3 + Math.random() * 4;
-      } else if (id === 'bakery') {
-        p.type = 'sprinkle';
-        p.color = SPRINKLE_COLORS[i % SPRINKLE_COLORS.length];
-        p.y = -10;
-        p.vx = (Math.random() - 0.5) * 30;
-        p.vy = 60 + Math.random() * 80;
-        p.size = 2 + Math.random() * 2;
-        p.life = 0.8;
-        p.maxLife = 0.8;
-      } else if (id === 'spa') {
+      if (mood === 'food') {
+        p.type = Math.random() > 0.45 ? 'sprinkle' : 'pollen';
+        p.color = p.type === 'sprinkle' ? SPRINKLE_COLORS[i % SPRINKLE_COLORS.length] : AMBIENT_PASTEL.pollen;
+        p.y = Math.random() > 0.5 ? -10 : viewH * 0.7 + Math.random() * 40;
+        p.vx = (Math.random() - 0.5) * 35;
+        p.vy = p.y < 0 ? 60 + Math.random() * 80 : -50 - Math.random() * 40;
+        p.size = 2 + Math.random() * 3;
+      } else if (mood === 'soap') {
         p.type = 'bubbleFloat';
         p.color = AMBIENT_PASTEL.bubble;
         p.y = viewH + 10;
         p.vx = (Math.random() - 0.5) * 25;
         p.vy = -70 - Math.random() * 50;
         p.size = 4 + Math.random() * 8;
-      } else if (id === 'frost') {
+      } else if (mood === 'frost') {
         p.type = 'snowMote';
         p.color = '#ffffff';
         p.y = -5;
@@ -206,7 +199,7 @@ export class AmbientParticles {
         p.vy = 40 + Math.random() * 50;
         p.size = 2 + Math.random() * 3;
         p.alpha = 0.55;
-      } else {
+      } else if (mood === 'ethereal') {
         p.type = 'lightOrb';
         p.color = AMBIENT_PASTEL.orb;
         p.y = -10;
@@ -214,6 +207,13 @@ export class AmbientParticles {
         p.vy = 35 + Math.random() * 40;
         p.size = 5 + Math.random() * 8;
         p.alpha = 0.28;
+      } else {
+        p.type = Math.random() > 0.5 ? 'sparkleIdle' : 'pollen';
+        p.color = AMBIENT_PASTEL.sparkle;
+        p.y = viewH * 0.5 + Math.random() * 30;
+        p.vx = (Math.random() - 0.5) * 40;
+        p.vy = -40 - Math.random() * 30;
+        p.size = 3 + Math.random() * 4;
       }
     }
   }
