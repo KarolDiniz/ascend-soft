@@ -426,21 +426,44 @@ export class Game {
         p.material,
       );
 
-      // Material-specific juice
-      if (p.material === 'glycerin' || p.material === 'iceSoap' || p.material === 'whipped') {
-        this.particles.risingBubbles(
-          this.player.x,
-          platformTop,
-          mat.particle,
-          p.material === 'whipped' ? 18 : 12,
-        );
-      }
-      if (p.behavior === 'sticky') {
-        this.particles.gumStretch(this.player.x, platformTop, mat.particle);
-        this.addFloater(this.player.x, platformTop + 16, 'gruda!', mat.particle);
-      }
-      if (p.material === 'mochi') {
-        this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'foam', false);
+      // Material-specific juice — cada item tem assinatura própria
+      switch (p.material) {
+        case 'glycerin':
+        case 'iceSoap':
+        case 'whipped':
+          this.particles.risingBubbles(
+            this.player.x,
+            platformTop,
+            mat.particle,
+            p.material === 'whipped' ? 20 : 14,
+          );
+          break;
+        case 'clearSlime':
+          this.particles.gumStretch(this.player.x, platformTop, mat.particle);
+          this.addFloater(this.player.x, platformTop + 16, 'gruda!', mat.particle);
+          break;
+        case 'mochi':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
+          break;
+        case 'butter':
+        case 'chocolate':
+        case 'honeycomb':
+          this.particles.drip(this.player.x, platformTop, mat.particle, 5);
+          break;
+        case 'jelly':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'drip', false);
+          break;
+        case 'citrus':
+          this.particles.juiceArc(this.player.x, platformTop, mat.particle);
+          break;
+        case 'kinetic':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'sand', false);
+          break;
+        case 'butterSlime':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'foam', false);
+          break;
+        default:
+          break;
       }
 
       this.audio.playLand(p.material, perfect, this.perfectStreak);

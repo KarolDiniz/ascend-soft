@@ -1,27 +1,37 @@
 import type { MaterialId } from '../../audio/materials';
 
-/** Playable ledge sizes — distinct silhouettes, still jump-reachable */
+/**
+ * Distinct playable sizes — silhouette must read uniquely at a glance.
+ * visualDepth drives body height; visualSpread stretches draw width.
+ */
 export const MATERIAL_LEDGE: Record<
   MaterialId,
   { minW: number; maxW: number; visualDepth: number; visualSpread: number }
 > = {
-  jelly: { minW: 90, maxW: 114, visualDepth: 1.15, visualSpread: 1.02 },
-  butter: { minW: 118, maxW: 148, visualDepth: 0.92, visualSpread: 1.04 },
-  /** queijo */
-  mochi: { minW: 96, maxW: 122, visualDepth: 1.08, visualSpread: 1.0 },
-  chocolate: { minW: 88, maxW: 112, visualDepth: 1.0, visualSpread: 1.0 },
-  citrus: { minW: 82, maxW: 106, visualDepth: 1.05, visualSpread: 1.02 },
-  honeycomb: { minW: 92, maxW: 118, visualDepth: 1.12, visualSpread: 1.0 },
-  /** sabonete */
-  glycerin: { minW: 84, maxW: 108, visualDepth: 0.95, visualSpread: 1.0 },
-  /** sabonete batido / espuma */
-  whipped: { minW: 94, maxW: 124, visualDepth: 1.35, visualSpread: 1.06 },
-  kinetic: { minW: 108, maxW: 138, visualDepth: 1.05, visualSpread: 1.08 },
-  /** sabonete gelo — estreito */
-  iceSoap: { minW: 68, maxW: 90, visualDepth: 0.98, visualSpread: 0.98 },
-  /** chiclete */
-  clearSlime: { minW: 78, maxW: 102, visualDepth: 1.02, visualSpread: 1.04 },
-  butterSlime: { minW: 100, maxW: 128, visualDepth: 1.1, visualSpread: 1.05 },
+  /** gelatina — média, alta, ondulada */
+  jelly: { minW: 86, maxW: 108, visualDepth: 1.45, visualSpread: 1.0 },
+  /** manteiga — bem larga e baixa */
+  butter: { minW: 124, maxW: 156, visualDepth: 0.78, visualSpread: 1.06 },
+  /** queijo — média-larga, furos */
+  mochi: { minW: 100, maxW: 128, visualDepth: 1.12, visualSpread: 1.02 },
+  /** chocolate — barra segmentada média */
+  chocolate: { minW: 92, maxW: 116, visualDepth: 0.95, visualSpread: 0.98 },
+  /** cítrico — mais estreita, cunha */
+  citrus: { minW: 78, maxW: 100, visualDepth: 1.2, visualSpread: 1.0 },
+  /** mel — média com células */
+  honeycomb: { minW: 94, maxW: 120, visualDepth: 1.25, visualSpread: 1.0 },
+  /** sabonete — barra clássica */
+  glycerin: { minW: 80, maxW: 104, visualDepth: 0.88, visualSpread: 0.98 },
+  /** espuma — larga e ALTA (picos) */
+  whipped: { minW: 100, maxW: 130, visualDepth: 1.75, visualSpread: 1.08 },
+  /** areia — bem larga, monte */
+  kinetic: { minW: 116, maxW: 150, visualDepth: 1.2, visualSpread: 1.12 },
+  /** gelo — estreita e rígida */
+  iceSoap: { minW: 64, maxW: 86, visualDepth: 1.05, visualSpread: 0.96 },
+  /** chiclete — compacta, irregular */
+  clearSlime: { minW: 72, maxW: 96, visualDepth: 0.95, visualSpread: 1.06 },
+  /** massa — média-larga, dobras */
+  butterSlime: { minW: 98, maxW: 126, visualDepth: 1.15, visualSpread: 1.04 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {
