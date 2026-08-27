@@ -111,7 +111,7 @@ export class Game {
   initTitle(): void {
     this.resetRun();
     this.state = 'title';
-    this.hud.showTitle();
+    this.hud.showTitle(this.best);
   }
 
   beginPlay(): void {
@@ -214,10 +214,12 @@ export class Game {
     }
 
     if (this.state === 'title') {
-      this.camera.follow(50 + Math.sin(this.time * 0.35) * 8, this.H * 0.12);
+      this.camera.follow(42 + Math.sin(this.time * 0.28) * 10, this.H * 0.14);
       this.camera.update(dt);
       for (const p of this.spawner.platforms) {
-        p.setPreviewSquash(0.15 + Math.sin(this.time * 2.2 + p.x * 0.05) * 0.12);
+        const wave = Math.sin(this.time * 2.05 + p.x * 0.04 + p.y * 0.01);
+        const soft = Math.sin(this.time * 0.9 + p.x * 0.02) * 0.06;
+        p.setPreviewSquash(0.2 + wave * 0.16 + soft);
         p.update(dt, this.time);
       }
       return;
@@ -653,8 +655,8 @@ export class Game {
     this.ambient.drawNear(ctx, this.toScreen);
 
     if (this.state === 'title') {
-      this.player.x = Math.sin(this.time * 0.55) * 18;
-      this.player.y = 30 + Math.sin(this.time * 1.1) * 5;
+      this.player.x = Math.sin(this.time * 0.48) * 22;
+      this.player.y = 28 + Math.sin(this.time * 1.05) * 7;
     }
     this.player.draw(ctx, this.toScreen);
 

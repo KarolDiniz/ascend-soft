@@ -5,11 +5,13 @@ export class Hud {
   private breathsEl: HTMLElement;
   private streakEl: HTMLElement;
   private titleScreen: HTMLElement;
+  private titleBestEl: HTMLElement;
   private fallScreen: HTMLElement;
   private fallScore: HTMLElement;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
   private toastTimer = 0;
+  private leaveTimer = 0;
 
   constructor() {
     this.root = document.getElementById('hud')!;
@@ -18,20 +20,58 @@ export class Hud {
     this.breathsEl = document.getElementById('hud-breaths')!;
     this.streakEl = document.getElementById('hud-streak')!;
     this.titleScreen = document.getElementById('title-screen')!;
+    this.titleBestEl = document.getElementById('title-best')!;
     this.fallScreen = document.getElementById('fall-screen')!;
     this.fallScore = document.getElementById('fall-score')!;
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
   }
 
-  showTitle(): void {
-    this.titleScreen.classList.remove('hidden');
+  showTitle(best: number): void {
+    window.clearTimeout(this.leaveTimer);
+    this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
+    this.setTitleBest(best);
+  }
+
+  /** Fade title out, then run callback (start run). */
+  leaveTitle(onDone: () => void): void {
+    if (this.titleScreen.classList.contains('hidden')) {
+      onDone();
+      return;
+    }
+    if (this.titleScreen.classList.contains('is-leaving')) return;
+    this.titleScreen.classList.add('is-leaving');
+    window.clearTimeout(this.leaveTimer);
+    this.leaveTimer = window.setTimeout(() => {
+      this.titleScreen.classList.add('hidden');
+      this.titleScreen.classList.remove('is-leaving');
+      onDone();
+    }, 280);
+  }
+
+  isTitleVisible(): boolean {
+    return !this.titleScreen.classList.contains('hidden');
+  }
+
+  isFallVisible(): boolean {
+    return !this.fallScreen.classList.contains('hidden');
+  }
+
+  private setTitleBest(best: number): void {
+    if (best > 0) {
+      this.titleBestEl.textContent = `melhor ${best}`;
+      this.titleBestEl.classList.remove('hidden');
+    } else {
+      this.titleBestEl.classList.add('hidden');
+    }
   }
 
   showPlaying(best: number): void {
+    window.clearTimeout(this.leaveTimer);
     this.titleScreen.classList.add('hidden');
+    this.titleScreen.classList.remove('is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
     this.bestEl.textContent = String(best);
@@ -71,7 +111,7 @@ export class Hud {
   }
 
   setMuteLabel(muted: boolean): void {
-    this.muteBtn.textContent = muted ? 'Som mudo' : 'Som ligado';
+    this.muteBtn.textContent = muted ? 'Mudo' : 'Som';
     this.muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
   }
 }

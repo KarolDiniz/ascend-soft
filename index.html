@@ -41,27 +41,39 @@
         <div id="material-toast" class="material-toast hidden" aria-live="polite"></div>
 
         <section id="title-screen" class="overlay title-screen">
-          <div class="title-glow" aria-hidden="true"></div>
-          <p class="eyebrow">torre sensorial</p>
-          <h1 class="brand">Ascend Soft</h1>
-          <p class="tagline">Pouse na manteiga. Ouça o sabonete. Suba de novo.</p>
-          <button id="btn-start" class="btn btn-primary btn-soap" type="button">Subir</button>
-          <div class="audio-row">
-            <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
-              Som ligado
-            </button>
-            <label class="volume">
-              <span class="sr-only">Volume</span>
-              <input id="volume" type="range" min="0" max="100" value="55" />
-            </label>
+          <div class="title-veil" aria-hidden="true"></div>
+
+          <div class="title-hero">
+            <p class="eyebrow">torre sensorial</p>
+            <h1 class="brand">Ascend<br />Soft</h1>
+            <p class="tagline">Pouse. Ouça. Suba de novo.</p>
+            <p id="title-best" class="title-best hidden" aria-live="polite"></p>
           </div>
-          <p class="hint">A / D ou toque nas laterais · Espaço ou centro para pular</p>
+
+          <div class="title-panel">
+            <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
+              Subir
+            </button>
+            <p class="press-blink" aria-hidden="true">aperte subir</p>
+            <div class="audio-row">
+              <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
+                Som
+              </button>
+              <label class="volume">
+                <span class="sr-only">Volume</span>
+                <input id="volume" type="range" min="0" max="100" value="55" />
+              </label>
+            </div>
+            <p class="hint">← → mover · espaço pular</p>
+          </div>
         </section>
 
         <section id="fall-screen" class="overlay fall-screen hidden">
-          <p class="fall-title">quase…</p>
-          <p id="fall-score" class="fall-score">altura 0</p>
-          <button id="btn-retry" class="btn btn-primary btn-soap" type="button">de novo</button>
+          <div class="title-panel fall-panel">
+            <p class="fall-title">quase…</p>
+            <p id="fall-score" class="fall-score">altura 0</p>
+            <button id="btn-retry" class="btn btn-primary btn-soap" type="button">de novo</button>
+          </div>
         </section>
       </div>
     </div>
