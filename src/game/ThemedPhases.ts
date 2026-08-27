@@ -2,8 +2,7 @@ import { MATERIALS, type MaterialId } from '../audio/materials';
 import { MATERIAL_PASTEL, materialDetailStroke, PASTEL, rgba } from '../theme/pastelPalette';
 
 /**
- * Ordem das fases temáticas — começa em manteiga (starters + mundo inicial).
- * Independente de MATERIAL_ORDER (usado só para unlock legado).
+ * Catálogo completo de materiais/fases — ordem de gameplay vem de PhaseRunOrder (embaralhada por run).
  */
 export const PHASE_ORDER: MaterialId[] = [
   'butter',
@@ -108,10 +107,6 @@ export function phaseIndexAt(height: number): number {
   return Math.min(PHASE_COUNT - 1, Math.floor(cyclicHeight(height) / PHASE_HEIGHT));
 }
 
-export function phaseAt(height: number): MaterialId {
-  return PHASE_ORDER[phaseIndexAt(height)];
-}
-
 export function cycleCount(height: number): number {
   return Math.floor(Math.max(0, height) / CYCLE_LENGTH);
 }
@@ -131,33 +126,6 @@ export function phaseTransitionT(height: number): number {
   }
   const t = Math.min(1, Math.max(0, (ch - (boundary - PHASE_BLEND)) / (PHASE_BLEND * 2)));
   return t * t * (3 - 2 * t);
-}
-
-function blendProgress(ch: number, idx: number): number {
-  const boundary = (idx + 1) * PHASE_HEIGHT;
-  const isLast = idx >= PHASE_COUNT - 1;
-  const blendStart = isLast ? boundary - PHASE_BLEND * 2 : boundary - PHASE_BLEND;
-  const blendEnd = isLast ? boundary : boundary + PHASE_BLEND;
-  if (ch <= blendStart) return 0;
-  if (ch >= blendEnd) return 1;
-  // smootherstep — even softer than smoothstep
-  const t = (ch - blendStart) / (blendEnd - blendStart);
-  return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-/** Pick spawn material — 100% phase-themed with soft crossfade at boundaries. */
-export function pickPhaseMaterial(height: number, rand: () => number): MaterialId {
-  const ch = cyclicHeight(height);
-  const idx = phaseIndexAt(height);
-  const cur = PHASE_ORDER[idx];
-  const nextIdx = (idx + 1) % PHASE_COUNT;
-  const next = PHASE_ORDER[nextIdx];
-
-  const t = blendProgress(ch, idx);
-
-  if (t <= 0.02) return cur;
-  if (t >= 0.98) return next;
-  return rand() < t ? next : cur;
 }
 
 function darken(hex: string, amt: number): string {
@@ -494,8 +462,8 @@ export interface ThemedPhaseZone {
   particleBudget: number;
 }
 
-export function buildThemedZones(): ThemedPhaseZone[] {
-  return PHASE_ORDER.map((id, idx) => {
+export function buildThemedZonesForOrder(order: readonly MaterialId[]): ThemedPhaseZone[] {
+  return order.map((id, idx) => {
     const w = WIND[id];
     return {
       id,
@@ -517,6 +485,11 @@ export function buildThemedZones(): ThemedPhaseZone[] {
       particleBudget: w.particleBudget,
     };
   });
+}
+
+/** Ordem fixa — só para fallback / ferramentas */
+export function buildThemedZones(): ThemedPhaseZone[] {
+  return buildThemedZonesForOrder(PHASE_ORDER);
 }
 
 /** Material categories for contextual juice / particles. */

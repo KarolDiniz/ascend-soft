@@ -1,5 +1,6 @@
 import type { MaterialId } from '../audio/materials';
-import { pickPhaseMaterial, phaseDifficultyScale } from './ThemedPhases';
+import { pickPhaseMaterial } from './PhaseRunOrder';
+import { phaseDifficultyScale } from './ThemedPhases';
 import { getBehaviorDef } from './platform/behaviors';
 import { estimateLedgeWidth, rollLedgeWidth } from './platform/ledgeSizes';
 import { Platform } from './Platform';
@@ -64,18 +65,17 @@ export class PlatformSpawner {
     this.rand = mulberry32(seed);
   }
 
-  reset(worldHalfW: number): void {
+  reset(worldHalfW: number, starterMaterial: MaterialId = 'butter'): void {
     this.worldHalfW = worldHalfW;
     this.platforms = [];
     this.highestY = 0;
     this.lastWasFading = false;
     this.lastDir = 1;
 
-    // Starters: butter-only intro — cozy, readable, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId; seed: number }[] = [
-      { x: 0, y: 0, w: 72, material: 'butter', seed: 101 },
-      { x: -42, y: 56, w: 44, material: 'butter', seed: 202 },
-      { x: 36, y: 112, w: 58, material: 'butter', seed: 303 },
+      { x: 0, y: 0, w: 72, material: starterMaterial, seed: 101 },
+      { x: -42, y: 56, w: 44, material: starterMaterial, seed: 202 },
+      { x: 36, y: 112, w: 58, material: starterMaterial, seed: 303 },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));

@@ -14,6 +14,7 @@ import { isSoapBarMaterial } from './platform/soapColors';
 import { PlatformSpawner } from './PlatformSpawner';
 import { Player } from './Player';
 import { REACH } from './physics';
+import { PhaseRunOrder, setPhaseRun } from './PhaseRunOrder';
 import { materialMood } from './ThemedPhases';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
@@ -136,15 +137,20 @@ export class Game {
   }
 
   private resetRun(): void {
-    this.spawner = new PlatformSpawner(Date.now() ^ (Math.random() * 1e9));
+    const seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
+    const phaseRun = new PhaseRunOrder(seed);
+    setPhaseRun(phaseRun);
+
+    this.spawner = new PlatformSpawner(seed);
     this.spawner.setWorldHalfWidth(this.worldHalfW);
-    this.spawner.reset(this.worldHalfW);
+    this.spawner.reset(this.worldHalfW, phaseRun.starterMaterial());
     this.player.reset(0, 28);
     this.camera.snapTo(this.player.y, this.H * 0.15);
     this.particles.clear();
     this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
+    this.scenery.resetForRun(phaseRun.starterMaterial());
     this.atmosphere.resetForHeight(0);
     this.height = 0;
     this.breathCount = 0;

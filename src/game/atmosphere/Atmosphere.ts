@@ -1,6 +1,6 @@
 import { cyclicHeight } from '../ThemedPhases';
 import {
-  ALTITUDE_ZONES,
+  getAltitudeZones,
   ZONE_BLEND,
   zoneIndexAt,
   type AltitudeZone,
@@ -77,14 +77,14 @@ export class Atmosphere {
     const ease = 1 - Math.exp(-2.4 * dt);
     const targetMap = new Map<ZoneId, number>();
     for (const w of target) targetMap.set(w.zone.id, w.weight);
-    for (const z of ALTITUDE_ZONES) {
+    for (const z of getAltitudeZones()) {
       const goal = targetMap.get(z.id) ?? 0;
       const cur = this.smoothMap.get(z.id) ?? 0;
       this.smoothMap.set(z.id, cur + (goal - cur) * ease);
     }
 
     this.weights = [];
-    for (const z of ALTITUDE_ZONES) {
+    for (const z of getAltitudeZones()) {
       const w = this.smoothMap.get(z.id) ?? 0;
       if (w > 0.008) this.weights.push({ zone: z, weight: w });
     }
@@ -155,12 +155,13 @@ export class Atmosphere {
   private computeWeights(h: number): ZoneWeight[] {
     const ch = cyclicHeight(h);
     const idx = zoneIndexAt(h);
-    const cur = ALTITUDE_ZONES[idx];
-    const nextIdx = (idx + 1) % ALTITUDE_ZONES.length;
-    const next = ALTITUDE_ZONES[nextIdx];
+    const zones = getAltitudeZones();
+    const cur = zones[idx]!;
+    const nextIdx = (idx + 1) % zones.length;
+    const next = zones[nextIdx]!;
 
     const boundary = cur.maxY;
-    const isLast = idx >= ALTITUDE_ZONES.length - 1;
+    const isLast = idx >= zones.length - 1;
     const blendStart = isLast ? boundary - ZONE_BLEND * 2 : boundary - ZONE_BLEND;
     const blendEnd = isLast ? boundary : boundary + ZONE_BLEND;
     const s = smootherstep((ch - blendStart) / (blendEnd - blendStart));

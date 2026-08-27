@@ -1,4 +1,4 @@
-import { ALTITUDE_ZONES, type DecorKind, type ZoneId } from './AltitudeZones';
+import { getAltitudeZones, type DecorKind, type ZoneId } from './AltitudeZones';
 import type { Atmosphere } from './Atmosphere';
 import { materialSceneryColors } from '../ThemedPhases';
 import { rgba } from '../../theme/pastelPalette';
@@ -28,7 +28,6 @@ const PARALLAX = [0.05, 0.1, 0.18, 0.26];
 const PROP_COUNT = 110;
 /** Slow crossfade — scenery melts between phases */
 const FADE_SPEED = 0.32;
-const START_ZONE: ZoneId = 'butter';
 
 function zoneColors(id: ZoneId): string[] {
   return materialSceneryColors(id);
@@ -41,17 +40,25 @@ export class SceneryLayer {
   private skipFar = false;
   activeCount = 0;
   lastEmitterCount = 0;
+  private startZone: ZoneId = 'butter';
 
   constructor() {
-    this.seedProps();
+    this.seedProps(this.startZone);
     this.preloadSprites();
   }
 
-  private seedProps(): void {
+  /** Re-seed decor for a new run — first phase aleatória */
+  resetForRun(startMaterial: ZoneId): void {
+    this.startZone = startMaterial;
+    this.seedProps(startMaterial);
+  }
+
+  private seedProps(startZone: ZoneId): void {
+    const zones = getAltitudeZones();
     this.props.length = 0;
     let i = 0;
-    for (const zone of ALTITUDE_ZONES) {
-      const perZone = Math.max(4, Math.floor(PROP_COUNT / ALTITUDE_ZONES.length));
+    for (const zone of zones) {
+      const perZone = Math.max(4, Math.floor(PROP_COUNT / zones.length));
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
         const layer = (k % 4) as 0 | 1 | 2 | 3;
@@ -66,13 +73,13 @@ export class SceneryLayer {
           phase: Math.random() * Math.PI * 2,
           speed: 0.35 + Math.random() * 0.55,
           color: colors[k % colors.length],
-          alpha: zone.id === START_ZONE ? 0.85 : 0,
-          targetAlpha: zone.id === START_ZONE ? 0.85 : 0,
+          alpha: zone.id === startZone ? 0.85 : 0,
+          targetAlpha: zone.id === startZone ? 0.85 : 0,
         });
         i++;
       }
     }
-    for (const zone of ALTITUDE_ZONES) {
+    for (const zone of zones) {
       const hero = zone.scenery[0];
       const colors = zoneColors(zone.id);
       this.props.push({
@@ -85,8 +92,8 @@ export class SceneryLayer {
         phase: Math.random() * 10,
         speed: 0.25 + Math.random() * 0.2,
         color: colors[0],
-        alpha: zone.id === START_ZONE ? 0.9 : 0,
-        targetAlpha: zone.id === START_ZONE ? 0.9 : 0,
+        alpha: zone.id === startZone ? 0.9 : 0,
+        targetAlpha: zone.id === startZone ? 0.9 : 0,
       });
       this.props.push({
         zoneId: zone.id,
@@ -98,14 +105,14 @@ export class SceneryLayer {
         phase: Math.random() * 10,
         speed: 0.3 + Math.random() * 0.25,
         color: colors[1],
-        alpha: zone.id === START_ZONE ? 0.85 : 0,
-        targetAlpha: zone.id === START_ZONE ? 0.85 : 0,
+        alpha: zone.id === startZone ? 0.85 : 0,
+        targetAlpha: zone.id === startZone ? 0.85 : 0,
       });
     }
   }
 
   private preloadSprites(): void {
-    for (const z of ALTITUDE_ZONES) {
+    for (const z of getAltitudeZones()) {
       const set: BiomeSpriteSet = { far: null, mid: null, accent: null };
       for (const key of ['far', 'mid', 'accent'] as const) {
         const img = new Image();

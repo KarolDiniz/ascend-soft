@@ -1,6 +1,6 @@
 import type { MaterialId } from '../../audio/materials';
+import { getPhaseRun } from '../PhaseRunOrder';
 import {
-  buildThemedZones,
   cyclicHeight,
   PHASE_BLEND,
   PHASE_COUNT,
@@ -23,13 +23,13 @@ export type AltitudeZone = ThemedPhaseZone;
 /** Smooth blend at each phase boundary (240 units total). */
 export const ZONE_BLEND = PHASE_BLEND;
 
-/** 20 themed phases — one material per ~400 altitude units, cycling. */
-export const ALTITUDE_ZONES: AltitudeZone[] = buildThemedZones();
+/** Zonas da partida atual — ordem embaralhada por run */
+export function getAltitudeZones(): readonly AltitudeZone[] {
+  return getPhaseRun().zones;
+}
 
 export function zoneIndexAt(height: number): number {
-  const ch = cyclicHeight(height);
-  for (let i = 0; i < PHASE_COUNT; i++) {
-    if (ch < ALTITUDE_ZONES[i].maxY) return i;
-  }
-  return PHASE_COUNT - 1;
+  return getPhaseRun().phaseIndexAt(height);
 }
+
+export { cyclicHeight, PHASE_COUNT };

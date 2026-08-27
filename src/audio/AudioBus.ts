@@ -1,5 +1,5 @@
 import type { MaterialId } from './materials';
-import { PHASE_ORDER } from '../game/ThemedPhases';
+import { getPhaseRun } from '../game/PhaseRunOrder';
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -518,7 +518,7 @@ export class AudioBus {
   playBiomeEnter(zoneId: MaterialId): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const idx = PHASE_ORDER.indexOf(zoneId);
+      const idx = getPhaseRun().indexOf(zoneId);
       const step = idx >= 0 ? idx : 0;
       const base = 349 + step * 18;
       this.noiseBurst(ctx, sfx, 0.18, 900, 0.045, t, 'bandpass');
