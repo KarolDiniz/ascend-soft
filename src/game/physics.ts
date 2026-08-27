@@ -21,10 +21,15 @@ export const MAX_HORIZONTAL_REACH = PHYS.maxSpeed * MAX_AIR_TIME * 0.72;
 
 export const REACH = {
   maxGapY: MAX_JUMP_HEIGHT,
-  /** Min vertical gap so platforms don't stack awkwardly */
-  minGapY: 42,
+  /** Min vertical gap — keeps sprite bodies from stacking on each other */
+  minGapY: 54,
+  /** Prefer gaps in this band for readable rhythm */
+  comfortGapY: 62,
   maxCenterGapX: MAX_HORIZONTAL_REACH,
-  /** Extra slack using platform half-widths is applied in spawner */
+  /** Min center-to-center X so platforms don't nestle side-by-side */
+  minCenterGapX: 50,
+  /** Extra edge clearance (world units) between AABB boxes when projecting on X */
+  minEdgeClearance: 22,
   moveAmpMax: 18,
   fadeVisibleMin: 2.6,
 };

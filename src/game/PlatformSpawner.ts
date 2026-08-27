@@ -13,13 +13,40 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-/** Max center-to-center X gap that remains landable given widths. */
+/** Max center-to-center X gap that remains landable given widths + vertical cost. */
 function maxReachableCenterGap(fromW: number, toW: number, gapY: number): number {
-  // Vertical cost reduces horizontal budget (simple ellipse-ish reach)
-  const yFactor = 1 - Math.min(0.55, (gapY / REACH.maxGapY) * 0.55);
+  const yFactor = 1 - Math.min(0.5, (gapY / REACH.maxGapY) * 0.5);
   const widthBonus = fromW * 0.35 + toW * 0.35 - PHYS.playerHalfW;
   const base = REACH.maxCenterGapX * yFactor + Math.max(0, widthBonus);
-  return Math.max(48, Math.min(base, REACH.maxCenterGapX + 40));
+  return Math.max(REACH.minCenterGapX + 8, Math.min(base, REACH.maxCenterGapX + 36));
+}
+
+/** Minimum |dx| so AABBs (and a bit of visual overflow) don't look glued. */
+function minCenterGapX(fromW: number, toW: number, gapY: number): number {
+  // Edge clearance: centers must be at least half-widths + padding apart
+  const edgeSep = fromW / 2 + toW / 2 + REACH.minEdgeClearance;
+  // If vertical gap is generous, allow slightly closer horizontally
+  const yRelief = Math.max(0, (gapY - REACH.minGapY) / (REACH.maxGapY - REACH.minGapY));
+  const padded = edgeSep * (1 - yRelief * 0.22);
+  return Math.max(REACH.minCenterGapX, Math.min(padded, edgeSep));
+}
+
+function tooClose(
+  ax: number,
+  ay: number,
+  aw: number,
+  bx: number,
+  by: number,
+  bw: number,
+): boolean {
+  const dy = Math.abs(by - ay);
+  const dx = Math.abs(bx - ax);
+  if (dy < REACH.minGapY - 2) return true;
+  const minX = minCenterGapX(aw, bw, dy);
+  // Separation ellipse: if both axes are near-min, still too clustered
+  const nx = dx / Math.max(1, minX);
+  const ny = dy / Math.max(1, REACH.minGapY);
+  return nx * nx + ny * ny < 1.05;
 }
 
 export class PlatformSpawner {
@@ -41,15 +68,16 @@ export class PlatformSpawner {
     this.lastWasFading = false;
     this.lastDir = 1;
 
+    // Starters: readable vertical + horizontal spacing, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId }[] = [
-      { x: 0, y: 0, w: 150, material: 'butter' },
-      { x: -36, y: 58, w: 110, material: 'jelly' },
-      { x: 42, y: 112, w: 100, material: 'mochi' },
+      { x: 0, y: 0, w: 140, material: 'butter' },
+      { x: -48, y: 58, w: 100, material: 'jelly' },
+      { x: 52, y: 118, w: 96, material: 'mochi' },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
     }
-    this.highestY = 112;
+    this.highestY = 118;
   }
 
   update(playerY: number, cameraY: number, viewH: number): void {
@@ -65,67 +93,94 @@ export class PlatformSpawner {
   private spawnNext(): void {
     const height = this.highestY;
     const difficulty = Math.min(1, height / 3200);
-
     const last = this.platforms[this.platforms.length - 1];
 
-    // Difficulty changes rhythm/variety — NEVER exceeds reachable jump height
     const gapYMin = REACH.minGapY;
-    const gapYMax = REACH.maxGapY * (0.72 + difficulty * 0.2); // up to ~0.92 of max
-    let gapY = gapYMin + this.rand() * (gapYMax - gapYMin);
-    gapY = Math.min(gapY, REACH.maxGapY);
-    const y = this.highestY + gapY;
+    const gapYMax = Math.min(
+      REACH.maxGapY * 0.92,
+      REACH.comfortGapY + difficulty * (REACH.maxGapY - REACH.comfortGapY) * 0.85,
+    );
+    let gapY = gapYMin + this.rand() * Math.max(4, gapYMax - gapYMin);
+    gapY = Math.min(Math.max(gapY, REACH.minGapY), REACH.maxGapY);
 
-    const wMin = 72 - difficulty * 10;
-    const wMax = 118 - difficulty * 20;
+    const wMin = 70 - difficulty * 8;
+    const wMax = 112 - difficulty * 18;
     const w = Math.max(64, wMin + this.rand() * (wMax - wMin));
 
     const maxGapX = maxReachableCenterGap(last.w, w, gapY);
-    // Prefer continuing direction with occasional flip
-    if (this.rand() < 0.28) this.lastDir *= -1;
-    const desired = 22 + this.rand() * Math.max(10, maxGapX - 22);
-    let x = last.x + this.lastDir * desired;
+    const minGapX = Math.min(minCenterGapX(last.w, w, gapY), maxGapX * 0.92);
 
-    const margin = Math.max(w / 2 + 8, 36);
-    const maxX = this.worldHalfW - margin;
+    if (this.rand() < 0.3) this.lastDir *= -1;
 
-    // Reflect / pull toward last — never teleport to opposite wall
-    if (x > maxX) {
-      x = maxX;
-      this.lastDir = -1;
-      if (Math.abs(x - last.x) > maxGapX) {
-        x = last.x + Math.min(maxGapX * 0.85, maxX - last.x);
+    let x = this.pickX(last.x, minGapX, maxGapX, w);
+    let y = this.highestY + gapY;
+
+    // Resolve crowding vs recent platforms (N-1 and N-2), keep jumpable from last
+    for (let attempt = 0; attempt < 6; attempt++) {
+      let crowded = false;
+      const recent = this.platforms.slice(-3);
+      for (const p of recent) {
+        if (tooClose(p.x, p.y, p.w, x, y, w)) {
+          crowded = true;
+          break;
+        }
       }
-    } else if (x < -maxX) {
-      x = -maxX;
-      this.lastDir = 1;
-      if (Math.abs(x - last.x) > maxGapX) {
-        x = last.x - Math.min(maxGapX * 0.85, last.x + maxX);
-      }
+      if (!crowded) break;
+
+      // Prefer more vertical room first (still ≤ max jump), then nudge X
+      gapY = Math.min(REACH.maxGapY, gapY + 4 + this.rand() * 6);
+      y = this.highestY + gapY;
+      const maxX2 = maxReachableCenterGap(last.w, w, gapY);
+      const minX2 = Math.min(minCenterGapX(last.w, w, gapY), maxX2 * 0.92);
+      this.lastDir *= -1;
+      x = this.pickX(last.x, minX2, maxX2, w);
     }
 
-    // Final hard clamp on center distance
-    const dx = x - last.x;
-    if (Math.abs(dx) > maxGapX) {
-      x = last.x + Math.sign(dx || this.lastDir) * maxGapX * 0.92;
+    // Hard guarantee: reachable from previous platform
+    const finalMaxX = maxReachableCenterGap(last.w, w, y - last.y);
+    if (Math.abs(x - last.x) > finalMaxX) {
+      x = last.x + Math.sign(x - last.x || this.lastDir) * finalMaxX * 0.9;
+    }
+    if (y - last.y > REACH.maxGapY) {
+      y = last.y + REACH.maxGapY;
+    }
+    if (y - last.y < REACH.minGapY) {
+      y = last.y + REACH.minGapY;
+    }
+
+    // Ensure min horizontal separation from last after clamps
+    const needMinX = Math.min(minCenterGapX(last.w, w, y - last.y), finalMaxX * 0.9);
+    if (Math.abs(x - last.x) < needMinX) {
+      x = last.x + this.lastDir * needMinX;
+      const margin = Math.max(w / 2 + 8, 36);
+      const maxX = this.worldHalfW - margin;
+      if (x > maxX) {
+        x = last.x - needMinX;
+        this.lastDir = -1;
+      } else if (x < -maxX) {
+        x = last.x + needMinX;
+        this.lastDir = 1;
+      }
       x = Math.max(-maxX, Math.min(maxX, x));
+      // If still unreachable after wall bounce, pull back toward last within max
+      if (Math.abs(x - last.x) > finalMaxX) {
+        x = last.x + Math.sign(x - last.x) * finalMaxX * 0.88;
+      }
     }
 
     const material = pickMaterial(height, this.rand);
 
-    // Moving: small amp, and still reachable at worst extreme
     let moving = height > 380 && this.rand() < 0.1 + difficulty * 0.06;
     let moveAmp = 10 + this.rand() * 8;
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
       const worstDx = Math.abs(x - last.x) + moveAmp;
-      if (worstDx > maxGapX * 0.95) {
-        // Too risky — either shrink amp or disable
-        moveAmp = Math.max(0, maxGapX * 0.9 - Math.abs(x - last.x));
+      if (worstDx > finalMaxX * 0.95) {
+        moveAmp = Math.max(0, finalMaxX * 0.9 - Math.abs(x - last.x));
         if (moveAmp < 8) moving = false;
       }
     }
 
-    // Fading: never consecutive, generous visible time, starts after land OR long timer
     let fading = false;
     if (
       height > 650 &&
@@ -136,18 +191,55 @@ export class PlatformSpawner {
       fading = true;
     }
 
-    const plat = new Platform({
-      x,
-      y,
-      w,
-      material,
-      moving,
-      fading,
-      moveAmp: moving ? moveAmp : 0,
-    });
-    this.platforms.push(plat);
+    this.platforms.push(
+      new Platform({
+        x,
+        y,
+        w,
+        material,
+        moving,
+        fading,
+        moveAmp: moving ? moveAmp : 0,
+      }),
+    );
     this.highestY = y;
     this.lastWasFading = fading;
+  }
+
+  private pickX(fromX: number, minGapX: number, maxGapX: number, w: number): number {
+    const span = Math.max(4, maxGapX - minGapX);
+    const desired = minGapX + this.rand() * span;
+    let x = fromX + this.lastDir * desired;
+
+    const margin = Math.max(w / 2 + 8, 36);
+    const maxX = this.worldHalfW - margin;
+
+    if (x > maxX) {
+      x = maxX;
+      this.lastDir = -1;
+      if (Math.abs(x - fromX) < minGapX) {
+        x = Math.max(-maxX, fromX - minGapX);
+      }
+      if (Math.abs(x - fromX) > maxGapX) {
+        x = fromX - Math.min(maxGapX * 0.9, fromX + maxX);
+      }
+    } else if (x < -maxX) {
+      x = -maxX;
+      this.lastDir = 1;
+      if (Math.abs(x - fromX) < minGapX) {
+        x = Math.min(maxX, fromX + minGapX);
+      }
+      if (Math.abs(x - fromX) > maxGapX) {
+        x = fromX + Math.min(maxGapX * 0.9, maxX - fromX);
+      }
+    }
+
+    const dx = x - fromX;
+    if (Math.abs(dx) > maxGapX) {
+      x = fromX + Math.sign(dx || this.lastDir) * maxGapX * 0.92;
+      x = Math.max(-maxX, Math.min(maxX, x));
+    }
+    return x;
   }
 
   setWorldHalfWidth(w: number): void {
