@@ -52,28 +52,87 @@ export class Particles {
     count: number,
     style: ParticleStyle = 'crumb',
     perfect = false,
+    zoneAccent?: string,
   ): void {
-    const n = Math.min(count + (perfect ? 5 : 0), 24);
+    const n = Math.min(count + (perfect ? 8 : 2), 28);
+    const tint = zoneAccent ?? color;
     for (let i = 0; i < n; i++) {
       const p = this.alloc();
       if (!p) break;
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
-      const speed = 18 + Math.random() * (perfect ? 65 : 40);
+      const speed = 20 + Math.random() * (perfect ? 72 : 44);
       p.active = true;
       p.x = x + (Math.random() - 0.5) * 18;
       p.y = y + Math.random() * 3;
       p.vx = Math.cos(angle) * speed;
       p.vy = Math.sin(angle) * speed + 8;
-      p.life = 0.55 + Math.random() * 0.75;
+      p.life = 0.55 + Math.random() * 0.85;
       p.maxLife = p.life;
       p.size = style === 'glitter' || style === 'spark' ? 2 + Math.random() * 2 : 3 + Math.random() * 4;
-      p.color = perfect && Math.random() > 0.6 ? '#e8a090' : color;
-      p.type = perfect && Math.random() > 0.7 ? 'spark' : style;
+      // Blend material color with zone accent on some particles
+      p.color =
+        perfect && Math.random() > 0.5
+          ? tint
+          : Math.random() > 0.7
+            ? tint
+            : color;
+      p.type = perfect && Math.random() > 0.65 ? 'spark' : style;
       p.rot = 0;
       p.spin = (Math.random() - 0.5) * 8;
     }
     if (perfect) {
-      this.rings.push({ x, y, life: 0.45, maxLife: 0.45, color: '#e8a090' });
+      this.rings.push({ x, y, life: 0.5, maxLife: 0.5, color: tint });
+      // Soft follow-through sparkles
+      for (let i = 0; i < 10; i++) {
+        const p = this.alloc();
+        if (!p) break;
+        p.active = true;
+        p.x = x + (Math.random() - 0.5) * 30;
+        p.y = y + Math.random() * 10;
+        p.vx = (Math.random() - 0.5) * 20;
+        p.vy = 10 + Math.random() * 30;
+        p.life = 0.7 + Math.random() * 0.4;
+        p.maxLife = p.life;
+        p.size = 1.5 + Math.random() * 2;
+        p.color = tint;
+        p.type = 'glitter';
+      }
+    }
+  }
+
+  /** Soft particles rising on fall / death */
+  exhale(x: number, y: number, color: string): void {
+    for (let i = 0; i < 12; i++) {
+      const p = this.alloc();
+      if (!p) break;
+      p.active = true;
+      p.x = x + (Math.random() - 0.5) * 40;
+      p.y = y;
+      p.vx = (Math.random() - 0.5) * 30;
+      p.vy = 40 + Math.random() * 60;
+      p.life = 0.6 + Math.random() * 0.5;
+      p.maxLife = p.life;
+      p.size = 2 + Math.random() * 3;
+      p.color = color;
+      p.type = 'foam';
+    }
+  }
+
+  /** Breath orb collect trail */
+  inhale(x: number, y: number, color: string): void {
+    for (let i = 0; i < 8; i++) {
+      const p = this.alloc();
+      if (!p) break;
+      p.active = true;
+      p.x = x + (Math.random() - 0.5) * 16;
+      p.y = y + (Math.random() - 0.5) * 16;
+      p.vx = (Math.random() - 0.5) * 40;
+      p.vy = 20 + Math.random() * 50;
+      p.life = 0.4 + Math.random() * 0.3;
+      p.maxLife = p.life;
+      p.size = 2 + Math.random() * 2;
+      p.color = color;
+      p.type = 'glitter';
     }
   }
 
@@ -155,6 +214,14 @@ export class Particles {
     }
   }
 
+  windX = 0;
+  windY = 0;
+
+  setWind(x: number, y: number): void {
+    this.windX = x;
+    this.windY = y;
+  }
+
   update(dt: number): void {
     for (const p of this.items) {
       if (!p.active) continue;
@@ -163,8 +230,13 @@ export class Particles {
         p.active = false;
         continue;
       }
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
+      // Soft zone wind — drips / foam feel the breeze more
+      const windMul =
+        p.type === 'drip' || p.type === 'foam' || p.type === 'bubble' || p.type === 'foamBurst'
+          ? 0.35
+          : 0.12;
+      p.x += (p.vx + this.windX * windMul) * dt;
+      p.y += (p.vy + this.windY * windMul * 0.2) * dt;
       // World +Y is up — gravity pulls down
       const g =
         p.type === 'foam' || p.type === 'bubble' || p.type === 'foamBurst'

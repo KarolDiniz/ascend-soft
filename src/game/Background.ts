@@ -1,90 +1,243 @@
-interface Blob {
-  x: number;
-  y: number;
-  r: number;
-  layer: number;
-  color: string;
-  phase: number;
-  speed: number;
-  kind: 'slice' | 'bubble' | 'flake';
-}
+import type { Atmosphere } from './atmosphere/Atmosphere';
+import type { OverlayKind, ZoneId } from './atmosphere/AltitudeZones';
 
+/**
+ * Sky gradient, soft shafts, vignette/grain, and cinematic biome overlays.
+ * Heavy silhouettes live in SceneryLayer.
+ */
 export class Background {
-  private blobs: Blob[] = [];
   private time = 0;
   private grain: ImageData | null = null;
   private grainCanvas: HTMLCanvasElement | null = null;
   private grainW = 0;
   private grainH = 0;
+  private grainAlpha = 0.04;
 
-  constructor() {
-    const colors = [
-      'rgba(170, 220, 205, 0.32)',
-      'rgba(245, 225, 180, 0.28)',
-      'rgba(255, 200, 180, 0.26)',
-      'rgba(190, 230, 220, 0.24)',
-      'rgba(255, 230, 210, 0.22)',
-      'rgba(200, 215, 230, 0.2)',
-    ];
-    const kinds: Blob['kind'][] = ['slice', 'bubble', 'flake'];
-    for (let i = 0; i < 16; i++) {
-      this.blobs.push({
-        x: Math.random(),
-        y: Math.random(),
-        r: 36 + Math.random() * 110,
-        layer: i < 5 ? 0 : i < 11 ? 1 : 2,
-        color: colors[i % colors.length],
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.07 + Math.random() * 0.05,
-        kind: kinds[i % 3],
-      });
-    }
-  }
-
-  update(dt: number): void {
+  update(dt: number, atm?: Atmosphere): void {
     this.time += dt;
+    if (atm) this.grainAlpha = atm.grainAlpha;
   }
 
-  draw(ctx: CanvasRenderingContext2D, w: number, h: number, cameraY: number): void {
-    const breath = (Math.sin(this.time * ((Math.PI * 2) / 11)) + 1) * 0.5;
-    const g = ctx.createLinearGradient(0, 0, w * 0.15, h);
-    g.addColorStop(0, this.lerpColor('#c5e0dc', '#d8ebe4', breath));
-    g.addColorStop(0.4, this.lerpColor('#efe6c8', '#f3ebd4', 1 - breath));
-    g.addColorStop(1, this.lerpColor('#f3d5c8', '#f7e0d4', breath));
+  /** Layer 1: sky + shafts + enter flash */
+  drawSky(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm?: Atmosphere,
+  ): void {
+    const period = atm?.breathPeriod ?? 11;
+    const breath = (Math.sin(this.time * ((Math.PI * 2) / period)) + 1) * 0.5;
+    const pal = atm?.getPalette();
+    const flash = atm?.enterFlash ?? 0;
+
+    const topA = pal?.top ?? '#c5e0dc';
+    const midA = pal?.mid ?? '#efe6c8';
+    const botA = pal?.bottom ?? '#f3d5c8';
+
+    const g = ctx.createLinearGradient(0, 0, w * 0.12, h);
+    g.addColorStop(0, this.lerpColor(topA, this.shift(topA, 10 + flash * 20), breath));
+    g.addColorStop(0.42, this.lerpColor(midA, this.shift(midA, -6 + flash * 16), 1 - breath));
+    g.addColorStop(1, this.lerpColor(botA, this.shift(botA, 8 + flash * 18), breath));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 
-    const parallax = [0.07, 0.15, 0.26];
-    for (const b of this.blobs) {
-      const px = parallax[b.layer];
-      const driftX = Math.sin(this.time * b.speed + b.phase) * 28;
-      const driftY = Math.cos(this.time * b.speed * 0.7 + b.phase) * 18;
-      const scroll = -(cameraY * px);
-      const x = b.x * w + driftX;
-      const y =
-        (((b.y * h + scroll + driftY) % (h + b.r * 2)) + h + b.r) % (h + b.r * 2) - b.r;
-      const scale = 1 + Math.sin(this.time * 0.45 + b.phase) * 0.07;
-
-      ctx.fillStyle = b.color;
-      ctx.beginPath();
-      if (b.kind === 'slice') {
-        ctx.ellipse(x, y, b.r * scale, b.r * 0.38 * scale, b.phase * 0.3, 0, Math.PI * 2);
-      } else if (b.kind === 'flake') {
-        ctx.ellipse(x, y, b.r * 0.55 * scale, b.r * 0.55 * scale, 0, 0, Math.PI * 2);
-      } else {
-        ctx.ellipse(x, y, b.r * 0.7 * scale, b.r * 0.75 * scale, 0, 0, Math.PI * 2);
-      }
-      ctx.fill();
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,252,245,${flash * 0.12})`;
+      ctx.fillRect(0, 0, w, h);
     }
 
-    // Soft vignette
-    const vig = ctx.createRadialGradient(w / 2, h * 0.45, h * 0.2, w / 2, h / 2, h * 0.85);
+    // Soft god-ray / light band
+    const bandY = h * (0.22 + breath * 0.1);
+    const shaft = ctx.createLinearGradient(0, bandY - 50, 0, bandY + 100);
+    shaft.addColorStop(0, 'rgba(255,255,255,0)');
+    shaft.addColorStop(0.45, `rgba(255, 250, 240, ${0.07 + breath * 0.05 + flash * 0.06})`);
+    shaft.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shaft;
+    ctx.fillRect(0, bandY - 50, w, 150);
+
+    // Extra soft angled shaft (garden/ether feel)
+    ctx.save();
+    ctx.globalAlpha = 0.045 + breath * 0.025;
+    ctx.translate(w * 0.7, 0);
+    ctx.rotate(0.35);
+    const ray = ctx.createLinearGradient(0, 0, 0, h);
+    ray.addColorStop(0, 'rgba(255,255,240,0.5)');
+    ray.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = ray;
+    ctx.fillRect(-40, 0, 80, h * 1.2);
+    ctx.restore();
+  }
+
+  /** Soft light shafts between mid ambient and world */
+  drawLightOverlay(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm?: Atmosphere,
+  ): void {
+    const breath = (Math.sin(this.time * 0.4) + 1) * 0.5;
+    const accent = atm?.getAccent() ?? '#fff8e8';
+    const rgb = this.hex(accent);
+    ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.03 + breath * 0.025})`;
+    ctx.beginPath();
+    ctx.ellipse(w * 0.5, h * 0.35, w * 0.45, h * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /** Weather / cinematic overlays after near particles */
+  drawBiomeOverlays(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm?: Atmosphere,
+  ): void {
+    if (!atm) return;
+    for (const { zone, weight } of atm.getWeights()) {
+      if (weight < 0.04) continue;
+      ctx.save();
+      ctx.globalAlpha = weight;
+      this.drawOverlay(ctx, w, h, zone.overlay, zone.id);
+      ctx.restore();
+    }
+  }
+
+  drawVignetteAndGrain(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm?: Atmosphere,
+  ): void {
+    const vig = ctx.createRadialGradient(w / 2, h * 0.45, h * 0.18, w / 2, h / 2, h * 0.9);
     vig.addColorStop(0, 'rgba(255,255,255,0)');
-    vig.addColorStop(1, 'rgba(80, 70, 60, 0.12)');
+    const frostish = atm?.primaryId === 'frost' ? 0.16 : 0.11;
+    vig.addColorStop(1, `rgba(70, 60, 55, ${frostish})`);
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, w, h);
 
+    if (atm?.primaryId === 'ether') {
+      const bloom = ctx.createRadialGradient(w / 2, h * 0.4, 20, w / 2, h * 0.4, h * 0.55);
+      bloom.addColorStop(0, 'rgba(255, 235, 200, 0.08)');
+      bloom.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = bloom;
+      ctx.fillRect(0, 0, w, h);
+    }
+
     this.drawGrain(ctx, w, h);
+  }
+
+  /** @deprecated use drawSky — kept for any old call sites */
+  draw(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    _cameraY: number,
+    atm?: Atmosphere,
+  ): void {
+    this.drawSky(ctx, w, h, atm);
+    this.drawVignetteAndGrain(ctx, w, h, atm);
+  }
+
+  private drawOverlay(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    kind: OverlayKind,
+    _id: ZoneId,
+  ): void {
+    switch (kind) {
+      case 'mottle': {
+        for (let i = 0; i < 8; i++) {
+          const x = ((i * 137 + this.time * 12) % (w + 80)) - 40;
+          const y = ((i * 89 + Math.sin(this.time * 0.3 + i) * 40) % h);
+          const r = 40 + (i % 4) * 18;
+          const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+          g.addColorStop(0, 'rgba(255,255,240,0.1)');
+          g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+      case 'sugarVeil': {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        for (let i = 0; i < 40; i++) {
+          const x = ((i * 47 + this.time * 18) % (w + 20)) - 10;
+          const y = ((i * 73 + this.time * 8) % (h + 20)) - 10;
+          ctx.fillRect(x, y, 1.5, 1.5);
+        }
+        break;
+      }
+      case 'caustics': {
+        ctx.strokeStyle = 'rgba(200, 230, 235, 0.12)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          const baseY = h * (0.2 + i * 0.15);
+          for (let x = 0; x <= w; x += 16) {
+            const yy =
+              baseY +
+              Math.sin(x * 0.02 + this.time * 1.2 + i) * 10 +
+              Math.sin(x * 0.045 + this.time * 0.7) * 5;
+            if (x === 0) ctx.moveTo(x, yy);
+            else ctx.lineTo(x, yy);
+          }
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'frostEdge': {
+        const edge = 70;
+        const top = ctx.createLinearGradient(0, 0, 0, edge);
+        top.addColorStop(0, 'rgba(255,255,255,0.22)');
+        top.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = top;
+        ctx.fillRect(0, 0, w, edge);
+        const bot = ctx.createLinearGradient(0, h, 0, h - edge);
+        bot.addColorStop(0, 'rgba(255,255,255,0.18)');
+        bot.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = bot;
+        ctx.fillRect(0, h - edge, w, edge);
+        const left = ctx.createLinearGradient(0, 0, edge, 0);
+        left.addColorStop(0, 'rgba(230,245,255,0.16)');
+        left.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = left;
+        ctx.fillRect(0, 0, edge, h);
+        const right = ctx.createLinearGradient(w, 0, w - edge, 0);
+        right.addColorStop(0, 'rgba(230,245,255,0.16)');
+        right.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = right;
+        ctx.fillRect(w - edge, 0, edge, h);
+        // Corner crystals
+        ctx.strokeStyle = 'rgba(210,230,245,0.35)';
+        ctx.lineWidth = 1;
+        this.cornerCrystal(ctx, 28, 28, 14);
+        this.cornerCrystal(ctx, w - 28, 32, 12);
+        this.cornerCrystal(ctx, 34, h - 30, 11);
+        this.cornerCrystal(ctx, w - 30, h - 28, 13);
+        break;
+      }
+      case 'goldBloom': {
+        const g = ctx.createRadialGradient(w * 0.5, h * 0.42, 10, w * 0.5, h * 0.42, h * 0.6);
+        g.addColorStop(0, 'rgba(255, 230, 190, 0.1)');
+        g.addColorStop(0.5, 'rgba(255, 220, 180, 0.04)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+        break;
+      }
+    }
+  }
+
+  private cornerCrystal(ctx: CanvasRenderingContext2D, x: number, y: number, s: number): void {
+    ctx.beginPath();
+    ctx.moveTo(x, y - s);
+    ctx.lineTo(x + s * 0.5, y);
+    ctx.lineTo(x, y + s);
+    ctx.lineTo(x - s * 0.5, y);
+    ctx.closePath();
+    ctx.stroke();
   }
 
   private drawGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
@@ -107,8 +260,8 @@ export class Background {
       this.grain = img;
       this.grainCanvas.getContext('2d')!.putImageData(img, 0, 0);
     }
-    if ((this.time * 6) % 1 < 0.05 && this.grain && this.grainCanvas) {
-      for (let i = 0; i < this.grain.data.length; i += 20) {
+    if ((this.time * 5) % 1 < 0.04 && this.grain && this.grainCanvas) {
+      for (let i = 0; i < this.grain.data.length; i += 24) {
         const v = 220 + ((Math.random() * 35) | 0);
         this.grain.data[i] = v;
         this.grain.data[i + 1] = v;
@@ -117,10 +270,18 @@ export class Background {
       this.grainCanvas.getContext('2d')!.putImageData(this.grain, 0, 0);
     }
     ctx.save();
-    ctx.globalAlpha = 0.045;
+    ctx.globalAlpha = this.grainAlpha;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.grainCanvas!, 0, 0, w, h);
     ctx.restore();
+  }
+
+  private shift(hex: string, amt: number): string {
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt));
+    const b = Math.max(0, Math.min(255, (n & 255) + amt));
+    return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
   }
 
   private lerpColor(a: string, b: string, t: number): string {

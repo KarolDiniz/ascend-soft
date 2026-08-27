@@ -1,5 +1,8 @@
 import { AudioBus } from '../audio/AudioBus';
 import { MATERIALS, type MaterialId } from '../audio/materials';
+import { AmbientParticles } from './atmosphere/AmbientParticles';
+import { Atmosphere } from './atmosphere/Atmosphere';
+import { SceneryLayer } from './atmosphere/SceneryLayer';
 import { Background } from './Background';
 import { BreathSpawner } from './Breaths';
 import { Camera } from './Camera';
@@ -36,11 +39,15 @@ export class Game {
   private player = new Player();
   private spawner = new PlatformSpawner();
   private particles = new Particles();
+  private ambient = new AmbientParticles();
+  private atmosphere = new Atmosphere();
+  private scenery = new SceneryLayer();
   private shards = new ShardField();
   private breaths = new BreathSpawner();
   private background = new Background();
   private mixStreak = 0;
   private lastReaction = '';
+  private fpsEma = 60;
 
   state: GameState = 'title';
   height = 0;
@@ -123,8 +130,10 @@ export class Game {
     this.player.reset(0, 28);
     this.camera.snapTo(this.player.y, this.H * 0.15);
     this.particles.clear();
+    this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
+    this.atmosphere.update(0, 0);
     this.height = 0;
     this.breathCount = 0;
     this.perfectStreak = 0;
@@ -149,12 +158,42 @@ export class Game {
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.worldHalfW = Math.min(220, Math.max(150, this.W * 0.38));
     this.spawner.setWorldHalfWidth(this.worldHalfW);
+    this.ambient.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.72 : 1);
   }
 
   private update(dt: number): void {
     this.time += dt;
     this.input.update(dt);
-    this.background.update(dt);
+    this.fpsEma = this.fpsEma * 0.9 + (1 / Math.max(0.001, dt)) * 0.1;
+    if (this.fpsEma < 50) {
+      this.ambient.setMobileScale(0.65);
+      this.scenery.setPerfMode(true);
+    } else {
+      this.scenery.setPerfMode(false);
+    }
+
+    const atmoHeight = this.state === 'title' ? 40 : this.height;
+    this.atmosphere.update(dt, atmoHeight);
+    this.background.update(dt, this.atmosphere);
+    this.scenery.update(dt, this.atmosphere);
+    this.ambient.update(dt, this.atmosphere, this.camera.y, this.W, this.H);
+    this.ambient.emitFromScenery(
+      this.scenery.collectEmitters(this.W, this.H, this.camera.y),
+      this.atmosphere,
+      this.W,
+      this.H,
+      dt,
+    );
+
+    if (this.atmosphere.biomeEntered && this.state === 'playing') {
+      const z = this.atmosphere.getPrimaryZone();
+      this.ambient.biomeBurst(this.player.x, this.player.y, this.atmosphere);
+      this.addFloater(this.player.x, this.player.y + 50, z.label, this.atmosphere.getAccent());
+      this.hud.showMaterialToast(z.label);
+      this.audio.playBiomeEnter(z.id);
+      this.screenPunch = Math.max(this.screenPunch, 0.25);
+    }
+
     if (this.screenPunch > 0) this.screenPunch = Math.max(0, this.screenPunch - dt * 4);
 
     for (let i = this.floaters.length - 1; i >= 0; i--) {
@@ -177,7 +216,8 @@ export class Game {
       this.fallTimer += dt;
       this.player.vy -= 200 * dt;
       this.player.y += this.player.vy * dt * 0.3;
-      this.particles.update(dt);
+      this.particles.setWind(this.atmosphere.windX, this.atmosphere.windY);
+    this.particles.update(dt);
       this.shards.update(dt);
       this.camera.update(dt);
       for (const p of this.spawner.platforms) p.update(dt, this.time);
@@ -236,11 +276,13 @@ export class Game {
           o.collected = true;
           this.breathCount += 1;
           this.audio.playBreath();
-          this.particles.burst(o.x, o.y, '#e8a090', 8, 'foam', true);
+          this.particles.burst(o.x, o.y, '#e8a090', 8, 'foam', true, this.atmosphere.getAccent());
+          this.particles.inhale(o.x, o.y, this.atmosphere.getAccent());
         }
       }
     }
 
+    this.particles.setWind(this.atmosphere.windX, this.atmosphere.windY);
     this.particles.update(dt);
     this.shards.update(dt);
 
@@ -328,6 +370,7 @@ export class Game {
         count,
         mat.particleStyle,
         perfect,
+        this.atmosphere.getAccent(),
       );
       this.audio.playLand(p.material, perfect, this.perfectStreak);
 
@@ -376,6 +419,9 @@ export class Game {
     switch (ev.type) {
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 2);
+        if (this.atmosphere.primaryId === 'bakery' || this.atmosphere.primaryId === 'spa') {
+          this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 2, 'foam', false);
+        }
         if (Math.random() > 0.6) this.audio.playMeltDrip();
         break;
       case 'meltGone':
@@ -389,30 +435,40 @@ export class Game {
         break;
       case 'shatter':
         this.shards.burst(p.x, p.surfaceY, ev.color, 10, p.w * 0.6);
-        this.particles.burst(p.x, p.surfaceY, '#ffffff', 12, 'glitter', true);
+        this.particles.burst(p.x, p.surfaceY, '#ffffff', 12, 'glitter', true, this.atmosphere.getAccent());
+        if (this.atmosphere.primaryId === 'frost') {
+          this.particles.burst(p.x, p.surfaceY, '#d0e8f8', 8, 'glitter', false);
+        }
         this.audio.playShatter();
         this.screenPunch = Math.max(this.screenPunch, 0.4);
         this.noteReaction(ev.floater, p.x, p.surfaceY + 22, '#a8d8ff');
         break;
       case 'crumbleSand':
         this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w);
+        if (Math.random() > 0.55) {
+          this.particles.burst(p.x, p.surfaceY, mat.particle, 3, 'sand', false, this.atmosphere.getAccent());
+        }
         if (Math.random() > 0.5) this.audio.playCrumbleLoop();
         break;
       case 'crumbleGone':
         this.particles.sandFall(p.x, p.surfaceY, mat.particle, p.w * 1.2);
-        this.particles.burst(p.x, p.surfaceY, mat.particle, 14, 'sand', false);
+        this.particles.burst(p.x, p.surfaceY, mat.particle, 14, 'sand', false, this.atmosphere.getAccent());
         this.audio.playCrumbleGone();
         this.noteReaction(ev.floater, p.x, p.surfaceY + 18, '#c9a88a');
         break;
       case 'foamPop':
         this.particles.foamBurst(p.x, p.surfaceY, mat.particle);
+        this.particles.burst(p.x, p.surfaceY, this.atmosphere.getAccent(), 10, 'bubble', false);
         this.audio.playFoamPop();
         this.screenPunch = Math.max(this.screenPunch, 0.35);
         this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#fff5fa');
         break;
       case 'squeeze':
         this.particles.juiceArc(p.x, p.surfaceY, mat.particle);
-        this.particles.burst(p.x, p.surfaceY, mat.particle, 6, 'zest', false);
+        this.particles.burst(p.x, p.surfaceY, mat.particle, 6, 'zest', false, this.atmosphere.getAccent());
+        if (this.atmosphere.primaryId === 'garden' || this.atmosphere.primaryId === 'bakery') {
+          this.particles.burst(p.x, p.surfaceY + 8, '#ffd0e0', 3, 'foam', false);
+        }
         this.audio.playSqueeze();
         if (ev.gone && ev.floater) {
           this.noteReaction(ev.floater, p.x, p.surfaceY + 18, '#ffb84d');
@@ -454,6 +510,7 @@ export class Game {
     this.state = 'falling';
     this.fallTimer = 0;
     this.perfectStreak = 0;
+    this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());
     this.audio.playFall();
     this.hud.showFall(this.height, this.best);
   }
@@ -473,7 +530,10 @@ export class Game {
       ctx.translate(-this.W / 2, -this.H / 2);
     }
 
-    this.background.draw(ctx, this.W, this.H, this.camera.y);
+    this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
+    this.scenery.drawFar(ctx, this.W, this.H, this.camera.y, this.atmosphere);
+    this.ambient.drawFar(ctx, this.toScreen);
+    this.scenery.drawMid(ctx, this.W, this.H, this.camera.y, this.atmosphere);
 
     const left = this.toScreen(-this.worldHalfW - 30, this.camera.y);
     const right = this.toScreen(this.worldHalfW + 30, this.camera.y);
@@ -481,16 +541,22 @@ export class Game {
     ctx.fillRect(0, 0, Math.max(0, left.x), this.H);
     ctx.fillRect(right.x, 0, Math.max(0, this.W - right.x), this.H);
 
+    this.ambient.drawMid(ctx, this.toScreen);
+    this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
+
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);
     this.particles.draw(ctx, this.toScreen);
     this.shards.draw(ctx, this.toScreen);
+    this.ambient.drawNear(ctx, this.toScreen);
 
     if (this.state === 'title') {
       this.player.x = Math.sin(this.time * 0.55) * 18;
       this.player.y = 30 + Math.sin(this.time * 1.1) * 5;
     }
     this.player.draw(ctx, this.toScreen);
+
+    this.background.drawBiomeOverlays(ctx, this.W, this.H, this.atmosphere);
 
     for (const f of this.floaters) {
       const s = this.toScreen(f.x, f.y);
@@ -501,6 +567,8 @@ export class Game {
       ctx.fillText(f.text, s.x, s.y);
     }
     ctx.globalAlpha = 1;
+
+    this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);
 
     if (this.debug) this.drawDebug(ctx);
 
@@ -538,9 +606,14 @@ export class Game {
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(
-      `gapY≤${REACH.maxGapY.toFixed(0)} reachX≤${REACH.maxCenterGapX.toFixed(0)} h=${this.height}`,
+      `zone=${this.atmosphere.getDebugLabel()} ambient=${this.ambient.activeCount} scenery=${this.scenery.activeCount} h=${this.height} fps~${this.fpsEma.toFixed(0)}`,
       10,
       this.H - 12,
+    );
+    ctx.fillText(
+      `${this.atmosphere.getDebugWeights()} wind=${this.atmosphere.windX.toFixed(0)},${this.atmosphere.windY.toFixed(0)}`,
+      10,
+      this.H - 28,
     );
     ctx.restore();
   }
