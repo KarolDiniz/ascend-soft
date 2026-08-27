@@ -1,8 +1,13 @@
 import type { Input } from './Input';
 import type { Platform } from './Platform';
 import { PHYS } from './physics';
-import { PASTEL, PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
+import { PLAYER_PASTEL } from '../theme/pastelPalette';
 import { PIXEL, enablePixelMode, fillPx, px, snapPt } from '../theme/pixel';
+import {
+  drawPlayerPixelBody,
+  drawPlayerPixelFace,
+  drawPlayerPixelShadow,
+} from './playerPixelArt';
 
 interface TrailPoint {
   x: number;
@@ -194,65 +199,18 @@ export class Player {
     ctx.translate(s.x, s.y);
 
     // Shadow
-    fillPx(ctx, -bw * 0.4, bh * 0.42, bw * 0.8, u * 2, PLAYER_PASTEL.shadow);
+    drawPlayerPixelShadow(ctx, bw, bh);
 
     // Body — stepped oval (cute pixel slime)
-    this.drawPixelBody(ctx, bw, bh);
+    drawPlayerPixelBody(ctx, bw, bh);
 
-    // Highlight
-    fillPx(ctx, -bw * 0.22, -bh * 0.28, u * 3, u * 2, rgba(PASTEL.white, 0.75));
-
-    // Blush
-    const bx = 7 * this.facing;
-    fillPx(ctx, -bx - u * 2, u, u * 2, u, PLAYER_PASTEL.blush);
-    fillPx(ctx, bx, u, u * 2, u, PLAYER_PASTEL.blush);
-
-    // Eyes — blink when blinkT > 0
-    const blinking = this.blinkT > 0;
-    const eyeBase = 4 * this.facing;
-    if (blinking) {
-      fillPx(ctx, eyeBase - 6, -u, u * 3, u, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, eyeBase + 3, -u, u * 3, u, rgba(PASTEL.ink, 0.55));
-    } else {
-      // Look slightly toward velocity / facing
-      const look = this.facing;
-      fillPx(ctx, eyeBase - 6 + look, -u * 2, u * 2, u * 3, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, eyeBase + 4 + look, -u * 2, u * 2, u * 3, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, eyeBase - 5 + look, -u * 3, u, u, PASTEL.white);
-      fillPx(ctx, eyeBase + 5 + look, -u * 3, u, u, PASTEL.white);
-    }
-
-    // Idle bounce sparkle on ground
-    if (this.onGround && Math.sin(this.animT * 4) > 0.94) {
-      fillPx(ctx, bw * 0.28, -bh * 0.35, u, u, PASTEL.butter);
-    }
+    drawPlayerPixelFace(ctx, bw, bh, {
+      facing: this.facing,
+      blinking: this.blinkT > 0,
+      animT: this.animT,
+      showSparkle: this.onGround,
+    });
 
     ctx.restore();
-  }
-
-  private drawPixelBody(ctx: CanvasRenderingContext2D, bw: number, bh: number): void {
-    const u = PIXEL.unit;
-    // Horizontal scanlines of a rounded rect / blob
-    const rows: [number, number][] = [
-      [0.45, -0.42],
-      [0.7, -0.3],
-      [0.88, -0.14],
-      [0.95, 0.02],
-      [0.95, 0.18],
-      [0.82, 0.32],
-      [0.55, 0.42],
-    ];
-    for (const [ww, yy] of rows) {
-      const rw = px(bw * ww);
-      const ry = px(bh * yy);
-      fillPx(ctx, -rw / 2, ry, rw, u * 2, PLAYER_PASTEL.bodyMid);
-    }
-    // Top lighter band
-    fillPx(ctx, -bw * 0.28, -bh * 0.28, bw * 0.55, u * 2, PLAYER_PASTEL.bodyTop);
-    // Bottom darker
-    fillPx(ctx, -bw * 0.35, bh * 0.28, bw * 0.7, u * 2, PLAYER_PASTEL.bodyBot);
-    // Outline key pixels
-    fillPx(ctx, -bw * 0.42, -bh * 0.1, u, u, rgba(PASTEL.inkSoft, 0.35));
-    fillPx(ctx, bw * 0.38, -bh * 0.1, u, u, rgba(PASTEL.inkSoft, 0.35));
   }
 }

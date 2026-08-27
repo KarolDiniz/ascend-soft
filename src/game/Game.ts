@@ -72,6 +72,8 @@ export class Game {
   private screenPunch = 0;
   private floaters: Floater[] = [];
   private seenMaterials = new Set<MaterialId>();
+  /** Banners de fase já exibidos nesta rodada — não repetir ao ciclar altitudes */
+  private shownPhaseToasts = new Set<MaterialId>();
   private runBestBroken = false;
   private startBest = 0;
 
@@ -124,9 +126,8 @@ export class Game {
     this.hud.showPlaying(this.best);
     const z = this.atmosphere.getPrimaryZone();
     const pal = this.atmosphere.getPalette();
-    this.hud.showPhaseToast(z.label, z.quote, pal.accent);
+    this.tryShowPhaseToast(z.id, z.label, z.quote, pal.accent);
     this.hud.setAmbientColors(pal.top, pal.mid);
-    this.audio.playSoftMurmur(z.quote.length);
   }
 
   retry(): void {
@@ -155,6 +156,19 @@ export class Game {
     this.screenPunch = 0;
     this.runBestBroken = false;
     this.startBest = this.best;
+    this.shownPhaseToasts.clear();
+  }
+
+  /** Exibe banner de reflexão só na primeira vez que a fase aparece na rodada */
+  private tryShowPhaseToast(
+    id: MaterialId,
+    label: string,
+    quote: string,
+    accent?: string,
+  ): void {
+    if (this.shownPhaseToasts.has(id)) return;
+    this.shownPhaseToasts.add(id);
+    this.hud.showPhaseToast(label, quote, accent);
   }
 
   private resize(): void {
@@ -209,10 +223,9 @@ export class Game {
       const z = this.atmosphere.getPrimaryZone();
       const pal = this.atmosphere.getPalette();
       this.ambient.biomeBurst(this.player.x, this.player.y, this.atmosphere);
-      this.hud.showPhaseToast(z.label, z.quote, this.atmosphere.getAccent());
+      this.tryShowPhaseToast(z.id, z.label, z.quote, this.atmosphere.getAccent());
       this.hud.setAmbientColors(pal.top, pal.mid);
       this.audio.playBiomeEnter(z.id);
-      this.audio.playSoftMurmur(z.quote.length);
       this.screenPunch = Math.max(this.screenPunch, 0.32);
       this.particles.burst(
         this.player.x,

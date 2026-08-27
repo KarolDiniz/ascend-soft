@@ -1,4 +1,6 @@
 import { ToastSpeaker } from './ToastSpeaker';
+import { PHASE_TOAST_MS } from './toastConfig';
+import type { AudioBus } from '../audio/AudioBus';
 
 export class Hud {
   private root: HTMLElement;
@@ -15,12 +17,13 @@ export class Hud {
   private toastPhaseEl: HTMLElement;
   private toastQuoteEl: HTMLElement;
   private speaker: ToastSpeaker;
+  private audio: AudioBus | null = null;
   private toastTimer = 0;
   private toastLiveTimer = 0;
   private leaveTimer = 0;
-  private readonly toastDuration = 5600;
+  private readonly toastDuration = PHASE_TOAST_MS;
 
-  constructor() {
+  constructor(audio?: AudioBus) {
     this.root = document.getElementById('hud')!;
     this.heightEl = document.getElementById('hud-height')!;
     this.bestEl = document.getElementById('hud-best')!;
@@ -35,6 +38,8 @@ export class Hud {
     this.toastPhaseEl = document.getElementById('toast-phase')!;
     this.toastQuoteEl = document.getElementById('toast-quote')!;
     this.speaker = new ToastSpeaker();
+    this.audio = audio ?? null;
+    this.toastEl.style.setProperty('--toast-duration', `${PHASE_TOAST_MS}ms`);
   }
 
   showTitle(best: number): void {
@@ -123,9 +128,12 @@ export class Hud {
 
     this.toastPhaseEl.textContent = phaseName;
     this.toastQuoteEl.textContent = quote;
-    this.toastEl.classList.remove('hidden', 'toast-out', 'toast-live');
-    this.toastEl.classList.add('toast-in');
+    this.toastEl.setAttribute('aria-label', `${phaseName}: ${quote}`);
+    this.toastEl.classList.remove('hidden', 'toast-out', 'toast-live', 'toast-active');
+    this.toastEl.classList.add('toast-in', 'toast-active');
     this.speaker.start(this.toastDuration);
+    this.audio?.stopSoftMurmur();
+    this.audio?.playSoftMurmur(this.toastDuration);
 
     window.clearTimeout(this.toastTimer);
     window.clearTimeout(this.toastLiveTimer);
@@ -136,9 +144,11 @@ export class Hud {
 
     this.toastTimer = window.setTimeout(() => {
       this.speaker.stop();
+      this.audio?.stopSoftMurmur();
       this.toastEl.classList.remove('toast-live');
       this.toastEl.classList.add('toast-out');
       window.setTimeout(() => this.toastEl.classList.add('hidden'), 500);
+      this.toastEl.classList.remove('toast-active');
     }, this.toastDuration);
   }
 

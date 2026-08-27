@@ -6,7 +6,7 @@ import { Hud } from './ui/Hud';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
-const hud = new Hud();
+const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 
 void spriteAtlas.init().then(() => {

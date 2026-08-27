@@ -21,6 +21,9 @@ export class AudioBus {
   private nextMusicTime = 0;
   private musicTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly musicBpm = 66;
+  private murmurTimer: ReturnType<typeof setTimeout> | null = null;
+  private murmurEndAt = 0;
+  private murmurIndex = 0;
 
   get isMuted(): boolean {
     return this.muted;
@@ -477,21 +480,35 @@ export class AudioBus {
     });
   }
 
-  /** Bonequinho murmurando — voz fina e calma, sem palavras legíveis */
-  playSoftMurmur(quoteLength = 48): void {
-    this.withCtx((ctx, sfx) => {
-      this.duckAmbient(320);
-      const t = ctx.currentTime;
-      const syllables = clamp(Math.floor(quoteLength / 11) + 3, 4, 11);
-      let cursor = t + 0.06;
+  /** Bonequinho murmurando — voz fina enquanto o banner estiver visível */
+  playSoftMurmur(durationMs = 5600): void {
+    this.stopSoftMurmur();
+    this.murmurEndAt = performance.now() + durationMs;
+    this.murmurIndex = 0;
+    this.duckAmbient(Math.min(durationMs, 480));
+    this.scheduleMurmurSyllable();
+  }
 
-      for (let i = 0; i < syllables; i++) {
-        const dur = 0.07 + Math.random() * 0.11;
-        const pause = 0.05 + Math.random() * 0.09;
-        this.murmurSyllable(ctx, sfx, cursor, dur, i);
-        cursor += dur + pause;
-      }
+  stopSoftMurmur(): void {
+    if (this.murmurTimer !== null) {
+      clearTimeout(this.murmurTimer);
+      this.murmurTimer = null;
+    }
+    this.murmurEndAt = 0;
+  }
+
+  private scheduleMurmurSyllable(): void {
+    if (this.murmurEndAt <= 0 || performance.now() >= this.murmurEndAt) {
+      this.stopSoftMurmur();
+      return;
+    }
+    this.withCtx((ctx, sfx) => {
+      const dur = 0.07 + Math.random() * 0.11;
+      const t = ctx.currentTime + 0.015;
+      this.murmurSyllable(ctx, sfx, t, dur, this.murmurIndex++);
     });
+    const pauseMs = (0.05 + Math.random() * 0.09) * 1000 + 80;
+    this.murmurTimer = setTimeout(() => this.scheduleMurmurSyllable(), pauseMs);
   }
 
   private murmurSyllable(

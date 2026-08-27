@@ -1,7 +1,14 @@
-import { PASTEL, PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
+import {
+  drawPlayerPixelBody,
+  drawPlayerPixelFace,
+  drawPlayerPixelShadow,
+  PLAYER_DRAW_H,
+  PLAYER_DRAW_W,
+} from '../game/playerPixelArt';
+import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
-/** Bonequinho pixelado no banner — animação de fala sincronizada com o murmúrio */
+/** Bonequinho pixelado no banner — mesma arte do jogador, animação de fala */
 export class ToastSpeaker {
   private canvas: HTMLCanvasElement;
   private panel: HTMLElement;
@@ -10,6 +17,8 @@ export class ToastSpeaker {
   private active = false;
   private startTime = 0;
   private duration = 5600;
+  private blinkT = -2.5;
+  private animT = 0;
 
   constructor(canvasId = 'toast-speaker', panelId = 'toast-speaker-panel') {
     this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -21,6 +30,8 @@ export class ToastSpeaker {
     this.active = true;
     this.startTime = performance.now();
     this.duration = durationMs;
+    this.animT = 0;
+    this.blinkT = 0.12 + Math.random() * 0.08;
     this.panel.classList.add('is-talking');
     if (this.raf) cancelAnimationFrame(this.raf);
     this.tick();
@@ -33,7 +44,7 @@ export class ToastSpeaker {
       cancelAnimationFrame(this.raf);
       this.raf = 0;
     }
-    this.draw(0, false, 0);
+    this.drawIdle();
   }
 
   private tick = (): void => {
@@ -43,16 +54,24 @@ export class ToastSpeaker {
       this.stop();
       return;
     }
+    const dt = 1 / 60;
+    this.animT += dt;
+    this.blinkT -= dt;
+    if (this.blinkT < -2.2) this.blinkT = 0.12 + Math.random() * 0.08;
+
     const t = elapsed / 1000;
     const syllable = Math.floor(elapsed / 135);
     const mouthOpen = syllable % 2 === 0;
-    const bob = Math.sin(t * 5.5) * 1.5;
-    const armWave = Math.sin(t * 4.2 + syllable * 0.4) * 0.6;
-    this.draw(bob, mouthOpen, armWave);
+    const bob = Math.sin(t * 5.5) * 2;
+    this.draw(mouthOpen, bob, this.blinkT > 0);
     this.raf = requestAnimationFrame(this.tick);
   };
 
-  private draw(bob: number, mouthOpen: boolean, armWave: number): void {
+  private drawIdle(): void {
+    this.draw(false, 0, false);
+  }
+
+  private draw(mouthOpen: boolean, bob: number, blinking: boolean): void {
     const ctx = this.ctx;
     const u = 2;
     const W = this.canvas.width;
@@ -60,83 +79,26 @@ export class ToastSpeaker {
     enablePixelMode(ctx);
     ctx.clearRect(0, 0, W, H);
 
+    const scale = 3;
+    const bw = px(PLAYER_DRAW_W * scale);
+    const bh = px(PLAYER_DRAW_H * scale);
     const cx = W / 2;
-    const baseY = H - u * 4 + bob;
-    const bw = 28;
-    const bh = 26;
+    const baseY = H - u * 6 + bob;
+
+    fillPx(ctx, cx - u * 12, H - u * 3, u * 24, u * 2, rgba(PASTEL.inkSoft, 0.1));
+    fillPx(ctx, cx - u * 9, H - u * 4, u * 18, u, rgba(PASTEL.inkSoft, 0.07));
 
     ctx.save();
     ctx.translate(cx, baseY);
-
-    // Sombra
-    fillPx(ctx, -bw * 0.35, bh * 0.38, bw * 0.7, u * 2, PLAYER_PASTEL.shadow);
-
-    // Corpo (mesmo blob do jogador)
-    const rows: [number, number][] = [
-      [0.45, -0.42],
-      [0.7, -0.3],
-      [0.88, -0.14],
-      [0.95, 0.02],
-      [0.95, 0.18],
-      [0.82, 0.32],
-      [0.55, 0.42],
-    ];
-    for (const [ww, yy] of rows) {
-      const rw = px(bw * ww, u);
-      const ry = px(bh * yy, u);
-      fillPx(ctx, -rw / 2, ry, rw, u * 2, PLAYER_PASTEL.bodyMid);
-    }
-    fillPx(ctx, -bw * 0.28, -bh * 0.28, bw * 0.55, u * 2, PLAYER_PASTEL.bodyTop);
-    fillPx(ctx, -bw * 0.35, bh * 0.28, bw * 0.7, u * 2, PLAYER_PASTEL.bodyBot);
-    fillPx(ctx, -bw * 0.42, -bh * 0.1, u, u, rgba(PASTEL.inkSoft, 0.35));
-    fillPx(ctx, bw * 0.38, -bh * 0.1, u, u, rgba(PASTEL.inkSoft, 0.35));
-
-    // Brilho
-    fillPx(ctx, -bw * 0.22, -bh * 0.28, u * 3, u * 2, rgba(PASTEL.white, 0.75));
-
-    // Bochechas
-    fillPx(ctx, -u * 4, u, u * 2, u, PLAYER_PASTEL.blush);
-    fillPx(ctx, u * 2, u, u * 2, u, PLAYER_PASTEL.blush);
-
-    // Olhos — pisca ocasional
-    const blink = Math.floor(performance.now() / 2800) % 5 === 0;
-    if (blink) {
-      fillPx(ctx, -u * 5, -u, u * 3, u, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, u * 2, -u, u * 3, u, rgba(PASTEL.ink, 0.55));
-    } else {
-      fillPx(ctx, -u * 5, -u * 2, u * 2, u * 3, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, u * 3, -u * 2, u * 2, u * 3, rgba(PASTEL.ink, 0.55));
-      fillPx(ctx, -u * 4, -u * 3, u, u, PASTEL.white);
-      fillPx(ctx, u * 4, -u * 3, u, u, PASTEL.white);
-    }
-
-    // Boca — abre/fecha ao falar
-    if (mouthOpen) {
-      fillPx(ctx, -u * 3, u * 2, u * 6, u * 2, rgba(PASTEL.ink, 0.45));
-      fillPx(ctx, -u * 2, u * 3, u * 4, u, rgba(PASTEL.inkSoft, 0.35));
-    } else {
-      fillPx(ctx, -u * 2, u * 2.5, u * 4, u, rgba(PASTEL.ink, 0.35));
-    }
-
-    // Mãozinhas gesticulando enquanto fala
-    const armY = u * 3 + armWave * u;
-    fillPx(ctx, -bw * 0.52, armY, u * 2, u * 2, PLAYER_PASTEL.bodyMid);
-    fillPx(ctx, bw * 0.38, armY - u, u * 2, u * 2, PLAYER_PASTEL.bodyMid);
-
+    drawPlayerPixelShadow(ctx, bw, bh);
+    drawPlayerPixelBody(ctx, bw, bh);
+    drawPlayerPixelFace(ctx, bw, bh, {
+      facing: 1,
+      blinking,
+      mouthOpen,
+      animT: this.animT,
+      showSparkle: true,
+    });
     ctx.restore();
-
-    // Notinhas / vibração de voz ao lado da boca
-    if (mouthOpen) {
-      const side = syllableFrame() % 3;
-      const nx = cx + bw * 0.38 + side * u * 2;
-      const ny = baseY - bh * 0.05 + bob;
-      fillPx(ctx, nx, ny, u, u, rgba(PASTEL.butter, 0.85));
-      fillPx(ctx, nx + u * 2, ny - u, u, u, rgba(PASTEL.butter, 0.55));
-      if (side === 1) fillPx(ctx, nx + u, ny + u, u, u, rgba(PASTEL.peach, 0.5));
-    }
   }
-}
-
-function syllableFrame(): number {
-  return Math.floor(performance.now() / 135);
 }
