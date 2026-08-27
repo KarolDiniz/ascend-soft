@@ -1,9 +1,28 @@
 import type { MaterialId } from '../../audio/materials';
 
+/** Playable width clamp — player is 30px wide; min stays landable, max fits world margins. */
+export const LEDGE_WIDTH_ABS = { min: 36, max: 90 } as const;
+
+/** Weighted size tiers — some ledges clearly smaller or larger than the material baseline. */
+const SIZE_TIERS = [
+  { weight: 0.3, mulMin: 0.7, mulMax: 0.84 },
+  { weight: 0.4, mulMin: 0.94, mulMax: 1.06 },
+  { weight: 0.3, mulMin: 1.14, mulMax: 1.34 },
+] as const;
+
+function rollSizeTier(rand: () => number): (typeof SIZE_TIERS)[number] {
+  let r = rand();
+  for (const tier of SIZE_TIERS) {
+    r -= tier.weight;
+    if (r <= 0) return tier;
+  }
+  return SIZE_TIERS[1];
+}
+
 /**
  * Distinct playable sizes — silhouette must read uniquely at a glance.
  * visualDepth drives body height; visualSpread stretches draw width.
- * Sized ~1.4–2.2× the player (30px) so ledges feel compact but landable.
+ * Sized ~1.2–3× the player (30px) with tiered small / medium / large rolls.
  */
 export const MATERIAL_LEDGE: Record<
   MaterialId,
@@ -53,5 +72,19 @@ export const MATERIAL_LEDGE: Record<
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {
   const L = MATERIAL_LEDGE[id];
-  return L.minW + rand() * (L.maxW - L.minW);
+  const base = (L.minW + L.maxW) / 2;
+  const tier = rollSizeTier(rand);
+  const mul = tier.mulMin + rand() * (tier.mulMax - tier.mulMin);
+  const jitter = (rand() - 0.5) * (L.maxW - L.minW) * 0.4;
+  const w = base * mul + jitter;
+  return Math.round(Math.max(LEDGE_WIDTH_ABS.min, Math.min(LEDGE_WIDTH_ABS.max, w)));
+}
+
+/** Typical width band for spawner reach previews before material is picked. */
+export function estimateLedgeWidth(rand: () => number): number {
+  const tier = rollSizeTier(rand);
+  const mul = tier.mulMin + rand() * (tier.mulMax - tier.mulMin);
+  const base = 52;
+  const w = base * mul + (rand() - 0.5) * 10;
+  return Math.round(Math.max(LEDGE_WIDTH_ABS.min, Math.min(LEDGE_WIDTH_ABS.max, w)));
 }

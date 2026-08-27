@@ -100,7 +100,7 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
   butter: matColors(
     '#FFE08A',
     rgba(PASTEL.butter, 0.45),
-    '#FFD858',
+    '#FFF0B8',
     rgba(PASTEL.butter, 0.32),
   ),
   mochi: matColors(

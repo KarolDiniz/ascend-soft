@@ -7,7 +7,6 @@ import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
 import { drawSpongeFlies } from './spongeFlies';
-import { drawButterJar, isButterJar } from './butterVisual';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -594,39 +593,14 @@ function drawJelly(a: DrawArgs): void {
   drawDebris(a, 5, mat.particle);
 }
 
-/** Manteiga — laje ou pote, tons variados por seed */
+/** Manteiga — laje larga, cantos retos, marcas de faca, derrete */
 function drawButter(a: DrawArgs): void {
-  const press = a.overlay?.pressAmount ?? 0;
-  if (isButterJar(a.seed)) {
-    drawButterJar({
-      ctx: a.ctx,
-      cx: a.cx,
-      sy: a.sy,
-      w: a.w,
-      h: a.h,
-      mat: a.mat,
-      u: a.u,
-      seed: a.seed,
-      time: a.time,
-      wobble: a.wobble,
-      melt: a.melt,
-      press,
-    });
-    drawPressIndent(a);
-    drawAmbientSpecks(a, 4, a.mat.particle);
-    return;
-  }
-  drawButterSlab(a);
-}
-
-/** Taveta de manteiga — laje larga, marcas de faca */
-function drawButterSlab(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, mat, u, melt, seed, time, wobble } = a;
   const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
 
   fillPx(ctx, x, sy, w, h, mat.fill);
-  fillPx(ctx, x, sy, w, u, rgba(mat.particle, 0.55));
+  fillPx(ctx, x, sy, w, u, rgba(PASTEL.white, 0.55));
   fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
   fillPx(ctx, x, sy, u, h, mat.stroke);
   fillPx(ctx, x + w - u, sy, u, h, mat.stroke);
@@ -647,7 +621,6 @@ function drawButterSlab(a: DrawArgs): void {
       rgba(mat.particle, 0.45 + seeded(seed, i) * 0.35),
     );
   }
-  // Soft curl edge crumbs when pressed
   if (press > 0.15) {
     for (let i = 0; i < 3 + Math.floor(press * 4); i++) {
       fillPx(ctx, x + seeded(seed, i + 200) * w, sy + h - u, u * 2, u * (1 + press * 2), mat.fill);

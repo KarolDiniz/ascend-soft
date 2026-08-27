@@ -1,7 +1,5 @@
 import { MATERIALS, type MaterialDef, type MaterialId } from '../../audio/materials';
 import { materialDetailStroke, rgba } from '../../theme/pastelPalette';
-import { butterPreset } from './butterVisual';
-
 /** Cores distintas de gelatina na fase — verde, rosa, branca, etc. */
 const JELLY_FILLS = [
   '#8AD4A8', // verde menta
@@ -81,18 +79,6 @@ export function resolvePlatformMaterial(material: MaterialId, seed: number): Mat
       particle: preset.stripeA,
       stroke: preset.stripeB,
       glow: rgba(preset.stripeA, 0.42),
-      spriteWash: rgba(preset.fill, 0.28),
-    };
-  }
-  if (material === 'butter') {
-    const preset = butterPreset(seed);
-    const base = MATERIALS.butter;
-    return {
-      ...base,
-      fill: preset.fill,
-      stroke: preset.stroke,
-      particle: preset.particle,
-      glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
     };
   }

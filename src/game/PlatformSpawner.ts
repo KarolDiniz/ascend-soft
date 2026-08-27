@@ -1,7 +1,7 @@
 import type { MaterialId } from '../audio/materials';
 import { pickPhaseMaterial, phaseDifficultyScale } from './ThemedPhases';
 import { getBehaviorDef } from './platform/behaviors';
-import { rollLedgeWidth } from './platform/ledgeSizes';
+import { estimateLedgeWidth, rollLedgeWidth } from './platform/ledgeSizes';
 import { Platform } from './Platform';
 import { PHYS, REACH } from './physics';
 
@@ -73,9 +73,9 @@ export class PlatformSpawner {
 
     // Starters: butter-only intro — cozy, readable, always reachable
     const starters: { x: number; y: number; w: number; material: MaterialId; seed: number }[] = [
-      { x: 0, y: 0, w: 62, material: 'butter', seed: 101 },
-      { x: -40, y: 56, w: 56, material: 'butter', seed: 202 },
-      { x: 38, y: 112, w: 58, material: 'butter', seed: 303 },
+      { x: 0, y: 0, w: 72, material: 'butter', seed: 101 },
+      { x: -42, y: 56, w: 44, material: 'butter', seed: 202 },
+      { x: 36, y: 112, w: 58, material: 'butter', seed: 303 },
     ];
     for (const s of starters) {
       this.platforms.push(new Platform(s));
@@ -106,10 +106,8 @@ export class PlatformSpawner {
     let gapY = gapYMin + this.rand() * Math.max(4, gapYMax - gapYMin);
     gapY = Math.min(Math.max(gapY, REACH.minGapY), REACH.maxGapY);
 
-    const wMin = 70 - difficulty * 8;
-    const wMax = 112 - difficulty * 18;
     // Placeholder width for reach calc — replaced after material pick
-    let w = Math.max(64, wMin + this.rand() * (wMax - wMin));
+    let w = estimateLedgeWidth(this.rand);
 
     const maxGapX = maxReachableCenterGap(last.w, w, gapY);
     const minGapX = Math.min(minCenterGapX(last.w, w, gapY), maxGapX * 0.92);
