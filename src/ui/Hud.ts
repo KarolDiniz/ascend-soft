@@ -133,7 +133,13 @@ export class Hud {
     this.toastEl.classList.add('toast-in', 'toast-active');
     this.speaker.start(this.toastDuration);
     this.audio?.stopSoftMurmur();
-    this.audio?.playSoftMurmur(this.toastDuration);
+
+    const muted = this.audio?.isMuted ?? false;
+    if (!muted) {
+      this.audio?.playCreatureSpeech(quote, this.toastDuration, (open) =>
+        this.speaker.setMouthOpen(open),
+      );
+    }
 
     window.clearTimeout(this.toastTimer);
     window.clearTimeout(this.toastLiveTimer);

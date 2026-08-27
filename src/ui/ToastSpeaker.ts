@@ -34,6 +34,8 @@ export class ToastSpeaker {
   private duration = 5600;
   private blinkT = -2.5;
   private animT = 0;
+  private mouthOpen = false;
+  private ttsDriven = false;
 
   constructor(canvasId = 'toast-speaker', panelId = 'toast-speaker-panel') {
     this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -46,14 +48,24 @@ export class ToastSpeaker {
     this.startTime = performance.now();
     this.duration = durationMs;
     this.animT = 0;
+    this.mouthOpen = false;
+    this.ttsDriven = false;
     this.blinkT = 0.12 + Math.random() * 0.08;
     this.panel.classList.add('is-talking');
     if (this.raf) cancelAnimationFrame(this.raf);
     this.tick();
   }
 
+  /** Boca sincronizada com TTS */
+  setMouthOpen(open: boolean): void {
+    this.ttsDriven = true;
+    this.mouthOpen = open;
+  }
+
   stop(): void {
     this.active = false;
+    this.mouthOpen = false;
+    this.ttsDriven = false;
     this.panel.classList.remove('is-talking');
     if (this.raf) {
       cancelAnimationFrame(this.raf);
@@ -77,7 +89,7 @@ export class ToastSpeaker {
 
     const t = elapsed / 1000;
     const syllable = Math.floor(elapsed / 120);
-    const mouthOpen = syllable % 2 === 0;
+    const mouthOpen = this.ttsDriven ? this.mouthOpen : syllable % 2 === 0;
     const talkPulse = mouthOpen ? 1.25 : 0.85;
 
     this.render({

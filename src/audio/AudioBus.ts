@@ -16,6 +16,8 @@ export class AudioBus {
   private readonly musicGain = 0.32;
   /** Volume do SFX de salto — discreto para não competir com o pouso */
   private readonly jumpPeakGain = 0.032;
+  /** Ganho da voz da criaturinha (banner, pulo, queda, respiração) */
+  private readonly creatureVolBoost = 1.75;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
@@ -28,6 +30,8 @@ export class AudioBus {
   private murmurTimer: ReturnType<typeof setTimeout> | null = null;
   private murmurEndAt = 0;
   private murmurIndex = 0;
+  private murmurMouthCallback: ((open: boolean) => void) | null = null;
+  private murmurPauseMs = 120;
 
   get isMuted(): boolean {
     return this.muted;
@@ -266,23 +270,26 @@ export class AudioBus {
   playJump(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const noise = this.noiseBuffer(ctx, 0.2);
+      this.creatureVocal(ctx, sfx, t, 0.075, 480, 1520, 0.058, { boing: true, chime: true, pop: true });
+      this.creatureVocal(ctx, sfx, t + 0.06, 0.045, 1040, 760, 0.032, { blip: true });
+
+      const noise = this.noiseBuffer(ctx, 0.12);
       const src = ctx.createBufferSource();
       src.buffer = noise;
       const filter = ctx.createBiquadFilter();
       filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(900, t);
-      filter.frequency.exponentialRampToValueAtTime(400, t + 0.15);
-      filter.Q.value = 0.7;
+      filter.frequency.setValueAtTime(720, t);
+      filter.frequency.exponentialRampToValueAtTime(380, t + 0.1);
+      filter.Q.value = 0.55;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(this.jumpPeakGain, t + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      g.gain.exponentialRampToValueAtTime(this.jumpPeakGain * 0.55, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
       src.connect(filter);
       filter.connect(g);
       g.connect(sfx);
       src.start(t);
-      src.stop(t + 0.18);
+      src.stop(t + 0.14);
     });
   }
 
@@ -380,57 +387,33 @@ export class AudioBus {
   playFall(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const noise = this.noiseBuffer(ctx, 0.85);
+      this.creatureVocal(ctx, sfx, t, 0.2, 620, 1480, 0.052, { wobble: true, boing: true });
+      this.creatureVocal(ctx, sfx, t + 0.19, 0.11, 960, 420, 0.044, { squeak: true, pop: true });
+
+      const noise = this.noiseBuffer(ctx, 0.55);
       const src = ctx.createBufferSource();
       src.buffer = noise;
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(700, t);
-      filter.frequency.exponentialRampToValueAtTime(140, t + 0.7);
+      filter.frequency.setValueAtTime(520, t);
+      filter.frequency.exponentialRampToValueAtTime(130, t + 0.55);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.07, t + 0.06);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+      g.gain.exponentialRampToValueAtTime(0.068, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.58);
       src.connect(filter);
       filter.connect(g);
       g.connect(sfx);
       src.start(t);
-      src.stop(t + 0.85);
-
-      const osc = ctx.createOscillator();
-      const og = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, t);
-      osc.frequency.exponentialRampToValueAtTime(55, t + 0.65);
-      og.gain.setValueAtTime(0.05, t);
-      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
-      osc.connect(og);
-      og.connect(sfx);
-      osc.start(t);
-      osc.stop(t + 0.72);
+      src.stop(t + 0.6);
     });
   }
 
   playBreath(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const noise = this.noiseBuffer(ctx, 0.35);
-      const src = ctx.createBufferSource();
-      src.buffer = noise;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(500, t);
-      filter.frequency.exponentialRampToValueAtTime(900, t + 0.25);
-      filter.Q.value = 0.8;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.08, t + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
-      src.connect(filter);
-      filter.connect(g);
-      g.connect(sfx);
-      src.start(t);
-      src.stop(t + 0.35);
+      this.creatureVocal(ctx, sfx, t, 0.09, 920, 580, 0.04, { boing: true, chime: true });
+      this.creatureVocal(ctx, sfx, t + 0.07, 0.065, 680, 640, 0.028, { blip: true, shimmer: true });
     });
   }
 
@@ -544,13 +527,25 @@ export class AudioBus {
     });
   }
 
-  /** Bonequinho murmurando — voz fina enquanto o banner estiver visível */
-  playSoftMurmur(durationMs = 5600): void {
+  /** Criaturinha mística falando — ritmo do texto, sussurro etéreo */
+  playCreatureSpeech(
+    text: string,
+    durationMs = 5600,
+    onMouth?: (open: boolean) => void,
+  ): void {
     this.stopSoftMurmur();
     this.murmurEndAt = performance.now() + durationMs;
     this.murmurIndex = 0;
+    this.murmurMouthCallback = onMouth ?? null;
+    const syllables = this.estimateSyllables(text);
+    this.murmurPauseMs = Math.max(82, (durationMs - 260) / syllables);
     this.duckAmbient(Math.min(durationMs, 480));
     this.scheduleMurmurSyllable();
+  }
+
+  /** @deprecated use playCreatureSpeech */
+  playSoftMurmur(durationMs = 5600): void {
+    this.playCreatureSpeech('', durationMs);
   }
 
   stopSoftMurmur(): void {
@@ -558,7 +553,15 @@ export class AudioBus {
       clearTimeout(this.murmurTimer);
       this.murmurTimer = null;
     }
+    this.murmurMouthCallback?.(false);
+    this.murmurMouthCallback = null;
     this.murmurEndAt = 0;
+  }
+
+  private estimateSyllables(text: string): number {
+    if (!text.trim()) return 14;
+    const groups = text.toLowerCase().match(/[aáàâãeéêiíîoóôõuúüy]+/gi);
+    return Math.max(8, Math.min(32, groups?.length ?? 10));
   }
 
   private scheduleMurmurSyllable(): void {
@@ -567,90 +570,175 @@ export class AudioBus {
       return;
     }
     this.withCtx((ctx, sfx) => {
-      const dur = 0.07 + Math.random() * 0.11;
-      const t = ctx.currentTime + 0.015;
-      this.murmurSyllable(ctx, sfx, t, dur, this.murmurIndex++);
+      const dur = 0.032 + Math.random() * 0.072;
+      const t = ctx.currentTime + 0.01;
+      this.creatureSyllable(ctx, sfx, t, dur, this.murmurIndex++);
+      if (this.murmurMouthCallback) {
+        this.murmurMouthCallback(true);
+        window.setTimeout(() => this.murmurMouthCallback?.(false), dur * 1000 * 0.52);
+      }
     });
-    const pauseMs = (0.05 + Math.random() * 0.09) * 1000 + 80;
-    this.murmurTimer = setTimeout(() => this.scheduleMurmurSyllable(), pauseMs);
+    const comicBeat = this.murmurIndex % 6 === 0 ? 90 + Math.random() * 70 : 0;
+    const pauseMs = this.murmurPauseMs + (Math.random() - 0.5) * 36 + comicBeat;
+    this.murmurTimer = window.setTimeout(() => this.scheduleMurmurSyllable(), pauseMs);
   }
 
-  private murmurSyllable(
+  /** Vocal da criaturinha — fino, engraçado, com boing e piadas sonoras */
+  private creatureVocal(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    dur: number,
+    f0Start: number,
+    f0End: number,
+    vol: number,
+    opts: {
+      breath?: number;
+      chime?: boolean;
+      shimmer?: boolean;
+      boing?: boolean;
+      squeak?: boolean;
+      blip?: boolean;
+      wobble?: boolean;
+      pop?: boolean;
+    } = {},
+  ): void {
+    vol *= this.creatureVolBoost;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = opts.squeak ? 520 : 400;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = opts.blip ? 5200 : 4800;
+    lp.Q.value = 0.35;
+    hp.connect(lp);
+
+    const bus = ctx.createGain();
+    bus.gain.setValueAtTime(0.0001, t);
+    if (opts.pop) {
+      bus.gain.exponentialRampToValueAtTime(vol * 1.35, t + 0.006);
+      bus.gain.exponentialRampToValueAtTime(vol, t + 0.018);
+    } else {
+      bus.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    }
+    bus.gain.exponentialRampToValueAtTime(vol * 0.65, t + dur * 0.42);
+    bus.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    lp.connect(bus);
+    bus.connect(sfx);
+
+    const vibrato = ctx.createOscillator();
+    const vibratoG = ctx.createGain();
+    vibrato.frequency.value = opts.wobble ? 9.5 + Math.random() * 4.5 : 4.2 + Math.random() * 2.4;
+    vibratoG.gain.value = f0Start * (opts.wobble ? 0.038 : 0.014);
+
+    const core = ctx.createOscillator();
+    core.type = opts.squeak || opts.blip ? 'triangle' : 'sine';
+    core.frequency.setValueAtTime(f0Start, t);
+    if (opts.boing) {
+      const peak = Math.max(f0Start, f0End) * (1.12 + Math.random() * 0.14);
+      core.frequency.exponentialRampToValueAtTime(Math.max(400, peak), t + dur * 0.32);
+      core.frequency.exponentialRampToValueAtTime(Math.max(360, f0End), t + dur);
+    } else {
+      core.frequency.exponentialRampToValueAtTime(Math.max(360, f0End), t + dur);
+    }
+    vibrato.connect(vibratoG);
+    vibratoG.connect(core.frequency);
+
+    const cGain = ctx.createGain();
+    cGain.gain.value = opts.blip ? 0.48 : opts.squeak ? 0.44 : 0.36;
+    core.connect(cGain);
+    cGain.connect(hp);
+    core.start(t);
+    core.stop(t + dur + 0.02);
+    vibrato.start(t);
+    vibrato.stop(t + dur + 0.02);
+
+    if (opts.shimmer !== false && !opts.blip) {
+      for (const detune of [1.018, 0.982]) {
+        const sh = ctx.createOscillator();
+        sh.type = 'sine';
+        sh.frequency.setValueAtTime(f0Start * detune, t);
+        sh.frequency.exponentialRampToValueAtTime(Math.max(360, f0End * detune), t + dur);
+        const sg = ctx.createGain();
+        sg.gain.value = 0.14;
+        sh.connect(sg);
+        sg.connect(hp);
+        sh.start(t);
+        sh.stop(t + dur + 0.02);
+      }
+    }
+
+    if (opts.boing) {
+      const boing = ctx.createOscillator();
+      boing.type = 'triangle';
+      boing.frequency.setValueAtTime(f0Start * 1.55, t + dur * 0.08);
+      boing.frequency.exponentialRampToValueAtTime(Math.max(500, f0End * 1.4), t + dur * 0.75);
+      const bg = ctx.createGain();
+      bg.gain.setValueAtTime(0.0001, t + dur * 0.08);
+      bg.gain.exponentialRampToValueAtTime(vol * 0.22, t + dur * 0.2);
+      bg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      boing.connect(bg);
+      bg.connect(hp);
+      boing.start(t);
+      boing.stop(t + dur + 0.02);
+    }
+
+    const breath = opts.breath ?? (opts.blip ? 0.22 : 0.38);
+    this.softNoise(ctx, sfx, dur * 0.88, 1720 + Math.random() * 480, vol * breath * 0.5, t, 'bandpass', 0.68);
+
+    if (opts.chime) {
+      const chimeF = [1310, 1760, 2210, 2860][Math.floor(Math.random() * 4)]!;
+      this.tone(ctx, sfx, 'sine', chimeF, chimeF * 0.998, dur * 0.5, vol * 0.18, t + 0.004);
+    }
+
+    if (opts.squeak || Math.random() > 0.68) {
+      this.noiseBurst(ctx, sfx, Math.min(0.022, dur * 0.18), 4800 + Math.random() * 900, vol * 0.2, t, 'bandpass');
+    }
+  }
+
+  private creatureSyllable(
     ctx: AudioContext,
     sfx: GainNode,
     t: number,
     dur: number,
     index: number,
   ): void {
-    const pitch = 1.05 + Math.random() * 0.22 + index * 0.015;
-    const f0 = (420 + Math.random() * 140) * pitch;
-    const f1 = f0 * (1.75 + Math.random() * 0.35);
-    const f2 = f0 * (2.65 + Math.random() * 0.45);
-    const vol = 0.062 + Math.random() * 0.028;
+    const vol = 0.068 + Math.random() * 0.028;
+    const kind = index % 8;
 
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 360;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 3200;
-    lp.Q.value = 0.6;
-    const bus = ctx.createGain();
-    bus.gain.setValueAtTime(0.0001, t);
-    bus.gain.exponentialRampToValueAtTime(vol, t + 0.018);
-    bus.gain.exponentialRampToValueAtTime(vol * 0.55, t + dur * 0.55);
-    bus.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    hp.connect(lp);
-    lp.connect(bus);
-    bus.connect(sfx);
-
-    const vibrato = ctx.createOscillator();
-    const vibratoG = ctx.createGain();
-    vibrato.frequency.value = 5.5 + Math.random() * 2.5;
-    vibratoG.gain.value = f0 * 0.018;
-
-    const body = ctx.createOscillator();
-    body.type = 'triangle';
-    body.frequency.setValueAtTime(f0, t);
-    body.frequency.exponentialRampToValueAtTime(f0 * (0.92 + Math.random() * 0.12), t + dur);
-    vibrato.connect(vibratoG);
-    vibratoG.connect(body.frequency);
-    body.connect(hp);
-    body.start(t);
-    body.stop(t + dur + 0.02);
-    vibrato.start(t);
-    vibrato.stop(t + dur + 0.02);
-
-    const formant = ctx.createOscillator();
-    formant.type = 'sine';
-    formant.frequency.setValueAtTime(f1, t);
-    formant.frequency.exponentialRampToValueAtTime(f2, t + dur * 0.85);
-    const fg = ctx.createGain();
-    fg.gain.setValueAtTime(0.0001, t);
-    fg.gain.exponentialRampToValueAtTime(vol * 0.72, t + 0.02);
-    fg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    formant.connect(fg);
-    fg.connect(hp);
-    formant.start(t);
-    formant.stop(t + dur + 0.02);
-
-    if (Math.random() > 0.35) {
-      const src = ctx.createBufferSource();
-      src.buffer = this.noiseBuffer(ctx, Math.max(0.04, dur * 0.55));
-      const nf = ctx.createBiquadFilter();
-      nf.type = 'bandpass';
-      nf.frequency.value = 1800 + Math.random() * 900;
-      nf.Q.value = 1.2;
-      const ng = ctx.createGain();
-      ng.gain.setValueAtTime(0.0001, t);
-      ng.gain.exponentialRampToValueAtTime(vol * 0.52, t + 0.008);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.45);
-      src.connect(nf);
-      nf.connect(ng);
-      ng.connect(hp);
-      src.start(t);
-      src.stop(t + dur + 0.02);
+    if (kind === 0) {
+      this.creatureVocal(ctx, sfx, t, dur * 0.55, 720, 1380, vol, { boing: true, pop: true, chime: true });
+      this.creatureVocal(ctx, sfx, t + dur * 0.52, dur * 0.45, 980, 680, vol * 0.82, { blip: true });
+      return;
     }
+    if (kind === 1) {
+      this.creatureVocal(ctx, sfx, t, dur, 880 + Math.random() * 220, 520, vol, { squeak: true, wobble: true });
+      return;
+    }
+    if (kind === 2) {
+      this.creatureVocal(ctx, sfx, t, dur * 0.7, 620, 1240, vol, { boing: true, shimmer: true });
+      this.creatureVocal(ctx, sfx, t + dur * 0.62, dur * 0.35, 1120, 860, vol * 0.7, { blip: true, chime: true });
+      return;
+    }
+    if (kind === 3) {
+      this.creatureVocal(ctx, sfx, t, dur, 1040, 1480, vol, { squeak: true, pop: true, chime: Math.random() > 0.4 });
+      return;
+    }
+
+    const pitch = 0.9 + Math.random() * 0.2;
+    const f0 = (640 + Math.random() * 360) * pitch;
+    const rising = Math.random() > 0.38;
+    const f0End = f0 * (rising ? 1.1 + Math.random() * 0.22 : 0.82 + Math.random() * 0.14);
+
+    this.creatureVocal(ctx, sfx, t, dur, f0, f0End, vol, {
+      breath: 0.32 + Math.random() * 0.22,
+      chime: index % 3 === 0 || Math.random() > 0.55,
+      shimmer: true,
+      boing: rising && Math.random() > 0.45,
+      wobble: !rising && Math.random() > 0.5,
+      blip: dur < 0.055,
+    });
   }
 
   // —— Material one-shots ——
