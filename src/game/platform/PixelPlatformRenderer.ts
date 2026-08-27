@@ -34,6 +34,21 @@ function shiftTone(color: string, shift: number): string {
   return `rgb(${Math.max(0, Math.min(255, Math.round(r + a)))},${Math.max(0, Math.min(255, Math.round(g + a * 0.92)))},${Math.max(0, Math.min(255, Math.round(b + a * 0.78)))})`;
 }
 
+function softCrumb(mat: MaterialDef, alpha = 0.82): string {
+  return rgba(mat.particle, alpha);
+}
+
+function softCrumbAlt(mat: MaterialDef, seed: number, i: number): string {
+  const pick = seeded(seed, i + 500);
+  if (pick > 0.66) return rgba(PASTEL.white, 0.75);
+  if (pick > 0.33) return rgba(mat.particle, 0.8);
+  return rgba(mat.fill, 0.72);
+}
+
+function softShadow(mat: MaterialDef, alpha = 0.22): string {
+  return rgba(mat.fill, alpha);
+}
+
 function tonedMat(mat: MaterialDef, shift: number): MaterialDef {
   if (Math.abs(shift) < 0.01) return mat;
   return {
@@ -79,10 +94,10 @@ export function renderPixelPlatform(
   ctx.globalAlpha = s.opacity;
   ctx.imageSmoothingEnabled = false;
 
-  const shadowA = personality ? 0.28 + Math.abs(personality.toneShift) * 0.12 : 0.22;
-  fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, rgba(PASTEL.inkSoft, shadowA));
-
   const matT = tonedMat(mat, personality?.toneShift ?? 0);
+  const shadowA = personality ? 0.18 + Math.abs(personality.toneShift) * 0.08 : 0.14;
+  fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, softShadow(matT, shadowA));
+
   const args = {
     ctx,
     cx,
@@ -220,9 +235,9 @@ function drawShelfFrontFace(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, u, mat, personality } = a;
   const lip = u * (2 + (personality?.lipDepth ?? 1) * 1.5);
   const x = cx - w / 2;
-  fillPx(ctx, x, sy + h - lip, w, lip, rgba(mat.stroke, 0.55));
-  fillPx(ctx, x + u, sy + h - lip + u * 0.5, w - u * 2, u, rgba(mat.fill, 0.75));
-  fillPx(ctx, x, sy + h, w, u, rgba(PASTEL.inkSoft, 0.18));
+  fillPx(ctx, x, sy + h - lip, w, lip, rgba(mat.fill, 0.72));
+  fillPx(ctx, x + u, sy + h - lip + u * 0.5, w - u * 2, u, rgba(mat.particle, 0.55));
+  fillPx(ctx, x, sy + h, w, u, softShadow(mat, 0.14));
 }
 
 /** Penduricalhos únicos por prateleira */
@@ -261,10 +276,10 @@ function drawHangingDetails(a: DrawArgs): void {
         break;
       }
       case 2: {
-        // Migalhas / pedacinhos
-        fillPx(ctx, hx + sway - u, baseY + u, u * 2, u, mat.particle);
-        fillPx(ctx, hx + sway + u * 0.5, baseY + u * 2, u, u * 2, mat.fill);
-        fillPx(ctx, hx + sway, baseY + u * 3 + Math.sin(time + i) * u, u, u, rgba(mat.stroke, 0.6));
+        // Migalhas pastel (nunca preto/cinza escuro)
+        fillPx(ctx, hx + sway - u, baseY + u, u * 2, u, softCrumb(mat, 0.85));
+        fillPx(ctx, hx + sway + u * 0.5, baseY + u * 2, u, u * 2, softCrumbAlt(mat, seed, i));
+        fillPx(ctx, hx + sway, baseY + u * 3 + Math.sin(time + i) * u, u, u, rgba(mat.fill, 0.7));
         break;
       }
       case 3: {
@@ -323,8 +338,8 @@ function seeded(seed: number, i: number): number {
 }
 
 /** Static debris chips at base — shift slightly when pressed */
-function drawDebris(a: DrawArgs, count: number, color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, wobble, personality } = a;
+function drawDebris(a: DrawArgs, count: number, _color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, time, wobble, personality, mat } = a;
   const press = a.overlay?.pressAmount ?? 0;
   const n = scaledCount(count, personality?.debrisMul ?? 1, 3);
   const baseY = sy + h;
@@ -335,10 +350,11 @@ function drawDebris(a: DrawArgs, count: number, color: string): void {
     const fx = cx + side * spread + push * side;
     const bob = Math.sin(time * 3.1 + i * 1.3 + wobble) * u * 0.65;
     const sz = u * (1 + Math.floor(seeded(seed, i + 60) * 3));
-    fillPx(ctx, fx, baseY + u * 0.5 + bob, sz, sz, color);
-    fillPx(ctx, fx + side * u * 1.5, baseY + u * 1.5 + bob, u, u, rgba(color, 0.65));
+    const crumb = softCrumbAlt(mat, seed, i);
+    fillPx(ctx, fx, baseY + u * 0.5 + bob, sz, sz, crumb);
+    fillPx(ctx, fx + side * u * 1.5, baseY + u * 1.5 + bob, u, u, softCrumb(mat, 0.65));
     if (seeded(seed, i + 62) > 0.35) {
-      fillPx(ctx, fx + side * u * 2.5, baseY + u * 2 + bob, u, u, rgba(color, 0.5));
+      fillPx(ctx, fx + side * u * 2.5, baseY + u * 2 + bob, u, u, rgba(mat.fill, 0.6));
     }
   }
 }
@@ -362,24 +378,27 @@ function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
 }
 
 /** Dense surface microdots inside body */
-function drawSurfaceGrain(a: DrawArgs, count: number, color: string, alpha = 0.4): void {
-  const { ctx, cx, sy, w, h, u, seed } = a;
+function drawSurfaceGrain(a: DrawArgs, count: number, _color: string, alpha = 0.4): void {
+  const { ctx, cx, sy, w, h, u, seed, mat } = a;
   const x = cx - w / 2;
   for (let i = 0; i < count; i++) {
+    const pick = seeded(seed, i + 500);
+    const grainColor = pick > 0.66 ? PASTEL.white : pick > 0.33 ? mat.particle : mat.fill;
+    const grainAlpha = alpha + seeded(seed, i + 130) * 0.2;
     fillPx(
       ctx,
       x + u + seeded(seed, i + 110) * (w - u * 2),
       sy + u + seeded(seed, i + 120) * (h - u * 2),
       u,
       u,
-      rgba(color, alpha + seeded(seed, i + 130) * 0.25),
+      rgba(grainColor, grainAlpha),
     );
   }
 }
 
 /** Side flecks / rim crumbs on left+right edges */
-function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
-  const { ctx, cx, sy, w, h, u, seed, time, personality } = a;
+function drawEdgeFlecks(a: DrawArgs, count: number, _color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, time, personality, mat } = a;
   const n = scaledCount(count, (personality?.debrisMul ?? 1) * 0.9, 4);
   const bias = personality?.edgeBias ?? 0;
   for (let i = 0; i < n; i++) {
@@ -387,9 +406,9 @@ function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
     const fy = sy + u * 2 + seeded(seed, i + 140) * (h - u * 4);
     const bob = Math.sin(time * 2.2 + i) * u * 0.45;
     const inset = w * 0.48 + bias * side * u * 2;
-    fillPx(ctx, cx + side * inset, fy + bob, u, u, rgba(color, 0.62));
+    fillPx(ctx, cx + side * inset, fy + bob, u, u, softCrumb(mat, 0.7));
     if (seeded(seed, i + 145) > 0.4) {
-      fillPx(ctx, cx + side * (inset + u * 2), fy + u + bob, u, u, rgba(color, 0.45));
+      fillPx(ctx, cx + side * (inset + u * 2), fy + u + bob, u, u, softCrumbAlt(mat, seed, i + 150));
     }
   }
 }

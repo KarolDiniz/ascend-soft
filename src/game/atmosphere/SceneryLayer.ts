@@ -1,6 +1,7 @@
 import { ALTITUDE_ZONES, type DecorKind, type ZoneId } from './AltitudeZones';
 import type { Atmosphere } from './Atmosphere';
 import { materialSceneryColors } from '../ThemedPhases';
+import { rgba } from '../../theme/pastelPalette';
 import { drawDecor } from './BiomeDecor';
 
 interface SceneryProp {
@@ -248,9 +249,9 @@ export class SceneryLayer {
       const sx = x - lx * s * 0.35;
       const sy = y + s * 0.52 + ly * s * 0.08;
       const sh = ctx.createRadialGradient(sx, sy, 0, sx, sy, s * 0.55);
-      sh.addColorStop(0, 'rgba(55, 48, 42, 0.45)');
-      sh.addColorStop(0.55, 'rgba(55, 48, 42, 0.14)');
-      sh.addColorStop(1, 'rgba(55, 48, 42, 0)');
+      sh.addColorStop(0, rgba(accent, 0.32));
+      sh.addColorStop(0.55, rgba(accent, 0.1));
+      sh.addColorStop(1, rgba(accent, 0));
       ctx.fillStyle = sh;
       ctx.beginPath();
       ctx.ellipse(sx, sy, s * 0.52, s * 0.14, 0, 0, Math.PI * 2);
@@ -284,8 +285,8 @@ export class SceneryLayer {
       ctx.globalAlpha = vis * 0.12;
       ctx.globalCompositeOperation = 'multiply';
       const ao = ctx.createRadialGradient(x, y + s * 0.35, 0, x, y + s * 0.35, s * 0.5);
-      ao.addColorStop(0, 'rgba(90, 70, 55, 0.35)');
-      ao.addColorStop(1, 'rgba(90, 70, 55, 0)');
+      ao.addColorStop(0, rgba(accent, 0.22));
+      ao.addColorStop(1, rgba(accent, 0));
       ctx.fillStyle = ao;
       ctx.beginPath();
       ctx.ellipse(x, y + s * 0.4, s * 0.4, s * 0.18, 0, 0, Math.PI * 2);

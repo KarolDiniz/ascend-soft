@@ -42,7 +42,7 @@ export class Background {
         t < 0.42
           ? this.lerpColor(topA, midA, t / 0.42)
           : this.lerpColor(midA, botA, (t - 0.42) / 0.58);
-      const shifted = this.shiftRgb(c, breath * 10 + flash * 14);
+      const shifted = this.shiftRgb(c, breath * 4 + flash * 10);
       const breatheShift = this.lerpColor(c, shifted, 0.38);
       const y0 = Math.floor((h * i) / bands);
       const y1 = Math.floor((h * (i + 1)) / bands);
@@ -158,10 +158,12 @@ export class Background {
 
     // Soft floor shadow / ambient occlusion at bottom
     ctx.globalCompositeOperation = 'source-over';
+    const pal = atm?.getPalette();
+    const floorTint = pal?.bottom ?? '#a89888';
     const floor = ctx.createLinearGradient(0, h * 0.62, 0, h);
-    floor.addColorStop(0, 'rgba(60, 50, 45, 0)');
-    floor.addColorStop(0.55, 'rgba(60, 50, 45, 0.04)');
-    floor.addColorStop(1, 'rgba(60, 50, 45, 0.1)');
+    floor.addColorStop(0, this.withAlpha(floorTint, 0));
+    floor.addColorStop(0.55, this.withAlpha(floorTint, 0.05));
+    floor.addColorStop(1, this.withAlpha(floorTint, 0.12));
     ctx.fillStyle = floor;
     ctx.fillRect(0, h * 0.62, w, h * 0.38);
 
@@ -198,8 +200,9 @@ export class Background {
     atm?: Atmosphere,
   ): void {
     ctx.imageSmoothingEnabled = false;
-    const frostish = atm && materialMood(atm.primaryId) === 'frost' ? 0.16 : 0.1;
-    ctx.fillStyle = `rgba(70, 60, 55, ${frostish})`;
+    const frostish = atm && materialMood(atm.primaryId) === 'frost' ? 0.14 : 0.08;
+    const vignette = atm?.getPalette()?.bottom ?? '#c8b8a8';
+    ctx.fillStyle = this.withAlpha(vignette, frostish);
     ctx.fillRect(0, 0, w, 6);
     ctx.fillRect(0, h - 8, w, 8);
     ctx.fillRect(0, 0, 6, h);
