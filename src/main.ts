@@ -3,11 +3,13 @@ import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
+import { TitleSettings } from './ui/TitleSettings';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
 const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
+const titleSettings = new TitleSettings(game);
 
 void spriteAtlas.init().then(() => {
   console.info(
@@ -21,6 +23,7 @@ const btnMute = document.getElementById('btn-mute')!;
 const volume = document.getElementById('volume') as HTMLInputElement;
 
 async function unlockAndPlay(): Promise<void> {
+  if (titleSettings.isOpen()) return;
   if (!hud.isTitleVisible() || document.getElementById('title-screen')!.classList.contains('is-leaving')) {
     return;
   }
@@ -44,6 +47,7 @@ btnRetry.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
+  if (titleSettings.isOpen()) return;
   if (e.code !== 'Enter' && e.code !== 'Space') return;
   if (hud.isTitleVisible()) {
     e.preventDefault();

@@ -41,13 +41,25 @@ export class SceneryLayer {
   private sprites = new Map<ZoneId, BiomeSpriteSet>();
   private time = 0;
   private skipFar = false;
+  private maxDraw = 9999;
   activeCount = 0;
   lastEmitterCount = 0;
   private startZone: ZoneId = 'butter';
 
+  private biomeSpritesLoaded = false;
+
   constructor() {
     this.seedProps(this.startZone);
-    this.preloadSprites();
+  }
+
+  configurePerf(opts: { skipBiomeSprites?: boolean; maxDraw?: number; forceLow?: boolean }): void {
+    if (opts.maxDraw !== undefined) this.maxDraw = opts.maxDraw;
+    if (opts.forceLow === true) this.skipFar = true;
+    else if (opts.forceLow === false) this.skipFar = false;
+    if (opts.skipBiomeSprites === false && !this.biomeSpritesLoaded) {
+      this.preloadSprites();
+      this.biomeSpritesLoaded = true;
+    }
   }
 
   /** Re-seed decor for a new run — first phase aleatória */
@@ -262,8 +274,10 @@ export class SceneryLayer {
     const lx = atm.lightDirX;
     const ly = atm.lightDirY;
     const accent = atm.getAccent();
+    let drawn = 0;
 
     for (const p of this.props) {
+      if (drawn >= this.maxDraw) break;
       if (p.layer < layerMin || p.layer > layerMax || p.alpha < 0.015) continue;
       const { x, y } = this.propScreenPos(p, w, h, cameraY);
 
@@ -296,6 +310,7 @@ export class SceneryLayer {
       ctx.globalAlpha = vis;
       drawDecor(ctx, p.kind, x, y, s, p.phase, p.color, p.flyDir);
       ctx.restore();
+      drawn++;
 
       if (isBird) continue;
 

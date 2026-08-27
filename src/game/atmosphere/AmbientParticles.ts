@@ -104,6 +104,12 @@ export class AmbientParticles {
     this.densityScale = Math.max(0.4, Math.min(1, scale));
   }
 
+  setBudgetScale(scale: number): void {
+    this.budgetScale = Math.max(0.35, Math.min(1, scale));
+  }
+
+  private budgetScale = 1;
+
   private allocWorld(): AmbientParticle | null {
     for (const p of this.items) if (!p.active) return p;
     return null;
@@ -121,7 +127,7 @@ export class AmbientParticles {
     viewW: number,
     viewH: number,
   ): void {
-    const budget = Math.floor(atm.particleBudget * this.densityScale);
+    const budget = Math.floor(atm.particleBudget * this.densityScale * this.budgetScale);
     const maxWorld = Math.min(WORLD_POOL, Math.max(90, Math.floor(budget * 0.62)));
     const maxScreen = Math.min(SCREEN_POOL, Math.max(80, Math.floor(budget * 0.58)));
 

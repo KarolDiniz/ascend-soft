@@ -17,6 +17,10 @@ export class SoftPass {
     this.scale = scale;
   }
 
+  setScale(scale: number): void {
+    this.scale = Math.max(0.25, Math.min(1, scale));
+  }
+
   paint(
     main: CanvasRenderingContext2D,
     w: number,

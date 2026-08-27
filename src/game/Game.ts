@@ -18,6 +18,7 @@ import { PhaseRunOrder, setPhaseRun } from './PhaseRunOrder';
 import { materialMood } from './ThemedPhases';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
+import { getPerfProfile, loadLightMode, saveLightMode } from './GameSettings';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 
 const BEST_KEY = 'ascend-soft-best';
@@ -78,6 +79,7 @@ export class Game {
   private shownPhaseToasts = new Set<MaterialId>();
   private runBestBroken = false;
   private startBest = 0;
+  private lightMode = loadLightMode();
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -96,7 +98,51 @@ export class Game {
     }
     this.input.bind(canvas);
     this.resize();
+    this.applyPerfSettings();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  isLightMode(): boolean {
+    return this.lightMode;
+  }
+
+  setLightMode(enabled: boolean): void {
+    if (this.lightMode === enabled) return;
+    this.lightMode = enabled;
+    saveLightMode(enabled);
+    this.applyPerfSettings();
+    this.resize();
+  }
+
+  private perfProfile() {
+    return getPerfProfile(this.lightMode);
+  }
+
+  private applyPerfSettings(): void {
+    const p = this.perfProfile();
+    this.softScenery.setScale(p.softPassScale);
+    this.ambient.setBudgetScale(p.budgetScale);
+    this.scenery.configurePerf({
+      skipBiomeSprites: p.skipBiomeSprites,
+      maxDraw: p.maxSceneryDraw,
+      forceLow: p.forceSceneryPerf,
+    });
+    this.audio.setLightLandAudio(p.simplifyLandAudio);
+    if (p.forceSceneryPerf) this.scenery.setPerfMode(true);
+    else if (!this.lightMode) this.scenery.setPerfMode(false);
+    this.applyMobileScales();
+  }
+
+  private applyMobileScales(): void {
+    const p = this.perfProfile();
+    if (p.lightMode) {
+      this.ambient.setMobileScale(p.ambientScale);
+      this.particles.setMobileScale(p.particleScale);
+      return;
+    }
+    const mobile = this.W < 700 || this.dpr >= 1.5;
+    this.ambient.setMobileScale(mobile ? 0.72 : 1);
+    this.particles.setMobileScale(mobile ? 0.6 : 1);
   }
 
   start(): void {
@@ -179,9 +225,13 @@ export class Game {
   }
 
   private resize(): void {
-    this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.W = window.innerWidth;
     this.H = window.innerHeight;
+    const p = this.perfProfile();
+    const mobile = this.W < 700;
+    const rawDpr = window.devicePixelRatio || 1;
+    const cap = mobile ? p.mobileDprCap : p.dprCap;
+    this.dpr = Math.min(cap, rawDpr);
     this.canvas.width = Math.floor(this.W * this.dpr);
     this.canvas.height = Math.floor(this.H * this.dpr);
     this.canvas.style.width = `${this.W}px`;
@@ -189,29 +239,41 @@ export class Game {
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.worldHalfW = Math.min(220, Math.max(150, this.W * 0.38));
     this.spawner.setWorldHalfWidth(this.worldHalfW);
-    this.ambient.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.72 : 1);
+    this.applyMobileScales();
+  }
+
+  private updateAdaptivePerf(): void {
+    const p = this.perfProfile();
+    let amb = p.ambientScale;
+    let part = p.particleScale;
+    if (this.fpsEma < 45) {
+      amb = Math.min(amb, 0.45);
+      part = Math.min(part, 0.45);
+      this.particles.setAllowContinuous(false);
+      this.scenery.setPerfMode(true);
+    } else if (this.fpsEma < 55) {
+      amb = Math.min(amb, 0.62);
+      part = Math.min(part, 0.68);
+      this.particles.setAllowContinuous(true);
+      this.scenery.setPerfMode(true);
+    } else {
+      this.particles.setAllowContinuous(true);
+      this.scenery.setPerfMode(p.forceSceneryPerf);
+    }
+    if (!p.lightMode && this.W >= 700 && this.dpr < 1.5 && this.fpsEma >= 55) {
+      amb = 1;
+      part = 1;
+      this.scenery.setPerfMode(false);
+    }
+    this.ambient.setMobileScale(amb);
+    this.particles.setMobileScale(part);
   }
 
   private update(dt: number): void {
     this.time += dt;
     this.input.update(dt);
     this.fpsEma = this.fpsEma * 0.9 + (1 / Math.max(0.001, dt)) * 0.1;
-    if (this.fpsEma < 45) {
-      this.ambient.setMobileScale(0.5);
-      this.particles.setMobileScale(0.5);
-      this.particles.setAllowContinuous(false);
-      this.scenery.setPerfMode(true);
-    } else if (this.fpsEma < 55) {
-      this.ambient.setMobileScale(0.65);
-      this.particles.setMobileScale(0.7);
-      this.particles.setAllowContinuous(true);
-      this.scenery.setPerfMode(true);
-    } else {
-      this.ambient.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.65 : 1);
-      this.particles.setMobileScale(this.W < 700 || this.dpr >= 2 ? 0.6 : 1);
-      this.particles.setAllowContinuous(true);
-      this.scenery.setPerfMode(false);
-    }
+    this.updateAdaptivePerf();
 
     const atmoHeight = this.state === 'title' ? 40 : this.height;
     this.atmosphere.update(dt, atmoHeight);
@@ -230,7 +292,9 @@ export class Game {
       .getWeights()
       .filter((w) => w.zone.id === 'grass')
       .reduce((sum, w) => sum + w.weight, 0);
-    this.audio.updateGrassBirdAmbience(dt, grassWeight);
+    if (this.perfProfile().birdAmbience) {
+      this.audio.updateGrassBirdAmbience(dt, grassWeight);
+    }
 
     if (this.atmosphere.biomeEntered && this.state === 'playing') {
       const z = this.atmosphere.getPrimaryZone();
@@ -756,14 +820,19 @@ export class Game {
 
     this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
 
-    // Soft scenery: paint at ~38% res + smooth upscale (title + play).
-    // Avoids ctx.filter blur which tanks FPS.
-    this.softScenery.paint(ctx, this.W, this.H, (s) => {
+    const paintScenery = (s: CanvasRenderingContext2D) => {
       this.scenery.drawFar(s, this.W, this.H, this.camera.y, this.atmosphere);
       this.ambient.drawFar(s, this.toScreen);
       this.scenery.drawMid(s, this.W, this.H, this.camera.y, this.atmosphere);
       this.ambient.drawMid(s, this.toScreen);
-    });
+    };
+
+    const p = this.perfProfile();
+    if (p.useSoftPass) {
+      this.softScenery.paint(ctx, this.W, this.H, paintScenery);
+    } else {
+      paintScenery(ctx);
+    }
 
     this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
     enablePixelMode(ctx);

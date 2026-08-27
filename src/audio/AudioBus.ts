@@ -35,6 +35,8 @@ export class AudioBus {
   /** Canto de pássaros na fase grama */
   private birdChirpAcc = 0;
   private birdChirpCooldown = 0;
+  /** Pouso simplificado no modo leve */
+  private lightLandAudio = false;
 
   get isMuted(): boolean {
     return this.muted;
@@ -76,6 +78,10 @@ export class AudioBus {
   setVolume(v: number): void {
     this.volume = clamp(v, 0, 1);
     this.applyGains();
+  }
+
+  setLightLandAudio(simple: boolean): void {
+    this.lightLandAudio = simple;
   }
 
   private applyGains(): void {
@@ -304,6 +310,13 @@ export class AudioBus {
       land.connect(sfx);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
+      if (this.lightLandAudio) {
+        const t = ctx.currentTime;
+        this.softThud(ctx, land, t, pitch, imp);
+        this.noiseBurst(ctx, land, 0.07, 480 + Math.random() * 220, this.impactVol(0.07, imp), t, 'bandpass');
+        if (perfect) this.perfectChime(ctx, land, pitch, streak);
+        return;
+      }
       const handlers: Record<MaterialId, () => void> = {
         jelly: () => this.jellyPloop(ctx, land, pitch, imp),
         butter: () => this.butterThup(ctx, land, pitch, imp),
