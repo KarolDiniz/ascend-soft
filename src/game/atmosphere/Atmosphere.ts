@@ -14,36 +14,28 @@ export interface ZoneWeight {
   weight: number;
 }
 
-function hexToRgb(c: string): [number, number, number] {
-  const n = parseInt(c.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+function parseRgb(c: string): [number, number, number] {
+  if (c.startsWith('#')) {
+    const n = parseInt(c.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (m) return [+m[1], +m[2], +m[3]];
+  return [220, 210, 200];
 }
 
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'))
-      .join('')
-  );
-}
-
-function lerpHex(a: string, b: string, t: number): string {
-  const pa = hexToRgb(a);
-  const pb = hexToRgb(b);
-  return rgbToHex(
-    pa[0] + (pb[0] - pa[0]) * t,
-    pa[1] + (pb[1] - pa[1]) * t,
-    pa[2] + (pb[2] - pa[2]) * t,
-  );
+function smootherstep(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return c * c * c * (c * (c * 6 - 15) + 10);
 }
 
 export class Atmosphere {
   height = 0;
   private weights: ZoneWeight[] = [];
+  /** Temporally smoothed weights for ultra-fluid palette/scenery */
+  private smoothMap = new Map<ZoneId, number>();
   windX = 0;
   windY = 0;
-  /** Gust overlay on wind */
   gustX = 0;
   gustY = 0;
   density = 0.55;
@@ -52,20 +44,24 @@ export class Atmosphere {
   particleBudget = 180;
   primaryId: ZoneId = 'butter';
   private lastPrimary: ZoneId = 'butter';
-  /** True for one frame when crossing into a new primary zone */
   biomeEntered: ZoneId | null = null;
-  /** Brightness flash 0→1 on biome enter */
   enterFlash = 0;
-  /** 0–1 how strong the current gust is */
   gustStrength = 0;
   private gustTimer = 3.5 + Math.random() * 2.5;
   private gustRemain = 0;
+  private time = 0;
+  /** Soft light direction for scenery shadows (screen-space bias) */
+  lightDirX = -0.35;
+  lightDirY = 0.55;
+  lightWarmth = 0.55;
 
   resetForHeight(h: number): void {
     this.height = Math.max(0, h);
     this.biomeEntered = null;
     this.enterFlash = 0;
     this.weights = this.computeWeights(this.height);
+    this.smoothMap.clear();
+    for (const w of this.weights) this.smoothMap.set(w.zone.id, w.weight);
     const primary = this.weights.reduce((a, b) => (b.weight > a.weight ? b : a)).zone;
     this.primaryId = primary.id;
     this.lastPrimary = primary.id;
@@ -73,8 +69,31 @@ export class Atmosphere {
 
   update(dt: number, height: number): void {
     this.height = Math.max(0, height);
+    this.time += dt;
     this.biomeEntered = null;
-    this.weights = this.computeWeights(this.height);
+    const target = this.computeWeights(this.height);
+
+    // Temporal ease — scenery/palette lag slightly behind height for creamier feel
+    const ease = 1 - Math.exp(-2.4 * dt);
+    const targetMap = new Map<ZoneId, number>();
+    for (const w of target) targetMap.set(w.zone.id, w.weight);
+    for (const z of ALTITUDE_ZONES) {
+      const goal = targetMap.get(z.id) ?? 0;
+      const cur = this.smoothMap.get(z.id) ?? 0;
+      this.smoothMap.set(z.id, cur + (goal - cur) * ease);
+    }
+
+    this.weights = [];
+    for (const z of ALTITUDE_ZONES) {
+      const w = this.smoothMap.get(z.id) ?? 0;
+      if (w > 0.008) this.weights.push({ zone: z, weight: w });
+    }
+    if (this.weights.length === 0) {
+      this.weights = target;
+    } else {
+      const sum = this.weights.reduce((a, b) => a + b.weight, 0) || 1;
+      for (const w of this.weights) w.weight /= sum;
+    }
 
     let wx = 0;
     let wy = 0;
@@ -94,29 +113,34 @@ export class Atmosphere {
     this.gustTimer -= dt;
     if (this.gustRemain > 0) {
       this.gustRemain -= dt;
-      this.gustStrength = Math.max(0, this.gustRemain / 0.6);
+      this.gustStrength = Math.max(0, this.gustRemain / 0.85);
     } else {
       this.gustStrength = 0;
-      this.gustX *= 1 - 3 * dt;
-      this.gustY *= 1 - 3 * dt;
+      this.gustX *= 1 - 2.2 * dt;
+      this.gustY *= 1 - 2.2 * dt;
     }
     if (this.gustTimer <= 0) {
-      this.gustTimer = 3.5 + Math.random() * 2.5;
-      this.gustRemain = 0.6;
-      this.gustX = (Math.random() - 0.5) * 70;
-      this.gustY = (Math.random() - 0.3) * 28;
+      this.gustTimer = 2.8 + Math.random() * 2.2;
+      this.gustRemain = 0.85;
+      this.gustX = (Math.random() - 0.5) * 55;
+      this.gustY = (Math.random() - 0.3) * 24;
       this.gustStrength = 1;
     }
 
-    this.windX = wx + this.gustX * Math.max(this.gustStrength, 0.15);
-    this.windY = wy + this.gustY * Math.max(this.gustStrength, 0.15);
+    this.windX = wx + this.gustX * Math.max(this.gustStrength, 0.12);
+    this.windY = wy + this.gustY * Math.max(this.gustStrength, 0.12);
     this.density = dens;
     this.breathPeriod = breath || 11;
     this.grainAlpha = grain;
     this.particleBudget = budget || 180;
 
+    // Soft drifting light
+    this.lightDirX = -0.32 + Math.sin(this.time * 0.18 + this.height * 0.004) * 0.12;
+    this.lightDirY = 0.5 + Math.cos(this.time * 0.14 + this.height * 0.003) * 0.08;
+    this.lightWarmth = 0.45 + Math.sin(this.time * 0.11) * 0.12;
+
     if (this.enterFlash > 0) {
-      this.enterFlash = Math.max(0, this.enterFlash - dt * 2.5);
+      this.enterFlash = Math.max(0, this.enterFlash - dt * 1.4);
     }
 
     const primary = this.weights.reduce((a, b) => (b.weight > a.weight ? b : a)).zone;
@@ -139,11 +163,10 @@ export class Atmosphere {
     const isLast = idx >= ALTITUDE_ZONES.length - 1;
     const blendStart = isLast ? boundary - ZONE_BLEND * 2 : boundary - ZONE_BLEND;
     const blendEnd = isLast ? boundary : boundary + ZONE_BLEND;
-    const t = Math.min(1, Math.max(0, (ch - blendStart) / (blendEnd - blendStart)));
-    const s = t * t * (3 - 2 * t);
+    const s = smootherstep((ch - blendStart) / (blendEnd - blendStart));
 
-    if (s <= 0.02) return [{ zone: cur, weight: 1 }];
-    if (s >= 0.98) return [{ zone: next, weight: 1 }];
+    if (s <= 0.01) return [{ zone: cur, weight: 1 }];
+    if (s >= 0.99) return [{ zone: next, weight: 1 }];
     return [
       { zone: cur, weight: 1 - s },
       { zone: next, weight: s },
@@ -156,16 +179,48 @@ export class Atmosphere {
 
   getPalette(): ZonePalette {
     if (this.weights.length === 1) return this.weights[0].zone.palette;
-    const a = this.weights[0];
-    const b = this.weights[1];
-    const t = b.weight;
+    // Multi-weight blend for ultra-smooth palette
+    let top = [0, 0, 0];
+    let mid = [0, 0, 0];
+    let bottom = [0, 0, 0];
+    let accent = [0, 0, 0];
+    const blobAcc: [number, number, number, number][] = [
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ];
+    for (const { zone, weight } of this.weights) {
+      const pt = parseRgb(zone.palette.top);
+      const pm = parseRgb(zone.palette.mid);
+      const pb = parseRgb(zone.palette.bottom);
+      const pa = parseRgb(zone.palette.accent);
+      top = [top[0] + pt[0] * weight, top[1] + pt[1] * weight, top[2] + pt[2] * weight];
+      mid = [mid[0] + pm[0] * weight, mid[1] + pm[1] * weight, mid[2] + pm[2] * weight];
+      bottom = [bottom[0] + pb[0] * weight, bottom[1] + pb[1] * weight, bottom[2] + pb[2] * weight];
+      accent = [accent[0] + pa[0] * weight, accent[1] + pa[1] * weight, accent[2] + pa[2] * weight];
+      for (let i = 0; i < 3; i++) {
+        const src = zone.palette.blob[i % zone.palette.blob.length];
+        const c = parseRgb(src);
+        const aMatch = src.match(/[\d.]+\s*\)$/);
+        const a = aMatch ? parseFloat(aMatch[0]) : 0.3;
+        blobAcc[i][0] += c[0] * weight;
+        blobAcc[i][1] += c[1] * weight;
+        blobAcc[i][2] += c[2] * weight;
+        blobAcc[i][3] += a * weight;
+      }
+    }
+    const hex = (rgb: number[]) =>
+      '#' +
+      rgb
+        .map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'))
+        .join('');
     return {
-      top: lerpHex(a.zone.palette.top, b.zone.palette.top, t),
-      mid: lerpHex(a.zone.palette.mid, b.zone.palette.mid, t),
-      bottom: lerpHex(a.zone.palette.bottom, b.zone.palette.bottom, t),
-      accent: lerpHex(a.zone.palette.accent, b.zone.palette.accent, t),
-      blob: a.zone.palette.blob.map((c, i) =>
-        lerpHex(c, b.zone.palette.blob[i % b.zone.palette.blob.length], t),
+      top: hex(top),
+      mid: hex(mid),
+      bottom: hex(bottom),
+      accent: hex(accent),
+      blob: blobAcc.map(
+        (b) => `rgba(${Math.round(b[0])},${Math.round(b[1])},${Math.round(b[2])},${b[3].toFixed(3)})`,
       ),
     };
   }
@@ -185,11 +240,7 @@ export class Atmosphere {
   }
 
   getBlobColors(): string[] {
-    if (this.weights.length === 1) return this.weights[0].zone.palette.blob;
-    const a = this.weights[0].zone.palette.blob;
-    const b = this.weights[1]?.zone.palette.blob ?? a;
-    const t = this.weights[1]?.weight ?? 0;
-    return t > 0.5 ? b : a;
+    return this.getPalette().blob;
   }
 
   getBlobKinds() {
@@ -208,4 +259,3 @@ export class Atmosphere {
     return this.weights.map((w) => `${w.zone.id}:${w.weight.toFixed(2)}`).join(' ');
   }
 }
-

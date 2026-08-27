@@ -9,7 +9,6 @@ interface SceneryProp {
   nx: number;
   ny: number;
   scale: number;
-  /** 0 far … 3 near-mid */
   layer: 0 | 1 | 2 | 3;
   phase: number;
   speed: number;
@@ -25,8 +24,9 @@ interface BiomeSpriteSet {
 }
 
 const PARALLAX = [0.05, 0.1, 0.18, 0.26];
-const PROP_COUNT = 80;
-const FADE_SPEED = 1.15;
+const PROP_COUNT = 110;
+/** Slow crossfade — scenery melts between phases */
+const FADE_SPEED = 0.32;
 const START_ZONE: ZoneId = 'butter';
 
 function zoneColors(id: ZoneId): string[] {
@@ -50,7 +50,7 @@ export class SceneryLayer {
     this.props.length = 0;
     let i = 0;
     for (const zone of ALTITUDE_ZONES) {
-      const perZone = Math.max(3, Math.floor(PROP_COUNT / ALTITUDE_ZONES.length));
+      const perZone = Math.max(4, Math.floor(PROP_COUNT / ALTITUDE_ZONES.length));
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
         const layer = (k % 4) as 0 | 1 | 2 | 3;
@@ -138,16 +138,18 @@ export class SceneryLayer {
       const layerMul = this.skipFar && p.layer < 2 ? 0 : 1;
       p.targetAlpha = w * 0.95 * layerMul;
       const diff = p.targetAlpha - p.alpha;
-      p.alpha += Math.sign(diff) * Math.min(Math.abs(diff), FADE_SPEED * dt);
+      // Ease-out approach — never snappy
+      const step = Math.min(Math.abs(diff), FADE_SPEED * dt * (0.35 + Math.abs(diff) * 1.6));
+      p.alpha += Math.sign(diff) * step;
       p.phase += dt * p.speed;
-      if (p.alpha > 0.02) this.activeCount++;
+      if (p.alpha > 0.015) this.activeCount++;
     }
   }
 
   collectEmitters(w: number, h: number, cameraY: number): { x: number; y: number; color: string; kind: string }[] {
     const out: { x: number; y: number; color: string; kind: string }[] = [];
     for (const p of this.props) {
-      if (p.alpha < 0.15) continue;
+      if (p.alpha < 0.12) continue;
       const px = PARALLAX[p.layer];
       const sway = Math.sin(p.phase) * (14 + p.layer * 5) + Math.sin(p.phase * 0.37) * 6;
       const bob = Math.cos(p.phase * 0.85) * (9 + p.layer * 3);
@@ -171,7 +173,7 @@ export class SceneryLayer {
   ): void {
     ctx.imageSmoothingEnabled = false;
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'far', 0.07);
-    this.drawProps(ctx, w, h, cameraY, 0, 1);
+    this.drawProps(ctx, w, h, cameraY, 0, 1, atm);
   }
 
   drawMid(
@@ -183,7 +185,7 @@ export class SceneryLayer {
   ): void {
     ctx.imageSmoothingEnabled = false;
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'mid', 0.18);
-    this.drawProps(ctx, w, h, cameraY, 2, 3);
+    this.drawProps(ctx, w, h, cameraY, 2, 3, atm);
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'accent', 0.22);
   }
 
@@ -197,7 +199,7 @@ export class SceneryLayer {
     parallax: number,
   ): void {
     for (const { zone, weight } of atm.getWeights()) {
-      if (weight < 0.05) continue;
+      if (weight < 0.04) continue;
       const set = this.sprites.get(zone.id);
       const img = set?.[key];
       if (!img || !img.complete || img.naturalWidth === 0) continue;
@@ -218,9 +220,14 @@ export class SceneryLayer {
     cameraY: number,
     layerMin: number,
     layerMax: number,
+    atm: Atmosphere,
   ): void {
+    const lx = atm.lightDirX;
+    const ly = atm.lightDirY;
+    const accent = atm.getAccent();
+
     for (const p of this.props) {
-      if (p.layer < layerMin || p.layer > layerMax || p.alpha < 0.02) continue;
+      if (p.layer < layerMin || p.layer > layerMax || p.alpha < 0.015) continue;
       const px = PARALLAX[p.layer];
       const sway = Math.sin(p.phase) * (12 + p.layer * 4);
       const bob = Math.cos(p.phase * 0.85) * (8 + p.layer * 3);
@@ -232,9 +239,57 @@ export class SceneryLayer {
       if (y < -p.scale * 2 || y > h + p.scale * 2) continue;
       if (x < -p.scale * 2 || x > w + p.scale * 2) continue;
 
+      const vis = p.alpha * (0.62 + p.layer * 0.1);
+      const s = p.scale;
+
+      // Soft contact shadow (light-driven offset)
       ctx.save();
-      ctx.globalAlpha = p.alpha * (0.62 + p.layer * 0.1);
-      drawDecor(ctx, p.kind, x, y, p.scale, p.phase, p.color);
+      ctx.globalAlpha = vis * 0.28;
+      const sx = x - lx * s * 0.35;
+      const sy = y + s * 0.52 + ly * s * 0.08;
+      const sh = ctx.createRadialGradient(sx, sy, 0, sx, sy, s * 0.55);
+      sh.addColorStop(0, 'rgba(55, 48, 42, 0.45)');
+      sh.addColorStop(0.55, 'rgba(55, 48, 42, 0.14)');
+      sh.addColorStop(1, 'rgba(55, 48, 42, 0)');
+      ctx.fillStyle = sh;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, s * 0.52, s * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Prop body
+      ctx.save();
+      ctx.globalAlpha = vis;
+      drawDecor(ctx, p.kind, x, y, s, p.phase, p.color);
+      ctx.restore();
+
+      // Soft rim light / highlight from top-left
+      ctx.save();
+      ctx.globalAlpha = vis * 0.22;
+      ctx.globalCompositeOperation = 'soft-light';
+      const hx = x + lx * s * 0.15;
+      const hy = y - s * 0.25;
+      const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, s * 0.7);
+      hg.addColorStop(0, 'rgba(255, 252, 245, 0.85)');
+      hg.addColorStop(0.4, accent);
+      hg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hg;
+      ctx.beginPath();
+      ctx.arc(x, y, s * 0.72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Gentle ambient occlusion under prop
+      ctx.save();
+      ctx.globalAlpha = vis * 0.12;
+      ctx.globalCompositeOperation = 'multiply';
+      const ao = ctx.createRadialGradient(x, y + s * 0.35, 0, x, y + s * 0.35, s * 0.5);
+      ao.addColorStop(0, 'rgba(90, 70, 55, 0.35)');
+      ao.addColorStop(1, 'rgba(90, 70, 55, 0)');
+      ctx.fillStyle = ao;
+      ctx.beginPath();
+      ctx.ellipse(x, y + s * 0.4, s * 0.4, s * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
   }

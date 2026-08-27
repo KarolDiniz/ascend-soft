@@ -52,6 +52,16 @@ export class Background {
 
     this.drawThemedBlobs(ctx, w, h, atm, breath);
 
+    // Soft atmospheric depth haze (pre-light)
+    if (atm) {
+      const haze = ctx.createLinearGradient(0, 0, 0, h);
+      haze.addColorStop(0, this.withAlpha(pal?.top ?? '#fff', 0.0));
+      haze.addColorStop(0.5, this.withAlpha(pal?.mid ?? '#fff', 0.04));
+      haze.addColorStop(1, this.withAlpha(pal?.bottom ?? '#fff', 0.1));
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, w, h);
+    }
+
     if (flash > 0) {
       ctx.fillStyle = `rgba(255,252,245,${flash * 0.16})`;
       ctx.fillRect(0, 0, w, h);
@@ -103,11 +113,66 @@ export class Background {
   }
 
   drawLightOverlay(
-    _ctx: CanvasRenderingContext2D,
-    _w: number,
-    _h: number,
-    _atm?: Atmosphere,
-  ): void {}
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm?: Atmosphere,
+  ): void {
+    const accent = atm?.getAccent() ?? '#f3e2a8';
+    const lx = atm?.lightDirX ?? -0.35;
+    const ly = atm?.lightDirY ?? 0.55;
+    const warmth = atm?.lightWarmth ?? 0.55;
+    const breath = (Math.sin(this.time * 0.35) + 1) * 0.5;
+
+    // Soft key light wash from top-left
+    ctx.save();
+    const keyX = w * (0.28 + lx * 0.15);
+    const keyY = h * (0.12 - ly * 0.05);
+    const key = ctx.createRadialGradient(keyX, keyY, 0, keyX, keyY, h * 0.85);
+    key.addColorStop(0, this.withAlpha('#fffaf0', 0.16 + breath * 0.04));
+    key.addColorStop(0.35, this.withAlpha(accent, 0.08 + warmth * 0.04));
+    key.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = key;
+    ctx.fillRect(0, 0, w, h);
+
+    // Volumetric light shafts
+    ctx.globalCompositeOperation = 'soft-light';
+    for (let i = 0; i < 5; i++) {
+      const drift = Math.sin(this.time * 0.22 + i * 1.1) * 18;
+      const ax = w * (0.15 + i * 0.16) + drift + lx * 40;
+      const topW = 18 + i * 6;
+      const botW = 55 + i * 22;
+      const g = ctx.createLinearGradient(ax, 0, ax + lx * 80, h * 0.92);
+      g.addColorStop(0, this.withAlpha('#fff8ee', 0.14 + breath * 0.05));
+      g.addColorStop(0.45, this.withAlpha(accent, 0.06));
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(ax - topW, -10);
+      ctx.lineTo(ax + topW, -10);
+      ctx.lineTo(ax + botW + lx * 30, h);
+      ctx.lineTo(ax - botW + lx * 30, h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Soft floor shadow / ambient occlusion at bottom
+    ctx.globalCompositeOperation = 'source-over';
+    const floor = ctx.createLinearGradient(0, h * 0.62, 0, h);
+    floor.addColorStop(0, 'rgba(60, 50, 45, 0)');
+    floor.addColorStop(0.55, 'rgba(60, 50, 45, 0.04)');
+    floor.addColorStop(1, 'rgba(60, 50, 45, 0.1)');
+    ctx.fillStyle = floor;
+    ctx.fillRect(0, h * 0.62, w, h * 0.38);
+
+    // Side fill light (opposite of key)
+    const fill = ctx.createRadialGradient(w * 0.85, h * 0.55, 0, w * 0.85, h * 0.55, w * 0.55);
+    fill.addColorStop(0, this.withAlpha(accent, 0.05));
+    fill.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = fill;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
 
   drawBiomeOverlays(
     ctx: CanvasRenderingContext2D,
@@ -116,11 +181,12 @@ export class Background {
     atm?: Atmosphere,
   ): void {
     if (!atm) return;
+    const accent = atm.getAccent();
     for (const { zone, weight } of atm.getWeights()) {
-      if (weight < 0.04) continue;
+      if (weight < 0.03) continue;
       ctx.save();
-      ctx.globalAlpha = weight;
-      this.drawOverlay(ctx, w, h, zone.overlay, zone.palette.accent);
+      ctx.globalAlpha = weight * 0.92;
+      this.drawOverlay(ctx, w, h, zone.overlay, accent);
       ctx.restore();
     }
   }

@@ -31,8 +31,8 @@ export const PHASE_ORDER: MaterialId[] = [
 /** Altitude span per themed phase (player.y). */
 export const PHASE_HEIGHT = 1000;
 
-/** Smooth blend window at each phase boundary. */
-export const PHASE_BLEND = 160;
+/** Smooth blend window at each phase boundary — long for ultra-fluid crossfade. */
+export const PHASE_BLEND = 340;
 
 export const PHASE_COUNT = PHASE_ORDER.length;
 
@@ -125,11 +125,6 @@ export function phaseTransitionT(height: number): number {
   return t * t * (3 - 2 * t);
 }
 
-function smoothstep(t: number): number {
-  const c = Math.min(1, Math.max(0, t));
-  return c * c * (3 - 2 * c);
-}
-
 function blendProgress(ch: number, idx: number): number {
   const boundary = (idx + 1) * PHASE_HEIGHT;
   const isLast = idx >= PHASE_COUNT - 1;
@@ -137,7 +132,9 @@ function blendProgress(ch: number, idx: number): number {
   const blendEnd = isLast ? boundary : boundary + PHASE_BLEND;
   if (ch <= blendStart) return 0;
   if (ch >= blendEnd) return 1;
-  return smoothstep((ch - blendStart) / (blendEnd - blendStart));
+  // smootherstep — even softer than smoothstep
+  const t = (ch - blendStart) / (blendEnd - blendStart);
+  return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 /** Pick spawn material — 100% phase-themed with soft crossfade at boundaries. */
@@ -283,28 +280,28 @@ const BLOBS: Record<MaterialId, BlobKind[]> = {
   butterSlime: ['scoop', 'bubble', 'orb'],
 };
 
-/** Per-phase wind / particle mood — tuned for cozy ASMR flow. */
+/** Per-phase wind / particle mood — dense ASMR particle field. */
 const WIND: Record<MaterialId, { windX: number; windY: number; density: number; breathPeriod: number; grainAlpha: number; particleBudget: number }> = {
-  butter: { windX: 10, windY: 6, density: 1.2, breathPeriod: 12, grainAlpha: 0.038, particleBudget: 400 },
-  jelly: { windX: 8, windY: 10, density: 1.25, breathPeriod: 11, grainAlpha: 0.035, particleBudget: 420 },
-  mochi: { windX: 14, windY: 5, density: 1.22, breathPeriod: 10, grainAlpha: 0.034, particleBudget: 410 },
-  marshmallow: { windX: 12, windY: 8, density: 1.18, breathPeriod: 13, grainAlpha: 0.032, particleBudget: 390 },
-  chocolate: { windX: 16, windY: 4, density: 1.28, breathPeriod: 10, grainAlpha: 0.036, particleBudget: 415 },
-  sponge: { windX: 9, windY: 12, density: 1.3, breathPeriod: 11, grainAlpha: 0.034, particleBudget: 400 },
-  glycerin: { windX: 7, windY: 14, density: 1.35, breathPeriod: 12, grainAlpha: 0.03, particleBudget: 430 },
-  citrus: { windX: 18, windY: 6, density: 1.24, breathPeriod: 9, grainAlpha: 0.035, particleBudget: 405 },
-  clearSlime: { windX: 11, windY: 9, density: 1.32, breathPeriod: 11, grainAlpha: 0.033, particleBudget: 425 },
-  whipped: { windX: 14, windY: 7, density: 1.26, breathPeriod: 10, grainAlpha: 0.032, particleBudget: 410 },
-  honeycomb: { windX: 15, windY: 5, density: 1.3, breathPeriod: 10, grainAlpha: 0.037, particleBudget: 420 },
-  soapBubble: { windX: 6, windY: 16, density: 1.38, breathPeriod: 13, grainAlpha: 0.028, particleBudget: 440 },
-  bathFoam: { windX: 8, windY: 12, density: 1.36, breathPeriod: 12, grainAlpha: 0.03, particleBudget: 435 },
-  lavenderSoap: { windX: 10, windY: 10, density: 1.28, breathPeriod: 13, grainAlpha: 0.032, particleBudget: 400 },
-  creamSoap: { windX: 9, windY: 11, density: 1.3, breathPeriod: 12, grainAlpha: 0.031, particleBudget: 405 },
-  keyboard: { windX: 20, windY: 3, density: 1.15, breathPeriod: 8, grainAlpha: 0.04, particleBudget: 360 },
-  bubbleWrap: { windX: 13, windY: 7, density: 1.22, breathPeriod: 9, grainAlpha: 0.034, particleBudget: 380 },
-  kinetic: { windX: 22, windY: -4, density: 1.34, breathPeriod: 11, grainAlpha: 0.042, particleBudget: 400 },
-  iceSoap: { windX: 20, windY: -8, density: 1.4, breathPeriod: 12, grainAlpha: 0.05, particleBudget: 430 },
-  butterSlime: { windX: 8, windY: 12, density: 1.15, breathPeriod: 14, grainAlpha: 0.025, particleBudget: 380 },
+  butter: { windX: 10, windY: 6, density: 1.55, breathPeriod: 12, grainAlpha: 0.038, particleBudget: 720 },
+  jelly: { windX: 8, windY: 10, density: 1.6, breathPeriod: 11, grainAlpha: 0.035, particleBudget: 760 },
+  mochi: { windX: 14, windY: 5, density: 1.55, breathPeriod: 10, grainAlpha: 0.034, particleBudget: 740 },
+  marshmallow: { windX: 12, windY: 8, density: 1.5, breathPeriod: 13, grainAlpha: 0.032, particleBudget: 700 },
+  chocolate: { windX: 16, windY: 4, density: 1.62, breathPeriod: 10, grainAlpha: 0.036, particleBudget: 750 },
+  sponge: { windX: 9, windY: 12, density: 1.65, breathPeriod: 11, grainAlpha: 0.034, particleBudget: 730 },
+  glycerin: { windX: 7, windY: 14, density: 1.7, breathPeriod: 12, grainAlpha: 0.03, particleBudget: 780 },
+  citrus: { windX: 18, windY: 6, density: 1.58, breathPeriod: 9, grainAlpha: 0.035, particleBudget: 720 },
+  clearSlime: { windX: 11, windY: 9, density: 1.68, breathPeriod: 11, grainAlpha: 0.033, particleBudget: 770 },
+  whipped: { windX: 14, windY: 7, density: 1.6, breathPeriod: 10, grainAlpha: 0.032, particleBudget: 740 },
+  honeycomb: { windX: 15, windY: 5, density: 1.65, breathPeriod: 10, grainAlpha: 0.037, particleBudget: 750 },
+  soapBubble: { windX: 6, windY: 16, density: 1.75, breathPeriod: 13, grainAlpha: 0.028, particleBudget: 800 },
+  bathFoam: { windX: 8, windY: 12, density: 1.72, breathPeriod: 12, grainAlpha: 0.03, particleBudget: 790 },
+  lavenderSoap: { windX: 10, windY: 10, density: 1.62, breathPeriod: 13, grainAlpha: 0.032, particleBudget: 720 },
+  creamSoap: { windX: 9, windY: 11, density: 1.65, breathPeriod: 12, grainAlpha: 0.031, particleBudget: 730 },
+  keyboard: { windX: 20, windY: 3, density: 1.45, breathPeriod: 8, grainAlpha: 0.04, particleBudget: 650 },
+  bubbleWrap: { windX: 13, windY: 7, density: 1.55, breathPeriod: 9, grainAlpha: 0.034, particleBudget: 700 },
+  kinetic: { windX: 22, windY: -4, density: 1.7, breathPeriod: 11, grainAlpha: 0.042, particleBudget: 740 },
+  iceSoap: { windX: 20, windY: -8, density: 1.78, breathPeriod: 12, grainAlpha: 0.05, particleBudget: 800 },
+  butterSlime: { windX: 8, windY: 12, density: 1.48, breathPeriod: 14, grainAlpha: 0.025, particleBudget: 700 },
 };
 
 function ambientFor(id: MaterialId): AmbientPreset[] {
