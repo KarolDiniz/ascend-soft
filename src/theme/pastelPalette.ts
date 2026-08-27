@@ -211,6 +211,54 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     '#F0FFFF',
     rgba(PASTEL.mint, 0.26),
   ),
+  amoeba: matColors(
+    '#88D8B0',
+    rgba(PASTEL.mint, 0.5),
+    '#B8F0D0',
+    rgba(PASTEL.seafoam, 0.3),
+  ),
+  moss: matColors(
+    '#6AAF78',
+    rgba(PASTEL.mint, 0.45),
+    '#88C898',
+    rgba(PASTEL.seafoam, 0.32),
+  ),
+  grass: matColors(
+    '#7EC868',
+    rgba(PASTEL.mint, 0.42),
+    '#98E088',
+    rgba(PASTEL.seafoam, 0.28),
+  ),
+  cotton: matColors(
+    '#F8F4F0',
+    rgba(PASTEL.white, 0.5),
+    '#FFFFFF',
+    rgba(PASTEL.cream, 0.25),
+  ),
+  cloud: matColors(
+    '#F4F8FF',
+    rgba(PASTEL.sky, 0.45),
+    '#FFFFFF',
+    rgba(PASTEL.mist, 0.22),
+  ),
+  paper: matColors(
+    '#F0E8D8',
+    rgba(PASTEL.cream, 0.45),
+    '#FFF8F0',
+    rgba(PASTEL.cream, 0.28),
+  ),
+  plasticBottle: matColors(
+    '#A8D8C8',
+    rgba(PASTEL.seafoam, 0.48),
+    '#C8F0E0',
+    rgba(PASTEL.mint, 0.3),
+  ),
+  velvet: matColors(
+    '#C898B0',
+    rgba(PASTEL.rose, 0.45),
+    '#E8B8C8',
+    rgba(PASTEL.blush, 0.3),
+  ),
 };
 
 export interface BiomePastelPalette {

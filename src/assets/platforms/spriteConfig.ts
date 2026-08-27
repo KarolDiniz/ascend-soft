@@ -44,4 +44,12 @@ export const ALL_SPRITE_MATERIALS: MaterialId[] = [
   'iceSoap',
   'clearSlime',
   'butterSlime',
+  'amoeba',
+  'moss',
+  'grass',
+  'cotton',
+  'cloud',
+  'paper',
+  'plasticBottle',
+  'velvet',
 ];

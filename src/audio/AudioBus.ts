@@ -315,6 +315,14 @@ export class AudioBus {
         iceSoap: () => this.iceTing(ctx, land, pitch, imp),
         clearSlime: () => this.slimeBlorp(ctx, land, pitch, imp),
         butterSlime: () => this.butterSlimeFold(ctx, land, pitch, imp),
+        amoeba: () => this.jellyPloop(ctx, land, pitch, imp),
+        moss: () => this.marshmallowPuff(ctx, land, pitch, imp),
+        grass: () => this.spongeSquish(ctx, land, pitch, imp),
+        cotton: () => this.marshmallowPuff(ctx, land, pitch, imp),
+        cloud: () => this.whippedFoam(ctx, land, pitch, imp),
+        paper: () => this.keyboardClick(ctx, land, pitch, imp),
+        plasticBottle: () => this.bubbleWrapPop(ctx, land, pitch, imp),
+        velvet: () => this.creamSquish(ctx, land, pitch, imp),
       };
       handlers[material]();
       if (perfect) this.perfectChime(ctx, land, pitch, streak);

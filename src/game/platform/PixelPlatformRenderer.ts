@@ -7,6 +7,16 @@ import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
 import { drawButterGarnish, drawButterKnife } from './butterVisual';
+import {
+  drawAmoeba,
+  drawCloud,
+  drawCotton,
+  drawGrass,
+  drawMoss,
+  drawPaper,
+  drawPlasticBottle,
+  drawVelvet,
+} from './extraPlatforms';
 import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
 import { drawSpongeFlies } from './spongeFlies';
 import type { PlatformDrawState, PlatformVariant } from './types';
@@ -182,6 +192,30 @@ export function renderPixelPlatform(
     case 'bubbleWrap':
       drawBubbleWrap(args);
       break;
+    case 'amoeba':
+      drawAmoeba(args);
+      break;
+    case 'plasticBottle':
+      drawPlasticBottle(args);
+      break;
+    case 'paper':
+      drawPaper(args);
+      break;
+    case 'grass':
+      drawGrass(args);
+      break;
+    case 'cotton':
+      drawCotton(args);
+      break;
+    case 'moss':
+      drawMoss(args);
+      break;
+    case 'cloud':
+      drawCloud(args);
+      break;
+    case 'velvet':
+      drawVelvet(args);
+      break;
     default:
       drawButter(args);
   }
@@ -197,7 +231,13 @@ export function renderPixelPlatform(
     material !== 'marshmallow' &&
     material !== 'glycerin' &&
     material !== 'lavenderSoap' &&
-    material !== 'creamSoap'
+    material !== 'creamSoap' &&
+    material !== 'amoeba' &&
+    material !== 'grass' &&
+    material !== 'cloud' &&
+    material !== 'cotton' &&
+    material !== 'moss' &&
+    material !== 'paper'
   )
     drawHangingDetails(args);
   drawRelaxSparkles(args);
@@ -210,7 +250,8 @@ export function renderPixelPlatform(
       material === 'iceSoap' ||
       material === 'chocolate' ||
       material === 'lavenderSoap' ||
-      material === 'creamSoap')
+      material === 'creamSoap' ||
+      material === 'plasticBottle')
   ) {
     ctx.globalAlpha = s.opacity * Math.min(1, crack * 1.3);
     for (let i = 0; i < 4 + Math.floor(crack * 4); i++) {

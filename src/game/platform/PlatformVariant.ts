@@ -83,6 +83,38 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'bubbleWrap_sheet', visualDepth: 1.15, visualSpread: 1.1 },
     { id: 'bubbleWrap_pack', visualDepth: 1.25, visualSpread: 1.08 },
   ],
+  amoeba: [
+    { id: 'amoeba_blob', visualDepth: 0.95, visualSpread: 1.12 },
+    { id: 'amoeba_dome', visualDepth: 1.05, visualSpread: 1.08 },
+  ],
+  plasticBottle: [
+    { id: 'plasticBottle_lay', visualDepth: 0.85, visualSpread: 1.15 },
+    { id: 'plasticBottle_up', visualDepth: 1.4, visualSpread: 0.9 },
+  ],
+  paper: [
+    { id: 'paper_fold', visualDepth: 0.65, visualSpread: 1.0 },
+    { id: 'paper_sheet', visualDepth: 0.58, visualSpread: 1.05 },
+  ],
+  grass: [
+    { id: 'grass_turf', visualDepth: 0.82, visualSpread: 1.06 },
+    { id: 'grass_patch', visualDepth: 0.72, visualSpread: 1.1 },
+  ],
+  cotton: [
+    { id: 'cotton_puff', visualDepth: 1.35, visualSpread: 1.1 },
+    { id: 'cotton_pad', visualDepth: 1.15, visualSpread: 1.06 },
+  ],
+  moss: [
+    { id: 'moss_mound', visualDepth: 1.0, visualSpread: 1.05 },
+    { id: 'moss_clump', visualDepth: 0.88, visualSpread: 1.08 },
+  ],
+  cloud: [
+    { id: 'cloud_puff', visualDepth: 1.28, visualSpread: 1.14 },
+    { id: 'cloud_drift', visualDepth: 1.15, visualSpread: 1.18 },
+  ],
+  velvet: [
+    { id: 'velvet_pad', visualDepth: 0.7, visualSpread: 1.0 },
+    { id: 'velvet_fold', visualDepth: 0.78, visualSpread: 1.04 },
+  ],
 };
 
 export function pickVariant(material: MaterialId, rand: () => number): VariantDef {

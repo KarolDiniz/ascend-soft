@@ -68,6 +68,22 @@ export const MATERIAL_LEDGE: Record<
   keyboard: { minW: 58, maxW: 72, visualDepth: 0.62, visualSpread: 1.06 },
   /** plástico bolha — laje com bolhas */
   bubbleWrap: { minW: 52, maxW: 64, visualDepth: 0.72, visualSpread: 1.04 },
+  /** ameba — blob baixo e largo */
+  amoeba: { minW: 50, maxW: 62, visualDepth: 0.88, visualSpread: 1.1 },
+  /** garrafa PET — estreita e alta */
+  plasticBottle: { minW: 40, maxW: 50, visualDepth: 1.35, visualSpread: 0.92 },
+  /** papel — folha fina */
+  paper: { minW: 48, maxW: 60, visualDepth: 0.62, visualSpread: 1.02 },
+  /** grama — torf baixo */
+  grass: { minW: 52, maxW: 66, visualDepth: 0.78, visualSpread: 1.06 },
+  /** algodão — puff alto */
+  cotton: { minW: 46, maxW: 58, visualDepth: 1.28, visualSpread: 1.08 },
+  /** musgo — monte médio */
+  moss: { minW: 50, maxW: 62, visualDepth: 0.95, visualSpread: 1.04 },
+  /** nuvem — puff aéreo */
+  cloud: { minW: 54, maxW: 68, visualDepth: 1.22, visualSpread: 1.12 },
+  /** veludo — placa baixa */
+  velvet: { minW: 48, maxW: 58, visualDepth: 0.72, visualSpread: 1.0 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {

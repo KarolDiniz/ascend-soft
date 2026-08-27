@@ -57,7 +57,23 @@ export type PlatformVariant =
   | 'keyboard_row'
   | 'keyboard_pad'
   | 'bubbleWrap_sheet'
-  | 'bubbleWrap_pack';
+  | 'bubbleWrap_pack'
+  | 'amoeba_blob'
+  | 'amoeba_dome'
+  | 'plasticBottle_lay'
+  | 'plasticBottle_up'
+  | 'paper_fold'
+  | 'paper_sheet'
+  | 'grass_turf'
+  | 'grass_patch'
+  | 'cotton_puff'
+  | 'cotton_pad'
+  | 'moss_mound'
+  | 'moss_clump'
+  | 'cloud_puff'
+  | 'cloud_drift'
+  | 'velvet_pad'
+  | 'velvet_fold';
 
 export interface VariantDef {
   id: PlatformVariant;

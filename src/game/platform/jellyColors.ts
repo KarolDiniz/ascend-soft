@@ -2,6 +2,7 @@ import { MATERIALS, type MaterialDef, type MaterialId } from '../../audio/materi
 import { materialDetailStroke, rgba } from '../../theme/pastelPalette';
 import { isSoapBarMaterial, soapColorPreset } from './soapColors';
 import { butterColorPreset } from './butterVisual';
+import { resolveAmoebaMaterial } from './amoebaColors';
 /** Cores distintas de gelatina na fase — verde, rosa, branca, etc. */
 const JELLY_FILLS = [
   '#8AD4A8', // verde menta
@@ -107,6 +108,9 @@ export function resolvePlatformMaterial(material: MaterialId, seed: number): Mat
       glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
     };
+  }
+  if (material === 'amoeba') {
+    return resolveAmoebaMaterial(seed);
   }
   return MATERIALS[material];
 }

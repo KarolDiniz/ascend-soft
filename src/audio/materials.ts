@@ -20,7 +20,15 @@ export type MaterialId =
   | 'lavenderSoap'
   | 'creamSoap'
   | 'keyboard'
-  | 'bubbleWrap';
+  | 'bubbleWrap'
+  | 'amoeba'
+  | 'plasticBottle'
+  | 'paper'
+  | 'grass'
+  | 'cotton'
+  | 'moss'
+  | 'cloud'
+  | 'velvet';
 
 export type ParticleStyle =
   | 'drip'
@@ -96,6 +104,14 @@ export const MATERIALS: Record<MaterialId, MaterialDef> = {
   kinetic: mat('kinetic', 'areia', 'sand', 1.1, 1.2, 700),
   iceSoap: mat('iceSoap', 'sabonete gelo', 'glitter', 0.5, 1.4, 850),
   butterSlime: mat('butterSlime', 'massa', 'foam', 1.5, 1.5, 1200),
+  amoeba: mat('amoeba', 'ameba', 'foam', 1.4, 1.35, 1350),
+  moss: mat('moss', 'musgo', 'foam', 1.2, 1.3, 1450),
+  grass: mat('grass', 'grama', 'crumb', 1.15, 1.3, 1550),
+  cotton: mat('cotton', 'algodão', 'foam', 1.35, 1.35, 1650),
+  cloud: mat('cloud', 'nuvem', 'foamBurst', 1.5, 1.4, 1750),
+  paper: mat('paper', 'papel', 'crumb', 0.9, 1.25, 1850),
+  plasticBottle: mat('plasticBottle', 'garrafa PET', 'spark', 0.65, 1.4, 1950),
+  velvet: mat('velvet', 'veludo', 'foam', 1.25, 1.45, 2100),
 };
 
 export const MATERIAL_ORDER: MaterialId[] = [
@@ -119,6 +135,14 @@ export const MATERIAL_ORDER: MaterialId[] = [
   'kinetic',
   'iceSoap',
   'butterSlime',
+  'amoeba',
+  'moss',
+  'grass',
+  'cotton',
+  'cloud',
+  'paper',
+  'plasticBottle',
+  'velvet',
 ];
 
 export function unlockedMaterials(height: number): MaterialId[] {

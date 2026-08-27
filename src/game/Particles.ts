@@ -75,6 +75,14 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   creamSoap: 'bubble',
   citrus: 'zest',
   keyboard: 'crumb',
+  amoeba: 'foam',
+  moss: 'foam',
+  grass: 'crumb',
+  cotton: 'foam',
+  cloud: 'foamBurst',
+  paper: 'crumb',
+  plasticBottle: 'spark',
+  velvet: 'foam',
 };
 
 export class Particles {
@@ -568,6 +576,14 @@ export class Particles {
       iceSoap: 2.8,
       clearSlime: 2.4,
       butterSlime: 1.8,
+      amoeba: 2.4,
+      moss: 2.0,
+      grass: 2.2,
+      cotton: 2.0,
+      cloud: 2.6,
+      paper: 1.6,
+      plasticBottle: 2.2,
+      velvet: 1.8,
     };
     const rate = rates[materialId] ?? 1.5;
     if (Math.random() > dt * rate * this.densityScale) return;

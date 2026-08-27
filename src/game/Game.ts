@@ -540,6 +540,31 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
           this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'crumb', false);
           break;
+        case 'amoeba':
+          this.particles.jellySlimeDrops(this.player.x, platformTop, mat.particle, p.w, impact);
+          break;
+        case 'moss':
+        case 'cotton':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          break;
+        case 'grass':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'zest', false);
+          break;
+        case 'cloud':
+          this.particles.foamPopStorm(this.player.x, platformTop, mat.particle);
+          break;
+        case 'paper':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'crumb', false);
+          this.particles.sandFall(this.player.x, platformTop, mat.particle, 8);
+          break;
+        case 'plasticBottle':
+          this.particles.crackSpark(this.player.x, platformTop, this.atmosphere.getAccent());
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'spark', false);
+          break;
+        case 'velvet':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          break;
         default:
           break;
       }
