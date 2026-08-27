@@ -12,6 +12,10 @@ export class AudioBus {
   private ambient: GainNode | null = null;
   private music: GainNode | null = null;
   private ambientGainBase = 0.42;
+  /** Volume relativo da música generativa (abaixo das plataformas) */
+  private readonly musicGain = 0.32;
+  /** Volume do SFX de salto — discreto para não competir com o pouso */
+  private readonly jumpPeakGain = 0.032;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
@@ -76,13 +80,13 @@ export class AudioBus {
     this.ambient.gain.setTargetAtTime(this.ambientGainBase, now, 0.08);
   }
 
-  private duckAmbient(ms = 100): void {
+  private duckAmbient(ms = 100, level = 0.35): void {
     if (!this.ambient || !this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
     const g = this.ambient.gain;
     g.cancelScheduledValues(t);
     g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(this.ambientGainBase * 0.35, t + 0.02);
+    g.linearRampToValueAtTime(this.ambientGainBase * level, t + 0.02);
     g.linearRampToValueAtTime(this.ambientGainBase, t + ms / 1000);
   }
 
@@ -124,7 +128,7 @@ export class AudioBus {
       lfo.start();
     }
 
-    this.music.gain.value = 1;
+    this.music.gain.value = this.musicGain;
     this.nextMusicTime = ctx.currentTime + 0.12;
     this.musicStep = 0;
     this.scheduleMusic();
@@ -272,7 +276,7 @@ export class AudioBus {
       filter.Q.value = 0.7;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.1, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(this.jumpPeakGain, t + 0.015);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
       src.connect(filter);
       filter.connect(g);
@@ -284,33 +288,36 @@ export class AudioBus {
 
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1): void {
     this.withCtx((ctx, sfx) => {
-      this.duckAmbient(110);
+      this.duckAmbient(220, 0.1);
+      const land = ctx.createGain();
+      land.gain.value = this.landBusGain;
+      land.connect(sfx);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
       const handlers: Record<MaterialId, () => void> = {
-        jelly: () => this.jellyPloop(ctx, sfx, pitch, imp),
-        butter: () => this.butterThup(ctx, sfx, pitch, imp),
-        mochi: () => this.cheeseLand(ctx, sfx, pitch, imp),
-        marshmallow: () => this.marshmallowPuff(ctx, sfx, pitch, imp),
-        chocolate: () => this.chocolateRipple(ctx, sfx, pitch, imp),
-        sponge: () => this.spongeSquish(ctx, sfx, pitch, imp),
-        citrus: () => this.citrusZest(ctx, sfx, pitch, imp),
-        honeycomb: () => this.honeyDrip(ctx, sfx, pitch, imp),
-        glycerin: () => this.soapSquish(ctx, sfx, pitch, imp),
-        whipped: () => this.whippedFoam(ctx, sfx, pitch, imp),
-        soapBubble: () => this.soapBubblePop(ctx, sfx, pitch, imp),
-        bathFoam: () => this.bathFoamFizz(ctx, sfx, pitch, imp),
-        lavenderSoap: () => this.lavenderSquish(ctx, sfx, pitch, imp),
-        creamSoap: () => this.creamSquish(ctx, sfx, pitch, imp),
-        keyboard: () => this.keyboardClick(ctx, sfx, pitch, imp),
-        bubbleWrap: () => this.bubbleWrapPop(ctx, sfx, pitch, imp),
-        kinetic: () => this.kineticSand(ctx, sfx, pitch, imp),
-        iceSoap: () => this.iceTing(ctx, sfx, pitch, imp),
-        clearSlime: () => this.slimeBlorp(ctx, sfx, pitch, imp),
-        butterSlime: () => this.butterSlimeFold(ctx, sfx, pitch, imp),
+        jelly: () => this.jellyPloop(ctx, land, pitch, imp),
+        butter: () => this.butterThup(ctx, land, pitch, imp),
+        mochi: () => this.cheeseLand(ctx, land, pitch, imp),
+        marshmallow: () => this.marshmallowPuff(ctx, land, pitch, imp),
+        chocolate: () => this.chocolateRipple(ctx, land, pitch, imp),
+        sponge: () => this.spongeSquish(ctx, land, pitch, imp),
+        citrus: () => this.citrusZest(ctx, land, pitch, imp),
+        honeycomb: () => this.honeyDrip(ctx, land, pitch, imp),
+        glycerin: () => this.soapSquish(ctx, land, pitch, imp),
+        whipped: () => this.whippedFoam(ctx, land, pitch, imp),
+        soapBubble: () => this.soapBubblePop(ctx, land, pitch, imp),
+        bathFoam: () => this.bathFoamFizz(ctx, land, pitch, imp),
+        lavenderSoap: () => this.lavenderSquish(ctx, land, pitch, imp),
+        creamSoap: () => this.creamSquish(ctx, land, pitch, imp),
+        keyboard: () => this.keyboardClick(ctx, land, pitch, imp),
+        bubbleWrap: () => this.bubbleWrapPop(ctx, land, pitch, imp),
+        kinetic: () => this.kineticSand(ctx, land, pitch, imp),
+        iceSoap: () => this.iceTing(ctx, land, pitch, imp),
+        clearSlime: () => this.slimeBlorp(ctx, land, pitch, imp),
+        butterSlime: () => this.butterSlimeFold(ctx, land, pitch, imp),
       };
       handlers[material]();
-      if (perfect) this.perfectChime(ctx, sfx, pitch, streak);
+      if (perfect) this.perfectChime(ctx, land, pitch, streak);
     });
   }
 
@@ -608,8 +615,13 @@ export class AudioBus {
 
   // —— Material one-shots ——
 
+  /** Ganho extra nos SFX de pouso — plataformas dominam o mix */
+  private readonly landVolBoost = 3.6;
+  /** Bus dedicado só para pouso — acima de murmúrio, música e outros SFX */
+  private readonly landBusGain = 2.15;
+
   private impactVol(base: number, impact: number): number {
-    return base * (0.72 + Math.min(1.3, impact) * 0.42);
+    return base * this.landVolBoost * (0.72 + Math.min(1.3, impact) * 0.42);
   }
 
   private softThud(
@@ -640,25 +652,123 @@ export class AudioBus {
     this.noiseBurst(ctx, sfx, 0.055, freq * 0.55, v * 0.38, t + 0.035);
   }
 
+  /** Tom com ataque suave e filtro quente — ASMR agradável */
+  private warmLandTone(
+    ctx: AudioContext,
+    sfx: GainNode,
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    vol: number,
+    t: number,
+    lp = 1400,
+  ): void {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(lp, t);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(120, lp * 0.72), t + dur);
+    filter.Q.value = 0.65;
+    osc.type = type;
+    osc.frequency.setValueAtTime(Math.max(40, f0), t);
+    if (Math.abs(f0 - f1) > 1) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur * 0.9);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.024);
+    g.gain.exponentialRampToValueAtTime(vol * 0.58, t + dur * 0.42);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    osc.start(t);
+    osc.stop(t + dur + 0.03);
+  }
+
+  /** Ruído rosa filtrado — textura macia sem aspereza */
+  private softNoise(
+    ctx: AudioContext,
+    sfx: GainNode,
+    dur: number,
+    freq: number,
+    vol: number,
+    t: number,
+    kind: BiquadFilterType = 'lowpass',
+    q = 0.75,
+  ): void {
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx, Math.max(0.06, dur), true);
+    const filter = ctx.createBiquadFilter();
+    filter.type = kind;
+    filter.frequency.value = freq;
+    filter.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(vol * 0.48, t + dur * 0.48);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
   private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    const v = this.impactVol(0.15, impact);
-    this.tone(ctx, sfx, 'sine', 175 * pitch, 58 * pitch, 0.24, v, t);
-    this.tone(ctx, sfx, 'triangle', 310 * pitch, 125 * pitch, 0.15, v * 0.52, t + 0.018);
-    this.noiseBurst(ctx, sfx, 0.11, 680, v * 0.58, t, 'bandpass');
-    this.noiseBurst(ctx, sfx, 0.07, 420, v * 0.35, t + 0.05, 'lowpass');
-    for (let i = 0; i < 4; i++) {
-      this.tone(ctx, sfx, 'sine', (380 - i * 35) * pitch, 160 * pitch, 0.055, v * 0.22, t + 0.06 + i * 0.038);
+    const v = this.impactVol(0.14, impact);
+
+    // Corpo gelatinoso — bloop profundo com wobble de retorno
+    this.warmLandTone(ctx, sfx, 'sine', 132 * pitch, 44 * pitch, 0.34, v * 1.05, t, 820);
+    this.warmLandTone(ctx, sfx, 'triangle', 208 * pitch, 158 * pitch, 0.3, v * 0.48, t + 0.045, 1250);
+    this.warmLandTone(ctx, sfx, 'sine', 158 * pitch, 124 * pitch, 0.24, v * 0.32, t + 0.13, 980);
+
+    // Camada úmida sedosa
+    this.softNoise(ctx, sfx, 0.15, 480, v * 0.4, t, 'bandpass', 1.1);
+    this.softNoise(ctx, sfx, 0.11, 300, v * 0.26, t + 0.028, 'lowpass');
+
+    // Brilho leve no topo
+    this.warmLandTone(ctx, sfx, 'sine', 460 * pitch, 360 * pitch, 0.13, v * 0.16, t + 0.022, 1900);
+
+    // Gotinhas prazerosas caindo em sequência
+    for (let i = 0; i < 5; i++) {
+      const delay = 0.072 + i * 0.048;
+      this.warmLandTone(
+        ctx,
+        sfx,
+        'sine',
+        (400 - i * 26) * pitch,
+        185 * pitch,
+        0.075,
+        v * 0.15,
+        t + delay,
+        1500,
+      );
     }
   }
 
   private butterThup(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    const v = this.impactVol(0.13, impact);
-    this.softThud(ctx, sfx, t, pitch, impact, 145);
-    this.tone(ctx, sfx, 'triangle', 200 * pitch, 95 * pitch, 0.1, v * 0.45, t + 0.02);
-    this.noiseBurst(ctx, sfx, 0.06, 360, v * 0.55, t + 0.01);
-    this.noiseBurst(ctx, sfx, 0.04, 180, v * 0.35, t + 0.04, 'lowpass');
+    const v = this.impactVol(0.12, impact);
+
+    // Almofada cremosa — thud quente e macio
+    this.warmLandTone(ctx, sfx, 'sine', 88 * pitch, 48 * pitch, 0.3, v * 1.08, t, 620);
+    this.warmLandTone(ctx, sfx, 'triangle', 124 * pitch, 72 * pitch, 0.24, v * 0.52, t + 0.016, 780);
+
+    // Textura de espalhar manteiga
+    this.softNoise(ctx, sfx, 0.13, 260, v * 0.36, t + 0.01, 'lowpass');
+    this.softNoise(ctx, sfx, 0.09, 420, v * 0.2, t + 0.028, 'bandpass', 0.55);
+
+    // Squish médio manteigoso
+    this.warmLandTone(ctx, sfx, 'sine', 178 * pitch, 88 * pitch, 0.2, v * 0.38, t + 0.022, 950);
+
+    // Cauda longa e reconfortante
+    this.warmLandTone(ctx, sfx, 'sine', 68 * pitch, 54 * pitch, 0.38, v * 0.24, t + 0.065, 480);
+
+    // Migalha sutil — quase imperceptível
+    this.softNoise(ctx, sfx, 0.045, 820, v * 0.1, t + 0.042, 'bandpass', 1.4);
   }
 
   private cheeseLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
