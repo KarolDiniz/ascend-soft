@@ -8,15 +8,15 @@ const u = PIXEL.unit;
 
 /** Anéis horizontais do corpo — largura relativa × posição Y */
 const BODY_ROWS: readonly [number, number][] = [
-  [0.38, -0.44],
-  [0.58, -0.36],
-  [0.76, -0.24],
-  [0.92, -0.1],
-  [0.98, 0.04],
-  [0.98, 0.18],
-  [0.9, 0.3],
-  [0.72, 0.38],
-  [0.5, 0.42],
+  [0.44, -0.44],
+  [0.66, -0.36],
+  [0.84, -0.24],
+  [0.98, -0.1],
+  [1.0, 0.04],
+  [1.0, 0.18],
+  [0.96, 0.3],
+  [0.8, 0.38],
+  [0.58, 0.42],
 ];
 
 export interface PlayerBodyOptions {
@@ -130,7 +130,7 @@ function drawSolidBlobBody(
     fillPx(ctx, -rw / 2, ry, rw, rowHeight(bh, i), fill);
   }
 
-  fillPixelCircle(ctx, 0, bh * 0.02, bw * 0.46, fill);
+  fillPixelCircle(ctx, 0, bh * 0.02, bw * 0.5, fill);
 
   const earBounce = earWiggle * u;
   fillPx(ctx, -bw * 0.36, -bh * 0.38 - earBounce, u * 2, u * 2, fill);
@@ -217,13 +217,13 @@ export function drawPlayerPixelFace(
   const eyeY = -u * 5;
   const eyeW = u * 4;
   const eyeH = excited && mouthOpen && !crying && !defeatSad ? u * 6 : u * 5;
-  const mouthY = u * 5;
+  const mouthY = u * 2.5;
   const blushY = u * 1.5;
 
   fillPx(ctx, -bw * 0.14, -bh * 0.32, bw * 0.28, u, rgba(PASTEL.white, 0.35));
 
-  const blushAlpha = defeatSad ? 0.28 : crying ? 0.32 : excited && mouthOpen ? 0.55 : 0.42;
-  const blush = rgba(PASTEL.coral, blushAlpha);
+  const blushAlpha = defeatSad ? 0.38 : crying ? 0.42 : excited && mouthOpen ? 0.65 : 0.55;
+  const blush = rgba(PASTEL.rose, blushAlpha);
   fillPx(ctx, -u * 5, blushY, u * 2, u, blush);
   fillPx(ctx, -u * 4, blushY + u, u, u, blush);
   fillPx(ctx, u * 3, blushY, u * 2, u, blush);

@@ -21,7 +21,7 @@ export class Player {
   y = 40;
   vx = 0;
   vy = 0;
-  w = 30;
+  w = 36;
   h = 30;
   onGround = false;
   facing = 1;
