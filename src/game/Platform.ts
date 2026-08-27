@@ -1,4 +1,5 @@
 import { MATERIALS, type MaterialId } from '../audio/materials';
+import { resolvePlatformMaterial } from './platform/jellyColors';
 import { REACH } from './physics';
 import {
   getBehaviorDef,
@@ -147,6 +148,11 @@ export class Platform {
     this.events.push(e);
   }
 
+  /** Cores/material visual — gelatinas variam por seed */
+  getMaterialDef() {
+    return resolvePlatformMaterial(this.material, this.seed);
+  }
+
   setPressed(pressed: boolean, impact = 0.6): void {
     if (!this.solid || !this.alive) return;
     const mat = MATERIALS[this.material];
@@ -224,7 +230,7 @@ export class Platform {
     this.emit({
       type: 'shatter',
       floater: this.behaviorDef.floater,
-      color: MATERIALS[this.material].particle,
+      color: this.getMaterialDef().particle,
     });
     this.emit({ type: 'vanishUnderPlayer' });
     this.startVanish(0.05);
@@ -386,7 +392,7 @@ export class Platform {
     time = 0,
   ): void {
     if (!this.alive && this.opacity <= 0) return;
-    const mat = MATERIALS[this.material];
+    const mat = this.getMaterialDef();
     // Per-behavior live deform — exaggerated for addictive juice
     const idleAmt = 1 - Math.min(1, Math.abs(this.pressAmount));
     let softWobble = 0;

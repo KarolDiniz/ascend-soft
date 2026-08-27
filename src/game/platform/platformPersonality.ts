@@ -30,9 +30,9 @@ function seeded(seed: number, i: number): number {
   return x - Math.floor(x);
 }
 
-export function buildPlatformPersonality(seed: number, _material: MaterialId): PlatformPersonality {
+export function buildPlatformPersonality(seed: number, material: MaterialId): PlatformPersonality {
   return {
-    toneShift: (seeded(seed, 2) - 0.5) * 0.32,
+    toneShift: material === 'jelly' ? 0 : (seeded(seed, 2) - 0.5) * 0.32,
     hangStyle: Math.floor(seeded(seed, 1) * 5) as 0 | 1 | 2 | 3 | 4,
     hangCount: 1 + Math.floor(seeded(seed, 3) * 7),
     sparkleMul: 0.75 + seeded(seed, 4) * 1.15,

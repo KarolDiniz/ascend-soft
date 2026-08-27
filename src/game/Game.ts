@@ -344,7 +344,7 @@ export class Game {
       if (!p.alive || p.opacity < 0.3) continue;
       if (Math.abs(p.y - camY) > this.H * 0.85) continue;
       if (Math.abs(p.x - this.player.x) > this.worldHalfW + 40) continue;
-      const mat = MATERIALS[p.material];
+      const mat = p.getMaterialDef();
       this.particles.emitPlatformIdle(dt, p.x, p.surfaceY, mat.particle, mat.particleStyle, p.material);
     }
 
@@ -457,7 +457,7 @@ export class Game {
       const impact = Math.min(1.25, Math.abs(this.player.vy) / 420);
       const centerDist = Math.abs(this.player.x - p.x) / (p.w / 2);
       const perfect = centerDist < 0.15;
-      const mat = MATERIALS[p.material];
+      const mat = p.getMaterialDef();
 
       p.setPressed(true, impact * (perfect ? 1.2 : 1));
       this.player.landOn(p);
@@ -579,7 +579,7 @@ export class Game {
     p: (typeof this.spawner.platforms)[number],
     ev: PlatformEvent,
   ): void {
-    const mat = MATERIALS[p.material];
+    const mat = p.getMaterialDef();
     switch (ev.type) {
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);

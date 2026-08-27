@@ -572,7 +572,7 @@ function drawJelly(a: DrawArgs): void {
         sy + u + seeded(seed, i + 15) * (h * 0.55),
         u,
         u,
-        rgba(PASTEL.mint, 0.6),
+        rgba(mat.particle, 0.55),
       );
     }
   }
