@@ -517,6 +517,9 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);
           break;
         case 'butter':
+          this.particles.butterSpread(this.player.x, platformTop, mat.particle, impact, p.w);
+          this.particles.drip(this.player.x, platformTop, mat.particle, 6);
+          break;
         case 'chocolate':
         case 'honeycomb':
           this.particles.drip(this.player.x, platformTop, mat.particle, 8);
@@ -587,6 +590,9 @@ export class Game {
     switch (ev.type) {
       case 'mouseSqueak':
         this.audio.playCheeseMouseSqueak();
+        break;
+      case 'spongeFlyBuzz':
+        this.audio.playSpongeFlyBuzz();
         break;
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);

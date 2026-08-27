@@ -10,6 +10,7 @@ export type GameplayFx =
   | 'pressAura'
   | 'releasePuff'
   | 'meltRibbon'
+  | 'butterSpread'
   | 'crackSpark'
   | 'ring';
 
@@ -620,6 +621,46 @@ export class Particles {
     }
   }
 
+  /** Manteiga — mancha espalhando lateralmente ao pisar */
+  butterSpread(x: number, y: number, color: string, impact: number, width: number): void {
+    const n = this.cap(16 + Math.floor(impact * 14));
+    for (let i = 0; i < n; i++) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const speed = 32 + Math.random() * (42 + impact * 38);
+      this.spawn(x + (Math.random() - 0.5) * 10, y + Math.random() * 3, color, 'butterSpread', {
+        vx: side * speed,
+        vy: -6 + Math.random() * 14,
+        life: 0.32 + Math.random() * 0.38,
+        size: 2.5 + Math.random() * 3.5,
+      });
+    }
+    for (let i = 0; i < Math.floor(n * 0.45); i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      this.spawn(x, y + 1, color, 'butterSpread', {
+        vx: side * (48 + Math.random() * 36),
+        vy: 4 + Math.random() * 10,
+        life: 0.4 + Math.random() * 0.3,
+        size: 3 + Math.random() * 4,
+      });
+    }
+    for (let i = 0; i < this.cap(4 + Math.floor(impact * 3)); i++) {
+      this.spawn(x + (Math.random() - 0.5) * width * 0.35, y, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 24,
+        vy: 10 + Math.random() * 22,
+        life: 0.35 + Math.random() * 0.25,
+        size: 1.5 + Math.random() * 2,
+      });
+    }
+    this.rings.push({
+      x,
+      y,
+      life: 0.32 + impact * 0.12,
+      maxLife: 0.32 + impact * 0.12,
+      color,
+      kind: 'dust',
+    });
+  }
+
   crackSpark(x: number, y: number, color: string): void {
     for (let i = 0; i < this.cap(5); i++) {
       const a = Math.random() * Math.PI * 2;
@@ -976,13 +1017,15 @@ export class Particles {
         g = 35;
       } else if (p.type === 'drip' || p.type === 'sandFall' || p.type === 'juice' || p.type === 'meltRibbon') {
         g = 520;
+      } else if (p.type === 'butterSpread') {
+        g = 140;
       } else if (p.type === 'shockSoft' || p.type === 'crackSpark') {
         g = 60;
       } else if (p.type === 'footSpeck') {
         g = 220;
       }
       p.vy -= g * dt;
-      p.vx *= 1 - 1.2 * dt;
+      p.vx *= 1 - (p.type === 'butterSpread' ? 2.8 : 1.2) * dt;
       if (p.type === 'sand' || p.type === 'sandFall') p.vx *= 1 - 0.6 * dt;
       p.rot += p.spin * dt;
     }
@@ -1068,10 +1111,13 @@ export class Particles {
         p.type === 'shockSoft'
       ) {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.max(2, sz), Math.max(2, sz));
-      } else if (p.type === 'zest' || p.type === 'juice' || p.type === 'meltRibbon') {
+      } else if (p.type === 'zest' || p.type === 'juice' || p.type === 'meltRibbon' || p.type === 'butterSpread') {
         ctx.fillRect(Math.round(s.x) - sz, Math.round(s.y), sz * 2, 2);
         if (p.type === 'meltRibbon') {
           ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - sz, 2, sz * 2);
+        }
+        if (p.type === 'butterSpread') {
+          ctx.fillRect(Math.round(s.x) - sz * 1.4, Math.round(s.y) + 1, Math.round(sz * 2.8), 2);
         }
       } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);

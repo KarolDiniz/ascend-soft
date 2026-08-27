@@ -321,19 +321,35 @@ export class AudioBus {
     });
   }
 
-  /** Ratinho assustado saindo do queijo */
+  /** Ratinho assustado — gritinho ao cair */
   playCheeseMouseSqueak(): void {
     this.withCtx((ctx, sfx) => {
       this.duckAmbient(100);
       const t = ctx.currentTime;
-      this.tone(ctx, sfx, 'sine', 1380, 720, 0.09, 0.1, t);
-      this.tone(ctx, sfx, 'triangle', 980, 1520, 0.07, 0.075, t + 0.018);
-      this.tone(ctx, sfx, 'sine', 1680, 920, 0.05, 0.055, t + 0.04);
-      this.noiseBurst(ctx, sfx, 0.035, 3400, 0.045, t, 'bandpass');
-      for (let i = 0; i < 5; i++) {
-        this.noiseBurst(ctx, sfx, 0.022, 650 + i * 180, 0.038 - i * 0.004, t + 0.07 + i * 0.04, 'lowpass');
-        this.tone(ctx, sfx, 'triangle', 600 - i * 40, 420, 0.025, 0.02, t + 0.075 + i * 0.04);
+      this.tone(ctx, sfx, 'sine', 1320, 620, 0.08, 0.11, t);
+      this.tone(ctx, sfx, 'triangle', 980, 480, 0.065, 0.085, t + 0.014);
+      this.tone(ctx, sfx, 'sine', 760, 380, 0.05, 0.06, t + 0.032);
+      this.noiseBurst(ctx, sfx, 0.028, 3200, 0.04, t, 'bandpass');
+      for (let i = 0; i < 4; i++) {
+        this.noiseBurst(ctx, sfx, 0.018, 720 + i * 160, 0.032 - i * 0.005, t + 0.05 + i * 0.035, 'lowpass');
+        this.tone(ctx, sfx, 'triangle', 540 - i * 55, 320, 0.022, 0.018, t + 0.055 + i * 0.035);
       }
+    });
+  }
+
+  /** Mosquinhas dispersando da esponja */
+  playSpongeFlyBuzz(): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(90);
+      const t = ctx.currentTime;
+      for (let i = 0; i < 10; i++) {
+        const f = 160 + ((i * 97) % 140);
+        this.noiseBurst(ctx, sfx, 0.016, f, 0.034, t + i * 0.024, 'bandpass');
+      }
+      this.tone(ctx, sfx, 'sine', 240, 190, 0.05, 0.038, t);
+      this.tone(ctx, sfx, 'triangle', 310, 260, 0.04, 0.03, t + 0.04);
+      this.softNoise(ctx, sfx, 0.07, 2600, 0.045, t + 0.03, 'highpass');
+      this.softNoise(ctx, sfx, 0.05, 1800, 0.032, t + 0.08, 'bandpass', 1.2);
     });
   }
 
@@ -840,6 +856,9 @@ export class AudioBus {
     const t = ctx.currentTime;
     const v = this.impactVol(0.12, impact);
 
+    // Espalhar — shhhhk lateral de faca passando
+    this.butterSpreadScrape(ctx, sfx, pitch, v, t + 0.006);
+
     // Almofada cremosa — thud quente e macio
     this.warmLandTone(ctx, sfx, 'sine', 88 * pitch, 48 * pitch, 0.3, v * 1.08, t, 620);
     this.warmLandTone(ctx, sfx, 'triangle', 124 * pitch, 72 * pitch, 0.24, v * 0.52, t + 0.016, 780);
@@ -856,6 +875,35 @@ export class AudioBus {
 
     // Migalha sutil — quase imperceptível
     this.softNoise(ctx, sfx, 0.045, 820, v * 0.1, t + 0.042, 'bandpass', 1.4);
+  }
+
+  /** Textura de espalhar manteiga com faca — ruído deslizante */
+  private butterSpreadScrape(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    vol: number,
+    t: number,
+  ): void {
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx, 0.13, true);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(720 * pitch, t);
+    filter.frequency.exponentialRampToValueAtTime(180 * pitch, t + 0.1);
+    filter.Q.setValueAtTime(0.75, t);
+    filter.Q.linearRampToValueAtTime(0.45, t + 0.08);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol * 0.44, t + 0.014);
+    g.gain.exponentialRampToValueAtTime(vol * 0.16, t + 0.07);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    src.start(t);
+    src.stop(t + 0.14);
+    this.softNoise(ctx, sfx, 0.06, 340, vol * 0.22, t + 0.02, 'lowpass', 0.6);
   }
 
   private cheeseLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

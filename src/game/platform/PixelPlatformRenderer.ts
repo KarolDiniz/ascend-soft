@@ -6,6 +6,7 @@ import type { PlatformBehavior } from './behaviors';
 import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
+import { drawButterGarnish, drawButterKnife } from './butterVisual';
 import { drawSpongeFlies } from './spongeFlies';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
@@ -625,6 +626,8 @@ function drawButter(a: DrawArgs): void {
       rgba(mat.particle, 0.45 + seeded(seed, i) * 0.35),
     );
   }
+  drawButterGarnish(ctx, seed, x, sy, w, h, u, time);
+  drawButterKnife(ctx, seed, x, sy, w, h, u, mat.fill);
   if (press > 0.15) {
     for (let i = 0; i < 3 + Math.floor(press * 4); i++) {
       fillPx(ctx, x + seeded(seed, i + 200) * w, sy + h - u, u * 2, u * (1 + press * 2), mat.fill);

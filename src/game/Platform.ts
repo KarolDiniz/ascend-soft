@@ -29,7 +29,8 @@ export type PlatformEvent =
   | { type: 'foamPop'; floater: string }
   | { type: 'squeeze'; floater?: string; gone: boolean }
   | { type: 'vanishUnderPlayer' }
-  | { type: 'mouseSqueak' };
+  | { type: 'mouseSqueak' }
+  | { type: 'spongeFlyBuzz' };
 
 export class Platform {
   x: number;
@@ -81,6 +82,7 @@ export class Platform {
   cheeseMouseFleeT = 0;
   cheeseMouseFleeVy = 0;
   cheeseMouseFleeY = 0;
+  private cheeseMouseSqueakPlayed = false;
   /** Mosquinhas na esponja: 0=orbitando, >0=dispersando, -1=foram embora */
   spongeFlyScatterT = 0;
   spongeFlyScatterVy = 0;
@@ -183,12 +185,13 @@ export class Platform {
           this.cheeseMouseFleeT = 0.001;
           this.cheeseMouseFleeVy = -6.5;
           this.cheeseMouseFleeY = 0;
-          this.emit({ type: 'mouseSqueak' });
+          this.cheeseMouseSqueakPlayed = false;
         }
         if (this.material === 'sponge' && hasSpongeFlies(this.seed) && this.spongeFlyScatterT === 0) {
           this.spongeFlyScatterT = 0.001;
           this.spongeFlyScatterVy = -7;
           this.spongeFlyScatterY = 0;
+          this.emit({ type: 'spongeFlyBuzz' });
         }
         if (this.fading) {
           this.fadeArmed = true;
@@ -276,8 +279,13 @@ export class Platform {
 
     if (this.cheeseMouseFleeT > 0) {
       this.cheeseMouseFleeT += dt;
+      const prevVy = this.cheeseMouseFleeVy;
       this.cheeseMouseFleeVy += 38 * dt;
       this.cheeseMouseFleeY += this.cheeseMouseFleeVy * dt;
+      if (!this.cheeseMouseSqueakPlayed && prevVy < 0 && this.cheeseMouseFleeVy >= 0) {
+        this.cheeseMouseSqueakPlayed = true;
+        this.emit({ type: 'mouseSqueak' });
+      }
       if (isCheeseMouseFleeDone(this.cheeseMouseFleeT, this.cheeseMouseFleeY, this.h)) {
         this.cheeseMouseFleeT = -1;
       }
