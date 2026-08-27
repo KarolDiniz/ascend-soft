@@ -1,4 +1,5 @@
 import type { MaterialId, ParticleStyle } from '../audio/materials';
+import { PASTEL } from '../theme/pastelPalette';
 
 export type GameplayFx =
   | ParticleStyle
@@ -581,7 +582,7 @@ export class Particles {
   }
 
   confetti(x: number, y: number): void {
-    const colors = ['#e8a090', '#f0d878', '#7ecfc0', '#ffd0e0', '#a8d8ff'];
+    const colors = [PASTEL.coral, PASTEL.butter, PASTEL.seafoam, PASTEL.blush, PASTEL.sky];
     for (let i = 0; i < this.cap(28); i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 40 + Math.random() * 90;

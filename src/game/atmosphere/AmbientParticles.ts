@@ -1,5 +1,6 @@
 import type { Atmosphere } from './Atmosphere';
 import type { AmbientType } from './AltitudeZones';
+import { AMBIENT_PASTEL } from '../../theme/pastelPalette';
 
 interface AmbientParticle {
   active: boolean;
@@ -42,7 +43,7 @@ interface ScreenMote {
 
 const WORLD_POOL = 300;
 const SCREEN_POOL = 220;
-const SPRINKLE_COLORS = ['#ff9eb5', '#8fd4c8', '#ffd07a', '#c9b6ff', '#fff5f0'];
+const SPRINKLE_COLORS = [...AMBIENT_PASTEL.sprinkle];
 
 export class AmbientParticles {
   private items: AmbientParticle[] = [];
@@ -176,7 +177,7 @@ export class AmbientParticles {
       p.alpha = 0.4;
       if (id === 'garden') {
         p.type = Math.random() > 0.4 ? 'pollen' : 'petal';
-        p.color = p.type === 'pollen' ? '#f0d878' : '#ffd0e0';
+        p.color = p.type === 'pollen' ? AMBIENT_PASTEL.pollen : AMBIENT_PASTEL.petal;
         p.y = viewH * 0.7 + Math.random() * 40;
         p.vx = (Math.random() - 0.5) * 40;
         p.vy = -50 - Math.random() * 40;
@@ -192,7 +193,7 @@ export class AmbientParticles {
         p.maxLife = 0.8;
       } else if (id === 'spa') {
         p.type = 'bubbleFloat';
-        p.color = '#c8e8f0';
+        p.color = AMBIENT_PASTEL.bubble;
         p.y = viewH + 10;
         p.vx = (Math.random() - 0.5) * 25;
         p.vy = -70 - Math.random() * 50;
@@ -207,7 +208,7 @@ export class AmbientParticles {
         p.alpha = 0.55;
       } else {
         p.type = 'lightOrb';
-        p.color = '#ffe8c8';
+        p.color = AMBIENT_PASTEL.orb;
         p.y = -10;
         p.vx = (Math.random() - 0.5) * 20;
         p.vy = 35 + Math.random() * 40;

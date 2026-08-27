@@ -1,6 +1,7 @@
 import { ALTITUDE_ZONES, type DecorKind, type ZoneId } from './AltitudeZones';
 import type { Atmosphere } from './Atmosphere';
 import { drawDecor } from './BiomeDecor';
+import { BIOME_PASTEL } from '../../theme/pastelPalette';
 
 interface SceneryProp {
   zoneId: ZoneId;
@@ -27,38 +28,9 @@ const PARALLAX = [0.05, 0.1, 0.18, 0.26];
 const PROP_COUNT = 60;
 const FADE_SPEED = 1.15;
 
-const ZONE_COLORS: Record<ZoneId, string[]> = {
-  garden: [
-    'rgba(120, 180, 155, 0.42)',
-    'rgba(230, 190, 140, 0.38)',
-    'rgba(255, 170, 170, 0.35)',
-    'rgba(200, 220, 160, 0.36)',
-  ],
-  bakery: [
-    'rgba(255, 190, 205, 0.4)',
-    'rgba(240, 200, 170, 0.38)',
-    'rgba(255, 220, 190, 0.36)',
-    'rgba(230, 170, 150, 0.34)',
-  ],
-  spa: [
-    'rgba(160, 210, 220, 0.38)',
-    'rgba(190, 185, 215, 0.34)',
-    'rgba(200, 230, 235, 0.36)',
-    'rgba(175, 200, 210, 0.32)',
-  ],
-  frost: [
-    'rgba(180, 210, 230, 0.4)',
-    'rgba(210, 225, 240, 0.36)',
-    'rgba(160, 195, 220, 0.34)',
-    'rgba(230, 240, 250, 0.32)',
-  ],
-  ether: [
-    'rgba(235, 210, 180, 0.38)',
-    'rgba(255, 230, 200, 0.34)',
-    'rgba(220, 195, 170, 0.32)',
-    'rgba(250, 235, 210, 0.3)',
-  ],
-};
+function zoneColors(id: ZoneId): string[] {
+  return BIOME_PASTEL[id].scenery;
+}
 
 export class SceneryLayer {
   private props: SceneryProp[] = [];
@@ -81,7 +53,7 @@ export class SceneryLayer {
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
         const layer = (k % 4) as 0 | 1 | 2 | 3;
-        const colors = ZONE_COLORS[zone.id];
+        const colors = zoneColors(zone.id);
         this.props.push({
           zoneId: zone.id,
           kind,
@@ -101,7 +73,7 @@ export class SceneryLayer {
     // Hero midground props (1–2 large per zone)
     for (const zone of ALTITUDE_ZONES) {
       const hero = zone.scenery[0];
-      const colors = ZONE_COLORS[zone.id];
+      const colors = zoneColors(zone.id);
       this.props.push({
         zoneId: zone.id,
         kind: hero,

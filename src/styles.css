@@ -1,14 +1,18 @@
 :root {
-  --bg-a: #c5e0dc;
-  --bg-b: #efe6c8;
-  --bg-c: #f3d5c8;
-  --ink: #3a3f48;
-  --ink-soft: #5c6570;
-  --coral: #e8a090;
-  --amber: #d4a574;
+  --bg-a: #C9E4DE;
+  --bg-b: #F7F1EA;
+  --bg-c: #F0C9B0;
+  --ink: #5A616C;
+  --ink-soft: #7A8490;
+  --coral: #E8A598;
+  --amber: #EBD4A0;
   --surface: rgba(255, 252, 248, 0.62);
-  --btn: #3d4a56;
-  --btn-text: #f7f3ee;
+  --btn: #5A616C;
+  --btn-text: #F7F1EA;
+  --mint: #C9E4DE;
+  --blush: #F0D5D8;
+  --butter: #F3E2A8;
+  --sky: #D2E4F0;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }

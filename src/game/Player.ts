@@ -1,6 +1,7 @@
 import type { Input } from './Input';
 import type { Platform } from './Platform';
 import { PHYS } from './physics';
+import { PASTEL, PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
 
 interface TrailPoint {
   x: number;
@@ -18,7 +19,7 @@ export class Player {
   h = 30;
   onGround = false;
   facing = 1;
-  trailColor = '#7eb0b8';
+  trailColor = PLAYER_PASTEL.trail;
 
   private coyote = 0;
   private squash = 1;
@@ -58,7 +59,7 @@ export class Player {
     this.stretch = 1;
     this.trail.length = 0;
     this.groundedPlatform = null;
-    this.trailColor = '#7eb0b8';
+    this.trailColor = PLAYER_PASTEL.trail;
   }
 
   update(dt: number, input: Input): boolean {
@@ -168,40 +169,40 @@ export class Player {
     ctx.save();
     ctx.translate(s.x, s.y);
 
-    ctx.fillStyle = 'rgba(80, 100, 110, 0.14)';
+    ctx.fillStyle = PLAYER_PASTEL.shadow;
     ctx.beginPath();
     ctx.ellipse(0, bh * 0.5, bw * 0.48, 4.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
     const body = ctx.createRadialGradient(-bw * 0.15, -bh * 0.22, 2, 0, 0, bw * 0.72);
-    body.addColorStop(0, '#9ec8d0');
-    body.addColorStop(0.5, '#6aa0aa');
-    body.addColorStop(1, '#4d7e88');
+    body.addColorStop(0, PLAYER_PASTEL.bodyTop);
+    body.addColorStop(0.5, PLAYER_PASTEL.bodyMid);
+    body.addColorStop(1, PLAYER_PASTEL.bodyBot);
     ctx.fillStyle = body;
     this.blob(ctx, 0, 0, bw / 2, bh / 2);
     ctx.fill();
 
     // Highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillStyle = rgba(PASTEL.white, 0.55);
     ctx.beginPath();
     ctx.ellipse(-bw * 0.18, -bh * 0.24, bw * 0.2, bh * 0.15, -0.4, 0, Math.PI * 2);
     ctx.fill();
 
     // Blush
-    ctx.fillStyle = 'rgba(240, 150, 150, 0.35)';
+    ctx.fillStyle = PLAYER_PASTEL.blush;
     ctx.beginPath();
     ctx.ellipse(-8 * this.facing - 2, 4, 4.5, 2.8, 0, 0, Math.PI * 2);
     ctx.ellipse(8 * this.facing + 2, 4, 4.5, 2.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Eyes
-    ctx.fillStyle = 'rgba(40, 55, 65, 0.45)';
+    ctx.fillStyle = rgba(PASTEL.ink, 0.4);
     const eyeX = 3.5 * this.facing;
     ctx.beginPath();
     ctx.arc(eyeX - 5.5, -2.5, 2.4, 0, Math.PI * 2);
     ctx.arc(eyeX + 5.5, -2.5, 2.4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = rgba(PASTEL.white, 0.7);
     ctx.beginPath();
     ctx.arc(eyeX - 4.5, -3.3, 0.9, 0, Math.PI * 2);
     ctx.arc(eyeX + 6.5, -3.3, 0.9, 0, Math.PI * 2);

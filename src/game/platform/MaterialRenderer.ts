@@ -1,4 +1,5 @@
 import type { MaterialDef } from '../../audio/materials';
+import { PASTEL, rgba } from '../../theme/pastelPalette';
 import { traceShape } from './PlatformShape';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
@@ -113,7 +114,7 @@ function drawTexture(
       ctx.lineTo(cx + Math.cos(a) * spread * 0.45, surfaceY + h * 0.55 + Math.sin(a) * h * 0.35);
       ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(255, 160, 60, 0.3)';
+    ctx.fillStyle = rgba(PASTEL.citrus, 0.28);
     for (let i = 0; i < 12; i++) {
       const px = cx - spread * 0.35 + seeded(seed, i) * spread * 0.7;
       const py = surfaceY + h * (0.35 + seeded(seed, i + 20) * 0.5);
@@ -122,7 +123,7 @@ function drawTexture(
       ctx.fill();
     }
   } else if (variant.startsWith('honey')) {
-    ctx.strokeStyle = 'rgba(140, 90, 20, 0.4)';
+    ctx.strokeStyle = rgba(PASTEL.honey, 0.45);
     ctx.lineWidth = 1;
     const cell = spread / 5;
     for (let row = 0; row < 3; row++) {
@@ -134,14 +135,14 @@ function drawTexture(
       }
     }
   } else if (variant.startsWith('kinetic')) {
-    ctx.fillStyle = 'rgba(130, 95, 70, 0.45)';
+    ctx.fillStyle = rgba(PASTEL.sand, 0.5);
     for (let i = 0; i < 28; i++) {
       const px = cx - spread * 0.45 + seeded(seed, i) * spread * 0.9;
       const py = surfaceY + h * (0.2 + seeded(seed, i + 30) * 0.9);
       ctx.fillRect(px, py, 1.8, 1.8);
     }
   } else if (variant.startsWith('whipped')) {
-    ctx.fillStyle = 'rgba(255, 220, 235, 0.35)';
+    ctx.fillStyle = rgba(PASTEL.blush, 0.35);
     for (let i = 0; i < 6; i++) {
       const px = cx - spread * 0.35 + i * (spread * 0.12);
       ctx.beginPath();
@@ -179,7 +180,7 @@ function drawTexture(
       ctx.stroke();
     }
   } else if (variant.startsWith('mochi')) {
-    ctx.fillStyle = 'rgba(255, 200, 220, 0.35)';
+    ctx.fillStyle = rgba(PASTEL.blush, 0.35);
     ctx.beginPath();
     ctx.ellipse(cx - spread * 0.15, surfaceY + h * 0.35, spread * 0.12, h * 0.18, -0.3, 0, Math.PI * 2);
     ctx.fill();

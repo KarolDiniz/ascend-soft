@@ -1,3 +1,5 @@
+import { AMBIENT_PASTEL, BIOME_PASTEL } from '../../theme/pastelPalette';
+
 export type ZoneId = 'garden' | 'bakery' | 'spa' | 'frost' | 'ether';
 
 export type AmbientType =
@@ -55,7 +57,6 @@ export interface AmbientPreset {
 export interface AltitudeZone {
   id: ZoneId;
   name: string;
-  /** Display label PT-BR on biome enter */
   label: string;
   minY: number;
   maxY: number;
@@ -69,12 +70,15 @@ export interface AltitudeZone {
   blobKinds: BlobKind[];
   scenery: DecorKind[];
   overlay: OverlayKind;
-  /** Target active ambient particles (before mobile scale) */
   particleBudget: number;
 }
 
-/** Overlap band for soft crossfade between zones */
 export const ZONE_BLEND = 120;
+
+function biomePalette(id: ZoneId): ZonePalette {
+  const b = BIOME_PASTEL[id];
+  return { top: b.top, mid: b.mid, bottom: b.bottom, accent: b.accent, blob: [...b.blob] };
+}
 
 export const ALTITUDE_ZONES: AltitudeZone[] = [
   {
@@ -83,23 +87,13 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     label: 'jardim…',
     minY: 0,
     maxY: 500,
-    palette: {
-      top: '#c5e0dc',
-      mid: '#efe6c8',
-      bottom: '#f3d5c8',
-      accent: '#e8c878',
-      blob: [
-        'rgba(170, 220, 205, 0.32)',
-        'rgba(245, 225, 180, 0.28)',
-        'rgba(255, 200, 180, 0.24)',
-      ],
-    },
+    palette: biomePalette('garden'),
     ambient: [
-      { type: 'pollen', weight: 0.35, color: '#f0d878' },
-      { type: 'petal', weight: 0.28, color: '#ffd0e0' },
-      { type: 'sparkleIdle', weight: 0.18, color: '#fff8e8' },
-      { type: 'sugarDust', weight: 0.12, color: '#fff5e0' },
-      { type: 'emberSoft', weight: 0.07, color: '#ffe8a8' },
+      { type: 'pollen', weight: 0.35, color: AMBIENT_PASTEL.pollen },
+      { type: 'petal', weight: 0.28, color: AMBIENT_PASTEL.petal },
+      { type: 'sparkleIdle', weight: 0.18, color: AMBIENT_PASTEL.sparkle },
+      { type: 'sugarDust', weight: 0.12, color: AMBIENT_PASTEL.sugar },
+      { type: 'emberSoft', weight: 0.07, color: AMBIENT_PASTEL.ember },
     ],
     windX: 12,
     windY: 8,
@@ -117,24 +111,14 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     label: 'confeitaria…',
     minY: 500,
     maxY: 1000,
-    palette: {
-      top: '#f5d6e0',
-      mid: '#f8e0d0',
-      bottom: '#f0c8b0',
-      accent: '#ffb8c8',
-      blob: [
-        'rgba(255, 210, 220, 0.3)',
-        'rgba(255, 230, 200, 0.28)',
-        'rgba(240, 200, 180, 0.22)',
-      ],
-    },
+    palette: biomePalette('bakery'),
     ambient: [
-      { type: 'sugarDust', weight: 0.28, color: '#ffffff' },
-      { type: 'steam', weight: 0.22, color: 'rgba(255,245,240,0.55)' },
-      { type: 'sprinkle', weight: 0.22, color: '#ff9eb5' },
-      { type: 'petal', weight: 0.12, color: '#ffd0e0' },
-      { type: 'dripAmbient', weight: 0.08, color: '#e8a878' },
-      { type: 'sparkleIdle', weight: 0.08, color: '#ffe8f0' },
+      { type: 'sugarDust', weight: 0.28, color: AMBIENT_PASTEL.sugar },
+      { type: 'steam', weight: 0.22, color: AMBIENT_PASTEL.steam },
+      { type: 'sprinkle', weight: 0.22, color: AMBIENT_PASTEL.sprinkle[0] },
+      { type: 'petal', weight: 0.12, color: AMBIENT_PASTEL.petal },
+      { type: 'dripAmbient', weight: 0.08, color: AMBIENT_PASTEL.dripBakery },
+      { type: 'sparkleIdle', weight: 0.08, color: AMBIENT_PASTEL.sparkle },
     ],
     windX: 18,
     windY: 6,
@@ -152,23 +136,13 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     label: 'spa…',
     minY: 1000,
     maxY: 1500,
-    palette: {
-      top: '#c8e4e8',
-      mid: '#d8e0ec',
-      bottom: '#e4d8e8',
-      accent: '#a8d8e0',
-      blob: [
-        'rgba(180, 220, 230, 0.3)',
-        'rgba(210, 200, 225, 0.26)',
-        'rgba(190, 230, 235, 0.22)',
-      ],
-    },
+    palette: biomePalette('spa'),
     ambient: [
-      { type: 'bubbleFloat', weight: 0.38, color: '#c8e8f0' },
-      { type: 'foamSpeck', weight: 0.22, color: '#ffffff' },
-      { type: 'steam', weight: 0.18, color: 'rgba(230,240,245,0.5)' },
-      { type: 'sparkleIdle', weight: 0.14, color: '#e0f4ff' },
-      { type: 'dripAmbient', weight: 0.08, color: '#b8dce8' },
+      { type: 'bubbleFloat', weight: 0.38, color: AMBIENT_PASTEL.bubble },
+      { type: 'foamSpeck', weight: 0.22, color: AMBIENT_PASTEL.foam },
+      { type: 'steam', weight: 0.18, color: AMBIENT_PASTEL.steam },
+      { type: 'sparkleIdle', weight: 0.14, color: AMBIENT_PASTEL.sparkle },
+      { type: 'dripAmbient', weight: 0.08, color: AMBIENT_PASTEL.dripSpa },
     ],
     windX: 8,
     windY: 14,
@@ -186,22 +160,12 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     label: 'gelo…',
     minY: 1500,
     maxY: 2000,
-    palette: {
-      top: '#d0e8f4',
-      mid: '#e8f2f8',
-      bottom: '#f4f8fc',
-      accent: '#b8d8f0',
-      blob: [
-        'rgba(200, 225, 240, 0.32)',
-        'rgba(230, 240, 250, 0.28)',
-        'rgba(180, 210, 230, 0.22)',
-      ],
-    },
+    palette: biomePalette('frost'),
     ambient: [
-      { type: 'frost', weight: 0.32, color: '#d0e8f8' },
-      { type: 'snowMote', weight: 0.38, color: '#ffffff' },
-      { type: 'sparkleIdle', weight: 0.22, color: '#e8f4ff' },
-      { type: 'steam', weight: 0.08, color: 'rgba(220,235,245,0.4)' },
+      { type: 'frost', weight: 0.32, color: AMBIENT_PASTEL.frost },
+      { type: 'snowMote', weight: 0.38, color: AMBIENT_PASTEL.snow },
+      { type: 'sparkleIdle', weight: 0.22, color: AMBIENT_PASTEL.sparkle },
+      { type: 'steam', weight: 0.08, color: AMBIENT_PASTEL.steam },
     ],
     windX: 22,
     windY: -6,
@@ -219,23 +183,13 @@ export const ALTITUDE_ZONES: AltitudeZone[] = [
     label: 'éter…',
     minY: 2000,
     maxY: 1e9,
-    palette: {
-      top: '#f0e4dc',
-      mid: '#f5ebe0',
-      bottom: '#efe0c8',
-      accent: '#e8d0a0',
-      blob: [
-        'rgba(240, 220, 200, 0.3)',
-        'rgba(255, 235, 210, 0.26)',
-        'rgba(230, 210, 190, 0.2)',
-      ],
-    },
+    palette: biomePalette('ether'),
     ambient: [
-      { type: 'lightOrb', weight: 0.35, color: '#ffe8c8' },
-      { type: 'emberSoft', weight: 0.22, color: '#ffd8a0' },
-      { type: 'sparkleIdle', weight: 0.22, color: '#fff5e0' },
-      { type: 'petal', weight: 0.14, color: '#f5d8c8' },
-      { type: 'steam', weight: 0.07, color: 'rgba(255,248,240,0.4)' },
+      { type: 'lightOrb', weight: 0.35, color: AMBIENT_PASTEL.orb },
+      { type: 'emberSoft', weight: 0.22, color: AMBIENT_PASTEL.ember },
+      { type: 'sparkleIdle', weight: 0.22, color: AMBIENT_PASTEL.sparkle },
+      { type: 'petal', weight: 0.14, color: AMBIENT_PASTEL.petal },
+      { type: 'steam', weight: 0.07, color: AMBIENT_PASTEL.steam },
     ],
     windX: 6,
     windY: 10,

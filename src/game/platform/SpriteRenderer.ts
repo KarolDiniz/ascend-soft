@@ -1,4 +1,5 @@
 import type { MaterialId } from '../../audio/materials';
+import { MATERIALS } from '../../audio/materials';
 import type { MaterialSprite } from '../../assets/platforms/SpriteAtlas';
 import {
   SPRITE_FRAME,
@@ -6,6 +7,7 @@ import {
   SPRITE_FRAME_W,
   SPRITE_FRAMES,
 } from '../../assets/platforms/spriteConfig';
+import { PASTEL, rgba } from '../../theme/pastelPalette';
 import type { PlatformBehavior } from './behaviors';
 import type { PlatformDrawState } from './types';
 
@@ -42,7 +44,7 @@ export function pickSpriteFrame(
 export function drawPlatformSprite(
   ctx: CanvasRenderingContext2D,
   sheet: MaterialSprite,
-  _material: MaterialId,
+  material: MaterialId,
   state: PlatformDrawState,
   pressAmount: number,
   pressVel: number,
@@ -54,6 +56,7 @@ export function drawPlatformSprite(
   const melt = overlay?.meltProgress ?? 0;
   const frame = pickSpriteFrame(pressAmount, pressVel, releaseTimer, melt);
   const img = sheet.image;
+  const mat = MATERIALS[material];
 
   const pressed = Math.max(0, pressAmount);
   const heightMul = 1 - pressed * 0.06 - melt * 0.35;
@@ -81,8 +84,8 @@ export function drawPlatformSprite(
     shadowY,
     drawW * 0.42,
   );
-  contactShadow.addColorStop(0, 'rgba(40, 50, 60, 0.16)');
-  contactShadow.addColorStop(1, 'rgba(40, 50, 60, 0)');
+  contactShadow.addColorStop(0, rgba(PASTEL.inkSoft, 0.12));
+  contactShadow.addColorStop(1, rgba(PASTEL.inkSoft, 0));
   ctx.fillStyle = contactShadow;
   ctx.beginPath();
   ctx.ellipse(anchorX, shadowY, drawW * 0.38, 7, 0, 0, Math.PI * 2);
@@ -104,24 +107,32 @@ export function drawPlatformSprite(
     drawH,
   );
 
-  // Melt oily sheen
+  // Soft pastel wash — only on opaque sprite pixels (no bounding-box square)
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.globalAlpha = state.opacity * 0.4;
+  ctx.fillStyle = mat.spriteWash;
+  ctx.fillRect(dx, dy, drawW, drawH);
+  ctx.globalAlpha = state.opacity * 0.14;
+  ctx.fillStyle = rgba(PASTEL.cream, 0.9);
+  ctx.fillRect(dx, dy, drawW, drawH);
+  ctx.globalCompositeOperation = 'source-over';
+
   if (melt > 0.05) {
-    ctx.globalCompositeOperation = 'screen';
+    ctx.globalCompositeOperation = 'source-atop';
     ctx.globalAlpha = state.opacity * melt * 0.45;
     const g = ctx.createLinearGradient(dx, dy, dx, dy + drawH);
-    g.addColorStop(0, 'rgba(255, 240, 180, 0.7)');
-    g.addColorStop(0.5, 'rgba(255, 200, 100, 0.2)');
-    g.addColorStop(1, 'rgba(180, 120, 40, 0.15)');
+    g.addColorStop(0, rgba(PASTEL.butter, 0.65));
+    g.addColorStop(0.5, rgba(PASTEL.peach, 0.2));
+    g.addColorStop(1, rgba(PASTEL.caramel, 0.12));
     ctx.fillStyle = g;
     ctx.fillRect(dx, dy, drawW, drawH);
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // Cracks
   const crack = overlay?.crackLevel ?? 0;
   if (crack > 0.05) {
     ctx.globalAlpha = state.opacity * Math.min(1, crack * 1.2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.strokeStyle = rgba(PASTEL.white, 0.85);
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(anchorX - drawW * 0.28, anchorY + drawH * 0.15);
@@ -136,24 +147,26 @@ export function drawPlatformSprite(
     ctx.stroke();
   }
 
-  // Crumble darkening
   if (overlay?.behavior === 'crumble' && (overlay.integrity ?? 1) < 0.95) {
-    ctx.globalAlpha = state.opacity * (1 - overlay.integrity) * 0.35;
-    ctx.fillStyle = 'rgba(80, 55, 40, 0.5)';
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = state.opacity * (1 - overlay.integrity) * 0.28;
+    ctx.fillStyle = rgba(PASTEL.caramelDeep, 0.45);
     ctx.fillRect(dx, dy, drawW, drawH);
+    ctx.globalCompositeOperation = 'source-over';
   }
 
-  // Flash
   if ((overlay?.flash ?? 0) > 0.05) {
-    ctx.globalAlpha = state.opacity * overlay!.flash * 0.7;
-    ctx.fillStyle = '#ffffff';
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = state.opacity * overlay!.flash * 0.65;
+    ctx.fillStyle = PASTEL.white;
     ctx.fillRect(dx, dy, drawW, drawH);
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   if (sheet.source === 'ai' && pressed > 0.25 && melt < 0.3) {
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = state.opacity * Math.min(0.35, pressed * 0.28);
-    ctx.fillStyle = 'rgba(255, 220, 180, 0.6)';
+    ctx.globalAlpha = state.opacity * Math.min(0.32, pressed * 0.26);
+    ctx.fillStyle = rgba(PASTEL.butter, 0.55);
     ctx.beginPath();
     ctx.ellipse(anchorX, anchorY + drawH * 0.08, drawW * 0.25, drawH * 0.06, 0, 0, Math.PI * 2);
     ctx.fill();
