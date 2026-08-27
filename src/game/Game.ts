@@ -538,7 +538,7 @@ export class Game {
           break;
       }
 
-      this.audio.playLand(p.material, perfect, this.perfectStreak);
+      this.audio.playLand(p.material, perfect, this.perfectStreak, impact);
 
       if (perfect) {
         this.perfectStreak += 1;
@@ -582,6 +582,9 @@ export class Game {
   ): void {
     const mat = p.getMaterialDef();
     switch (ev.type) {
+      case 'mouseSqueak':
+        this.audio.playCheeseMouseSqueak();
+        break;
       case 'meltDrip':
         this.particles.drip(p.x, p.surfaceY - 4, mat.particle, 4);
         this.particles.meltRibbon(p.x, p.surfaceY, mat.particle);

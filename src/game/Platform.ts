@@ -27,7 +27,8 @@ export type PlatformEvent =
   | { type: 'crumbleGone'; floater: string }
   | { type: 'foamPop'; floater: string }
   | { type: 'squeeze'; floater?: string; gone: boolean }
-  | { type: 'vanishUnderPlayer' };
+  | { type: 'vanishUnderPlayer' }
+  | { type: 'mouseSqueak' };
 
 export class Platform {
   x: number;
@@ -177,6 +178,7 @@ export class Platform {
           this.cheeseMouseFleeT = 0.001;
           this.cheeseMouseFleeVy = -6.5;
           this.cheeseMouseFleeY = 0;
+          this.emit({ type: 'mouseSqueak' });
         }
         if (this.fading) {
           this.fadeArmed = true;

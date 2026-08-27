@@ -282,34 +282,51 @@ export class AudioBus {
     });
   }
 
-  playLand(material: MaterialId, perfect: boolean, streak = 0): void {
+  playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1): void {
     this.withCtx((ctx, sfx) => {
       this.duckAmbient(110);
       const pitch = 0.92 + Math.random() * 0.16;
+      const imp = clamp(impact, 0.35, 1.35);
       const handlers: Record<MaterialId, () => void> = {
-        jelly: () => this.jellyPloop(ctx, sfx, pitch),
-        butter: () => this.butterThup(ctx, sfx, pitch),
-        mochi: () => this.mochiBounce(ctx, sfx, pitch),
-        marshmallow: () => this.mochiBounce(ctx, sfx, pitch * 1.08),
-        chocolate: () => this.chocolateRipple(ctx, sfx, pitch),
-        sponge: () => this.whippedFoam(ctx, sfx, pitch * 0.92),
-        citrus: () => this.citrusZest(ctx, sfx, pitch),
-        honeycomb: () => this.honeyDrip(ctx, sfx, pitch),
-        glycerin: () => this.soapSquish(ctx, sfx, pitch),
-        whipped: () => this.whippedFoam(ctx, sfx, pitch),
-        soapBubble: () => this.whippedFoam(ctx, sfx, pitch * 1.15),
-        bathFoam: () => this.whippedFoam(ctx, sfx, pitch * 0.95),
-        lavenderSoap: () => this.soapSquish(ctx, sfx, pitch * 1.05),
-        creamSoap: () => this.soapSquish(ctx, sfx, pitch * 0.95),
-        keyboard: () => this.kineticShush(ctx, sfx, pitch * 1.35),
-        bubbleWrap: () => this.whippedFoam(ctx, sfx, pitch * 1.2),
-        kinetic: () => this.kineticShush(ctx, sfx, pitch),
-        iceSoap: () => this.iceTing(ctx, sfx, pitch),
-        clearSlime: () => this.slimeBlorp(ctx, sfx, pitch),
-        butterSlime: () => this.butterSlimeFold(ctx, sfx, pitch),
+        jelly: () => this.jellyPloop(ctx, sfx, pitch, imp),
+        butter: () => this.butterThup(ctx, sfx, pitch, imp),
+        mochi: () => this.cheeseLand(ctx, sfx, pitch, imp),
+        marshmallow: () => this.marshmallowPuff(ctx, sfx, pitch, imp),
+        chocolate: () => this.chocolateRipple(ctx, sfx, pitch, imp),
+        sponge: () => this.spongeSquish(ctx, sfx, pitch, imp),
+        citrus: () => this.citrusZest(ctx, sfx, pitch, imp),
+        honeycomb: () => this.honeyDrip(ctx, sfx, pitch, imp),
+        glycerin: () => this.soapSquish(ctx, sfx, pitch, imp),
+        whipped: () => this.whippedFoam(ctx, sfx, pitch, imp),
+        soapBubble: () => this.soapBubblePop(ctx, sfx, pitch, imp),
+        bathFoam: () => this.bathFoamFizz(ctx, sfx, pitch, imp),
+        lavenderSoap: () => this.lavenderSquish(ctx, sfx, pitch, imp),
+        creamSoap: () => this.creamSquish(ctx, sfx, pitch, imp),
+        keyboard: () => this.keyboardClick(ctx, sfx, pitch, imp),
+        bubbleWrap: () => this.bubbleWrapPop(ctx, sfx, pitch, imp),
+        kinetic: () => this.kineticSand(ctx, sfx, pitch, imp),
+        iceSoap: () => this.iceTing(ctx, sfx, pitch, imp),
+        clearSlime: () => this.slimeBlorp(ctx, sfx, pitch, imp),
+        butterSlime: () => this.butterSlimeFold(ctx, sfx, pitch, imp),
       };
       handlers[material]();
       if (perfect) this.perfectChime(ctx, sfx, pitch, streak);
+    });
+  }
+
+  /** Ratinho assustado saindo do queijo */
+  playCheeseMouseSqueak(): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(100);
+      const t = ctx.currentTime;
+      this.tone(ctx, sfx, 'sine', 1380, 720, 0.09, 0.1, t);
+      this.tone(ctx, sfx, 'triangle', 980, 1520, 0.07, 0.075, t + 0.018);
+      this.tone(ctx, sfx, 'sine', 1680, 920, 0.05, 0.055, t + 0.04);
+      this.noiseBurst(ctx, sfx, 0.035, 3400, 0.045, t, 'bandpass');
+      for (let i = 0; i < 5; i++) {
+        this.noiseBurst(ctx, sfx, 0.022, 650 + i * 180, 0.038 - i * 0.004, t + 0.07 + i * 0.04, 'lowpass');
+        this.tone(ctx, sfx, 'triangle', 600 - i * 40, 420, 0.025, 0.02, t + 0.075 + i * 0.04);
+      }
     });
   }
 
@@ -591,78 +608,217 @@ export class AudioBus {
 
   // —— Material one-shots ——
 
-  private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number): void {
-    const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 200 * pitch, 80 * pitch, 0.2, 0.17, t);
-    this.tone(ctx, sfx, 'triangle', 120 * pitch, 90 * pitch, 0.1, 0.09, t);
-    this.noiseBurst(ctx, sfx, 0.06, 600, 0.05, t);
+  private impactVol(base: number, impact: number): number {
+    return base * (0.72 + Math.min(1.3, impact) * 0.42);
   }
 
-  private butterThup(ctx: AudioContext, sfx: GainNode, pitch: number): void {
-    const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 160 * pitch, 70 * pitch, 0.14, 0.14, t);
-    this.noiseBurst(ctx, sfx, 0.05, 400, 0.07, t);
+  private softThud(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    pitch: number,
+    impact: number,
+    f0 = 120,
+  ): void {
+    const v = this.impactVol(0.11, impact);
+    this.tone(ctx, sfx, 'sine', f0 * pitch, f0 * pitch * 0.52, 0.17, v, t);
+    this.noiseBurst(ctx, sfx, 0.045, 240, v * 0.7, t);
   }
 
-  private mochiBounce(ctx: AudioContext, sfx: GainNode, pitch: number): void {
-    const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 280 * pitch, 140 * pitch, 0.22, 0.14, t);
-    this.tone(ctx, sfx, 'triangle', 180 * pitch, 100 * pitch, 0.12, 0.08, t + 0.04);
+  private squelch(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    pitch: number,
+    impact: number,
+    freq = 520,
+  ): void {
+    const v = this.impactVol(0.13, impact);
+    this.tone(ctx, sfx, 'sine', 210 * pitch, 78 * pitch, 0.2, v, t);
+    this.tone(ctx, sfx, 'triangle', 130 * pitch, 62 * pitch, 0.13, v * 0.55, t + 0.012);
+    this.noiseBurst(ctx, sfx, 0.1, freq, v * 0.72, t, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.055, freq * 0.55, v * 0.38, t + 0.035);
   }
 
-  private chocolateRipple(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 140 * pitch, 60 * pitch, 0.25, 0.12, t);
-    this.noiseBurst(ctx, sfx, 0.08, 280, 0.06, t);
+    const v = this.impactVol(0.15, impact);
+    this.tone(ctx, sfx, 'sine', 175 * pitch, 58 * pitch, 0.24, v, t);
+    this.tone(ctx, sfx, 'triangle', 310 * pitch, 125 * pitch, 0.15, v * 0.52, t + 0.018);
+    this.noiseBurst(ctx, sfx, 0.11, 680, v * 0.58, t, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.07, 420, v * 0.35, t + 0.05, 'lowpass');
+    for (let i = 0; i < 4; i++) {
+      this.tone(ctx, sfx, 'sine', (380 - i * 35) * pitch, 160 * pitch, 0.055, v * 0.22, t + 0.06 + i * 0.038);
+    }
   }
 
-  private citrusZest(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private butterThup(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.noiseBurst(ctx, sfx, 0.07, 2200 * pitch, 0.09, t, 'bandpass');
-    this.tone(ctx, sfx, 'triangle', 520 * pitch, 260 * pitch, 0.08, 0.06, t);
+    const v = this.impactVol(0.13, impact);
+    this.softThud(ctx, sfx, t, pitch, impact, 145);
+    this.tone(ctx, sfx, 'triangle', 200 * pitch, 95 * pitch, 0.1, v * 0.45, t + 0.02);
+    this.noiseBurst(ctx, sfx, 0.06, 360, v * 0.55, t + 0.01);
+    this.noiseBurst(ctx, sfx, 0.04, 180, v * 0.35, t + 0.04, 'lowpass');
   }
 
-  private honeyDrip(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private cheeseLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 240 * pitch, 90 * pitch, 0.28, 0.11, t);
-    this.tone(ctx, sfx, 'sine', 180 * pitch, 70 * pitch, 0.2, 0.06, t + 0.05);
+    const v = this.impactVol(0.12, impact);
+    this.softThud(ctx, sfx, t, pitch, impact, 155);
+    this.tone(ctx, sfx, 'sine', 280 * pitch, 140 * pitch, 0.22, v * 0.85, t + 0.025);
+    this.tone(ctx, sfx, 'triangle', 480 * pitch, 320 * pitch, 0.08, v * 0.3, t + 0.04);
+    this.noiseBurst(ctx, sfx, 0.05, 520, v * 0.4, t + 0.03, 'bandpass');
   }
 
-  private soapSquish(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private marshmallowPuff(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 300 * pitch, 120 * pitch, 0.14, 0.1, t);
-    this.noiseBurst(ctx, sfx, 0.12, 1800, 0.07, t, 'highpass');
+    const v = this.impactVol(0.11, impact);
+    this.noiseBurst(ctx, sfx, 0.16, 1100 * pitch, v * 0.75, t, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.12, 600, v * 0.45, t + 0.02);
+    this.tone(ctx, sfx, 'sine', 320 * pitch, 180 * pitch, 0.18, v * 0.55, t);
+    this.tone(ctx, sfx, 'triangle', 240 * pitch, 120 * pitch, 0.14, v * 0.35, t + 0.03);
   }
 
-  private whippedFoam(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private chocolateRipple(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.noiseBurst(ctx, sfx, 0.18, 900 * pitch, 0.1, t);
-    this.tone(ctx, sfx, 'triangle', 220 * pitch, 110 * pitch, 0.12, 0.05, t);
+    const v = this.impactVol(0.12, impact);
+    this.tone(ctx, sfx, 'sine', 125 * pitch, 52 * pitch, 0.28, v, t);
+    this.tone(ctx, sfx, 'triangle', 90 * pitch, 45 * pitch, 0.2, v * 0.5, t + 0.025);
+    this.noiseBurst(ctx, sfx, 0.09, 220, v * 0.65, t);
+    this.noiseBurst(ctx, sfx, 0.05, 140, v * 0.4, t + 0.06, 'lowpass');
   }
 
-  private kineticShush(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private spongeSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.noiseBurst(ctx, sfx, 0.2, 700 * pitch, 0.11, t);
-    this.noiseBurst(ctx, sfx, 0.12, 1400, 0.05, t + 0.03, 'bandpass');
+    const v = this.impactVol(0.12, impact);
+    this.noiseBurst(ctx, sfx, 0.14, 820, v * 0.7, t, 'bandpass');
+    this.tone(ctx, sfx, 'sine', 260 * pitch, 110 * pitch, 0.16, v * 0.6, t);
+    this.tone(ctx, sfx, 'triangle', 180 * pitch, 70 * pitch, 0.12, v * 0.4, t + 0.02);
+    this.noiseBurst(ctx, sfx, 0.08, 400, v * 0.45, t + 0.05);
   }
 
-  private iceTing(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private citrusZest(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 760 * pitch, 760 * pitch, 0.32, 0.07, t);
-    this.tone(ctx, sfx, 'sine', 1140 * pitch, 1140 * pitch, 0.22, 0.035, t);
+    const v = this.impactVol(0.1, impact);
+    this.noiseBurst(ctx, sfx, 0.09, 2800 * pitch, v * 0.85, t, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.06, 4200, v * 0.45, t + 0.015, 'highpass');
+    this.tone(ctx, sfx, 'triangle', 620 * pitch, 280 * pitch, 0.1, v * 0.55, t);
+    this.tone(ctx, sfx, 'sine', 880 * pitch, 440 * pitch, 0.06, v * 0.3, t + 0.025);
   }
 
-  private slimeBlorp(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private honeyDrip(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 260 * pitch, 70 * pitch, 0.22, 0.15, t);
-    this.tone(ctx, sfx, 'triangle', 150 * pitch, 60 * pitch, 0.18, 0.08, t + 0.02);
-    this.noiseBurst(ctx, sfx, 0.08, 500, 0.05, t);
+    const v = this.impactVol(0.11, impact);
+    this.tone(ctx, sfx, 'sine', 230 * pitch, 75 * pitch, 0.32, v, t);
+    this.tone(ctx, sfx, 'sine', 165 * pitch, 58 * pitch, 0.24, v * 0.55, t + 0.06);
+    this.tone(ctx, sfx, 'triangle', 120 * pitch, 48 * pitch, 0.18, v * 0.35, t + 0.12);
+    this.noiseBurst(ctx, sfx, 0.05, 300, v * 0.3, t + 0.08, 'lowpass');
   }
 
-  private butterSlimeFold(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+  private soapSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    this.tone(ctx, sfx, 'sine', 190 * pitch, 80 * pitch, 0.2, 0.13, t);
-    this.noiseBurst(ctx, sfx, 0.1, 450, 0.07, t);
+    const v = this.impactVol(0.11, impact);
+    this.squelch(ctx, sfx, t, pitch, impact, 1400);
+    this.noiseBurst(ctx, sfx, 0.08, 2200, v * 0.4, t + 0.02, 'highpass');
+    for (let i = 0; i < 2; i++) {
+      this.tone(ctx, sfx, 'sine', 900 * pitch, 600 * pitch, 0.04, v * 0.18, t + 0.04 + i * 0.03);
+    }
+  }
+
+  private lavenderSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.squelch(ctx, sfx, t, pitch * 1.04, impact, 1300);
+    this.noiseBurst(ctx, sfx, 0.08, 2200, v * 0.4, t + 0.02, 'highpass');
+    this.tone(ctx, sfx, 'sine', 720 * pitch, 720 * pitch, 0.14, v * 0.25, t + 0.05);
+  }
+
+  private creamSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.softThud(ctx, sfx, t, pitch * 0.96, impact, 130);
+    this.squelch(ctx, sfx, t + 0.01, pitch * 0.95, impact, 900);
+    this.tone(ctx, sfx, 'triangle', 280 * pitch, 160 * pitch, 0.1, v * 0.35, t + 0.03);
+  }
+
+  private whippedFoam(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.noiseBurst(ctx, sfx, 0.2, 950 * pitch, v * 0.8, t);
+    this.noiseBurst(ctx, sfx, 0.14, 1600, v * 0.45, t + 0.015, 'highpass');
+    this.tone(ctx, sfx, 'triangle', 210 * pitch, 95 * pitch, 0.14, v * 0.4, t);
+    this.tone(ctx, sfx, 'sine', 340 * pitch, 200 * pitch, 0.08, v * 0.25, t + 0.04);
+  }
+
+  private bathFoamFizz(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.whippedFoam(ctx, sfx, pitch * 0.95, impact);
+    for (let i = 0; i < 4; i++) {
+      this.tone(ctx, sfx, 'sine', 1200 + i * 180, 800, 0.035, v * 0.15, t + 0.05 + i * 0.025);
+    }
+  }
+
+  private soapBubblePop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.tone(ctx, sfx, 'sine', 420 * pitch, 90 * pitch, 0.12, v * 0.85, t);
+    this.noiseBurst(ctx, sfx, 0.07, 2000, v * 0.65, t, 'bandpass');
+    this.tone(ctx, sfx, 'sine', 680 * pitch, 680 * pitch, 0.18, v * 0.3, t + 0.025);
+    this.noiseBurst(ctx, sfx, 0.05, 3200, v * 0.35, t + 0.03, 'highpass');
+  }
+
+  private bubbleWrapPop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.12, impact);
+    for (let i = 0; i < 3; i++) {
+      this.tone(ctx, sfx, 'sine', 380 * pitch, 60 * pitch, 0.07, v * (0.7 - i * 0.12), t + i * 0.045);
+      this.noiseBurst(ctx, sfx, 0.035, 1800 + i * 300, v * 0.5, t + i * 0.045, 'bandpass');
+    }
+  }
+
+  private keyboardClick(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.noiseBurst(ctx, sfx, 0.025, 2800, v * 0.75, t, 'bandpass');
+    this.tone(ctx, sfx, 'triangle', 820 * pitch, 420 * pitch, 0.04, v * 0.55, t);
+    this.tone(ctx, sfx, 'sine', 1200 * pitch, 600 * pitch, 0.035, v * 0.35, t + 0.008);
+    this.noiseBurst(ctx, sfx, 0.02, 4500, v * 0.25, t + 0.012, 'highpass');
+  }
+
+  private kineticSand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.noiseBurst(ctx, sfx, 0.22, 620 * pitch, v * 0.75, t);
+    this.noiseBurst(ctx, sfx, 0.15, 1100, v * 0.4, t + 0.02, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.12, 380, v * 0.5, t + 0.04);
+    this.tone(ctx, sfx, 'sine', 160 * pitch, 80 * pitch, 0.1, v * 0.3, t);
+  }
+
+  private iceTing(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.09, impact);
+    this.tone(ctx, sfx, 'sine', 820 * pitch, 820 * pitch, 0.38, v * 0.85, t);
+    this.tone(ctx, sfx, 'sine', 1240 * pitch, 1240 * pitch, 0.28, v * 0.45, t + 0.015);
+    this.tone(ctx, sfx, 'triangle', 1680 * pitch, 1680 * pitch, 0.2, v * 0.25, t + 0.03);
+    this.noiseBurst(ctx, sfx, 0.04, 4000, v * 0.2, t, 'highpass');
+  }
+
+  private slimeBlorp(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.13, impact);
+    this.squelch(ctx, sfx, t, pitch, impact, 480);
+    this.tone(ctx, sfx, 'sine', 340 * pitch, 95 * pitch, 0.12, v * 0.45, t + 0.02);
+    this.noiseBurst(ctx, sfx, 0.06, 350, v * 0.35, t + 0.05, 'lowpass');
+  }
+
+  private butterSlimeFold(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.12, impact);
+    this.tone(ctx, sfx, 'sine', 175 * pitch, 68 * pitch, 0.22, v, t);
+    this.noiseBurst(ctx, sfx, 0.12, 420, v * 0.65, t);
+    this.tone(ctx, sfx, 'triangle', 130 * pitch, 55 * pitch, 0.15, v * 0.45, t + 0.04);
+    this.noiseBurst(ctx, sfx, 0.07, 280, v * 0.35, t + 0.07, 'lowpass');
   }
 
   private perfectChime(
