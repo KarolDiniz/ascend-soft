@@ -9,11 +9,17 @@ export class AudioBus {
   private master: GainNode | null = null;
   private sfx: GainNode | null = null;
   private ambient: GainNode | null = null;
-  private ambientGainBase = 0.14;
+  private music: GainNode | null = null;
+  private ambientGainBase = 0.42;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
   private volume = 0.55;
+  /** Soft generative BGM scheduler */
+  private musicStep = 0;
+  private nextMusicTime = 0;
+  private musicTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly musicBpm = 66;
 
   get isMuted(): boolean {
     return this.muted;
@@ -35,13 +41,16 @@ export class AudioBus {
     this.master = this.ctx.createGain();
     this.sfx = this.ctx.createGain();
     this.ambient = this.ctx.createGain();
+    this.music = this.ctx.createGain();
     this.sfx.connect(this.master);
     this.ambient.connect(this.master);
+    this.music.connect(this.ambient);
     this.master.connect(this.ctx.destination);
     this.applyGains();
-    this.startAmbient();
-    this.started = true;
+    // Resume before starting sources — required on Chrome/Safari
     if (this.ctx.state === 'suspended') await this.ctx.resume();
+    this.started = true;
+    this.startAmbient();
   }
 
   setMuted(muted: boolean): void {
@@ -74,35 +83,35 @@ export class AudioBus {
   }
 
   private startAmbient(): void {
-    if (!this.ctx || !this.ambient) return;
+    if (!this.ctx || !this.ambient || !this.music) return;
     const ctx = this.ctx;
 
-    // Warm pink-ish noise bed
+    // Warm pink-ish noise bed (ASMR hush)
     const noise = this.noiseBuffer(ctx, 2, true);
     const src = ctx.createBufferSource();
     src.buffer = noise;
     src.loop = true;
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 420;
+    filter.frequency.value = 380;
     const ng = ctx.createGain();
-    ng.gain.value = 0.035;
+    ng.gain.value = 0.04;
     src.connect(filter);
     filter.connect(ng);
     ng.connect(this.ambient);
     src.start();
 
-    // Soft detuned sines
-    for (const f of [98, 146.8, 196.2]) {
+    // Soft root drone (F2 / C3)
+    for (const f of [87.31, 130.81]) {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.004);
-      g.gain.value = 0.028;
+      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.003);
+      g.gain.value = 0.045;
       const lfo = ctx.createOscillator();
       const lfoG = ctx.createGain();
-      lfo.frequency.value = 0.04 + Math.random() * 0.03;
-      lfoG.gain.value = 0.008;
+      lfo.frequency.value = 0.03 + Math.random() * 0.025;
+      lfoG.gain.value = 0.012;
       lfo.connect(lfoG);
       lfoG.connect(g.gain);
       osc.connect(g);
@@ -110,6 +119,140 @@ export class AudioBus {
       osc.start();
       lfo.start();
     }
+
+    this.music.gain.value = 1;
+    this.nextMusicTime = ctx.currentTime + 0.12;
+    this.musicStep = 0;
+    this.scheduleMusic();
+  }
+
+  /**
+   * Soft generative loop — Fmaj7 → Am7 → Bbmaj7 → Cadd9
+   * Slow arpeggios + airy bells; ducking still applies via ambient bus.
+   */
+  private scheduleMusic(): void {
+    if (!this.ctx || !this.music) return;
+    if (!this.started || this.muted) {
+      if (this.musicTimer !== null) clearTimeout(this.musicTimer);
+      this.musicTimer = setTimeout(() => this.scheduleMusic(), 120);
+      return;
+    }
+    const ctx = this.ctx;
+    // Keep scheduling even if context was briefly suspended
+    if (ctx.state === 'suspended') void ctx.resume();
+
+    const stepDur = 60 / this.musicBpm / 2;
+    const horizon = 0.25;
+
+    while (this.nextMusicTime < ctx.currentTime + horizon) {
+      // Skip notes that are already in the past (tab was backgrounded)
+      if (this.nextMusicTime >= ctx.currentTime - 0.02) {
+        this.playMusicStep(this.musicStep, this.nextMusicTime);
+      }
+      this.nextMusicTime += stepDur;
+      this.musicStep += 1;
+    }
+
+    if (this.musicTimer !== null) clearTimeout(this.musicTimer);
+    this.musicTimer = setTimeout(() => this.scheduleMusic(), 40);
+  }
+
+  private playMusicStep(step: number, t: number): void {
+    if (!this.ctx || !this.music) return;
+    const ctx = this.ctx;
+    const dest = this.music;
+    const bar = Math.floor(step / 8) % 4;
+    const beat = step % 8;
+
+    // Chord tones (Hz) — warm F major family
+    const chords: number[][] = [
+      [174.61, 220.0, 261.63, 329.63], // Fmaj7
+      [220.0, 261.63, 329.63, 392.0], // Am7
+      [233.08, 293.66, 349.23, 440.0], // Bbmaj7
+      [261.63, 329.63, 392.0, 493.88], // Cadd9
+    ];
+    const chord = chords[bar];
+
+    // Soft pad swell on bar downbeat
+    if (beat === 0) {
+      for (let i = 0; i < 3; i++) {
+        this.musicTone(ctx, dest, 'sine', chord[i], chord[i], 3.2, 0.07 - i * 0.012, t + i * 0.02);
+      }
+      this.musicTone(ctx, dest, 'triangle', chord[0] * 0.5, chord[0] * 0.5, 3.4, 0.05, t);
+    }
+
+    // Satisfying arpeggio — sparse, never busy
+    const arpPattern = [0, 2, 1, 3, 2, 0, 3, 1];
+    if (beat % 2 === 0 || beat === 3 || beat === 7) {
+      const idx = arpPattern[beat];
+      const f = chord[idx] * (beat >= 6 ? 2 : 1);
+      const vol = beat === 0 ? 0.11 : 0.08;
+      this.musicTone(ctx, dest, 'sine', f, f * 1.002, 0.9, vol, t);
+      this.musicTone(ctx, dest, 'triangle', f * 1.003, f * 1.003, 0.6, vol * 0.4, t + 0.01);
+    }
+
+    // Airy sparkle every 2 bars
+    if (step % 16 === 12) {
+      const sparkle = chord[3] * 2;
+      this.musicTone(ctx, dest, 'sine', sparkle, sparkle * 1.01, 1.4, 0.055, t);
+      this.musicTone(ctx, dest, 'sine', sparkle * 1.5, sparkle * 1.5, 1.0, 0.03, t + 0.06);
+    }
+
+    // Soft breath pulse on off-bars
+    if (beat === 4 && bar % 2 === 1) {
+      this.musicBreath(ctx, dest, t);
+    }
+  }
+
+  private musicTone(
+    ctx: AudioContext,
+    dest: GainNode,
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    vol: number,
+    t: number,
+  ): void {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 2400;
+    filter.Q.value = 0.5;
+    osc.type = type;
+    osc.frequency.setValueAtTime(Math.max(40, f0), t);
+    if (Math.abs(f0 - f1) > 0.5) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur * 0.9);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(vol * 0.55, t + dur * 0.45);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(dest);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+
+  private musicBreath(ctx: AudioContext, dest: GainNode, t: number): void {
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx, 0.45, true);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(520, t);
+    filter.frequency.exponentialRampToValueAtTime(780, t + 0.35);
+    filter.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.055, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(dest);
+    src.start(t);
+    src.stop(t + 0.45);
   }
 
   playJump(): void {
