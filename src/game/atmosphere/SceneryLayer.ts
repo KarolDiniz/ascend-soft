@@ -1,7 +1,7 @@
 import { getAltitudeZones, type DecorKind, type ZoneId } from './AltitudeZones';
 import type { Atmosphere } from './Atmosphere';
 import { materialSceneryColors } from '../ThemedPhases';
-import { rgba } from '../../theme/pastelPalette';
+import { rgba, PASTEL } from '../../theme/pastelPalette';
 import { drawDecor } from './BiomeDecor';
 
 interface SceneryProp {
@@ -16,6 +16,9 @@ interface SceneryProp {
   color: string;
   alpha: number;
   targetAlpha: number;
+  /** Horizontal flight — pássaros na fase grama */
+  flyDir: 1 | -1;
+  flySpeed: number;
 }
 
 interface BiomeSpriteSet {
@@ -61,20 +64,23 @@ export class SceneryLayer {
       const perZone = Math.max(4, Math.floor(PROP_COUNT / zones.length));
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
-        const layer = (k % 4) as 0 | 1 | 2 | 3;
+        const isBird = kind === 'bird';
+        const layer = (isBird ? 2 + (k % 2) : k % 4) as 0 | 1 | 2 | 3;
         const colors = zoneColors(zone.id);
         this.props.push({
           zoneId: zone.id,
           kind,
-          nx: (i * 0.17 + k * 0.23 + Math.random() * 0.1) % 1,
-          ny: 0.12 + ((i * 0.31 + k * 0.19) % 0.76),
-          scale: layer < 2 ? 70 + Math.random() * 90 : 40 + Math.random() * 55,
+          nx: isBird ? Math.random() : (i * 0.17 + k * 0.23 + Math.random() * 0.1) % 1,
+          ny: isBird ? 0.05 + (k * 0.09 + Math.random() * 0.08) : 0.12 + ((i * 0.31 + k * 0.19) % 0.76),
+          scale: isBird ? 52 + Math.random() * 28 : layer < 2 ? 70 + Math.random() * 90 : 40 + Math.random() * 55,
           layer,
           phase: Math.random() * Math.PI * 2,
-          speed: 0.35 + Math.random() * 0.55,
-          color: colors[k % colors.length],
+          speed: isBird ? 0.55 + Math.random() * 0.35 : 0.35 + Math.random() * 0.55,
+          color: isBird ? rgba(PASTEL.seafoam, 0.58) : colors[k % colors.length],
           alpha: zone.id === startZone ? 0.85 : 0,
           targetAlpha: zone.id === startZone ? 0.85 : 0,
+          flyDir: isBird ? (Math.random() > 0.5 ? 1 : -1) : 1,
+          flySpeed: isBird ? 0.028 + Math.random() * 0.022 : 0,
         });
         i++;
       }
@@ -94,6 +100,8 @@ export class SceneryLayer {
         color: colors[0],
         alpha: zone.id === startZone ? 0.9 : 0,
         targetAlpha: zone.id === startZone ? 0.9 : 0,
+        flyDir: 1,
+        flySpeed: 0,
       });
       this.props.push({
         zoneId: zone.id,
@@ -107,7 +115,29 @@ export class SceneryLayer {
         color: colors[1],
         alpha: zone.id === startZone ? 0.85 : 0,
         targetAlpha: zone.id === startZone ? 0.85 : 0,
+        flyDir: 1,
+        flySpeed: 0,
       });
+    }
+    // Pássaros extras sobrevoando a grama
+    if (zones.some((z) => z.id === 'grass')) {
+      for (let b = 0; b < 3; b++) {
+        this.props.push({
+          zoneId: 'grass',
+          kind: 'bird',
+          nx: Math.random(),
+          ny: 0.04 + b * 0.07 + Math.random() * 0.05,
+          scale: 48 + Math.random() * 32,
+          layer: (2 + (b % 2)) as 2 | 3,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.6 + Math.random() * 0.4,
+          color: rgba(PASTEL.sky, 0.52),
+          alpha: 0,
+          targetAlpha: 0,
+          flyDir: b % 2 === 0 ? 1 : -1,
+          flySpeed: 0.032 + Math.random() * 0.018,
+        });
+      }
     }
   }
 
@@ -150,6 +180,11 @@ export class SceneryLayer {
       const step = Math.min(Math.abs(diff), FADE_SPEED * dt * (0.35 + Math.abs(diff) * 1.6));
       p.alpha += Math.sign(diff) * step;
       p.phase += dt * p.speed;
+      if (p.kind === 'bird' && p.flySpeed > 0) {
+        p.nx += p.flyDir * p.flySpeed * dt;
+        if (p.nx < -0.14) p.nx += 1.28;
+        if (p.nx > 1.14) p.nx -= 1.28;
+      }
       if (p.alpha > 0.015) this.activeCount++;
     }
   }
@@ -158,13 +193,7 @@ export class SceneryLayer {
     const out: { x: number; y: number; color: string; kind: string }[] = [];
     for (const p of this.props) {
       if (p.alpha < 0.12) continue;
-      const px = PARALLAX[p.layer];
-      const sway = Math.sin(p.phase) * (14 + p.layer * 5) + Math.sin(p.phase * 0.37) * 6;
-      const bob = Math.cos(p.phase * 0.85) * (9 + p.layer * 3);
-      const scroll = -(cameraY * px);
-      const x = p.nx * w + sway;
-      const band = h + p.scale * 2;
-      const y = ((((p.ny * h + scroll + bob) % band) + band) % band) - p.scale;
+      const { x, y } = this.propScreenPos(p, w, h, cameraY);
       if (y < -40 || y > h + 40 || x < -40 || x > w + 40) continue;
       out.push({ x, y, color: p.color, kind: p.kind });
     }
@@ -236,40 +265,39 @@ export class SceneryLayer {
 
     for (const p of this.props) {
       if (p.layer < layerMin || p.layer > layerMax || p.alpha < 0.015) continue;
-      const px = PARALLAX[p.layer];
-      const sway = Math.sin(p.phase) * (12 + p.layer * 4);
-      const bob = Math.cos(p.phase * 0.85) * (8 + p.layer * 3);
-      const scroll = -(cameraY * px);
-      const x = p.nx * w + sway;
-      const band = h + p.scale * 2;
-      const y = ((((p.ny * h + scroll + bob) % band) + band) % band) - p.scale;
+      const { x, y } = this.propScreenPos(p, w, h, cameraY);
 
       if (y < -p.scale * 2 || y > h + p.scale * 2) continue;
       if (x < -p.scale * 2 || x > w + p.scale * 2) continue;
 
       const vis = p.alpha * (0.62 + p.layer * 0.1);
       const s = p.scale;
+      const isBird = p.kind === 'bird';
 
-      // Soft contact shadow (light-driven offset)
-      ctx.save();
-      ctx.globalAlpha = vis * 0.28;
-      const sx = x - lx * s * 0.35;
-      const sy = y + s * 0.52 + ly * s * 0.08;
-      const sh = ctx.createRadialGradient(sx, sy, 0, sx, sy, s * 0.55);
-      sh.addColorStop(0, rgba(accent, 0.32));
-      sh.addColorStop(0.55, rgba(accent, 0.1));
-      sh.addColorStop(1, rgba(accent, 0));
-      ctx.fillStyle = sh;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, s * 0.52, s * 0.14, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      // Soft contact shadow (light-driven offset) — skip for birds in the sky
+      if (!isBird) {
+        ctx.save();
+        ctx.globalAlpha = vis * 0.28;
+        const sx = x - lx * s * 0.35;
+        const sy = y + s * 0.52 + ly * s * 0.08;
+        const sh = ctx.createRadialGradient(sx, sy, 0, sx, sy, s * 0.55);
+        sh.addColorStop(0, rgba(accent, 0.32));
+        sh.addColorStop(0.55, rgba(accent, 0.1));
+        sh.addColorStop(1, rgba(accent, 0));
+        ctx.fillStyle = sh;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, s * 0.52, s * 0.14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
 
       // Prop body
       ctx.save();
       ctx.globalAlpha = vis;
-      drawDecor(ctx, p.kind, x, y, s, p.phase, p.color);
+      drawDecor(ctx, p.kind, x, y, s, p.phase, p.color, p.flyDir);
       ctx.restore();
+
+      if (isBird) continue;
 
       // Soft rim light / highlight from top-left
       ctx.save();
@@ -300,5 +328,24 @@ export class SceneryLayer {
       ctx.fill();
       ctx.restore();
     }
+  }
+
+  private propScreenPos(
+    p: SceneryProp,
+    w: number,
+    h: number,
+    cameraY: number,
+  ): { x: number; y: number } {
+    const px = PARALLAX[p.layer];
+    const sway = p.kind === 'bird' ? Math.sin(p.phase * 0.7) * 5 : Math.sin(p.phase) * (12 + p.layer * 4);
+    const bob =
+      p.kind === 'bird'
+        ? Math.sin(p.phase * 0.45) * 6 + Math.cos(p.phase * 0.22) * 3
+        : Math.cos(p.phase * 0.85) * (8 + p.layer * 3);
+    const scroll = -(cameraY * px);
+    const x = p.nx * w + sway;
+    const band = h + p.scale * 2;
+    const y = ((((p.ny * h + scroll + bob) % band) + band) % band) - p.scale;
+    return { x, y };
   }
 }

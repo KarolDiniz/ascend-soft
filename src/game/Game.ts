@@ -226,6 +226,12 @@ export class Game {
       dt,
     );
 
+    const grassWeight = this.atmosphere
+      .getWeights()
+      .filter((w) => w.zone.id === 'grass')
+      .reduce((sum, w) => sum + w.weight, 0);
+    this.audio.updateGrassBirdAmbience(dt, grassWeight);
+
     if (this.atmosphere.biomeEntered && this.state === 'playing') {
       const z = this.atmosphere.getPrimaryZone();
       const pal = this.atmosphere.getPalette();

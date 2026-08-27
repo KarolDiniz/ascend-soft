@@ -32,6 +32,9 @@ export class AudioBus {
   private murmurIndex = 0;
   private murmurMouthCallback: ((open: boolean) => void) | null = null;
   private murmurPauseMs = 120;
+  /** Canto de pássaros na fase grama */
+  private birdChirpAcc = 0;
+  private birdChirpCooldown = 0;
 
   get isMuted(): boolean {
     return this.muted;
@@ -524,6 +527,49 @@ export class AudioBus {
       this.noiseBurst(ctx, sfx, 0.18, 900, 0.045, t, 'bandpass');
       this.tone(ctx, sfx, 'sine', base, base * 1.5, 0.35, 0.06, t);
       this.tone(ctx, sfx, 'triangle', base * 1.5, base * 2, 0.28, 0.035, t + 0.04);
+    });
+    if (zoneId === 'grass') this.playBirdChirp(true);
+  }
+
+  /** Trinados suaves enquanto a fase grama está visível */
+  updateGrassBirdAmbience(dt: number, grassWeight: number): void {
+    if (!this.started || this.muted || grassWeight < 0.18) {
+      this.birdChirpAcc = 0;
+      return;
+    }
+    if (this.birdChirpCooldown > 0) {
+      this.birdChirpCooldown -= dt;
+      return;
+    }
+    const rate = (0.12 + grassWeight * 0.42) * dt;
+    this.birdChirpAcc += rate;
+    while (this.birdChirpAcc >= 1) {
+      this.birdChirpAcc -= 1;
+      if (Math.random() < 0.55 + grassWeight * 0.4) {
+        this.playBirdChirp(false);
+        this.birdChirpCooldown = 1.8 + Math.random() * 3.2;
+        break;
+      }
+    }
+  }
+
+  /** Canto procedural de passarinho — bus ambiente, tom ASMR suave */
+  playBirdChirp(burst = false): void {
+    this.withAmbient((ctx, amb) => {
+      const t = ctx.currentTime + 0.01;
+      const chirps = burst ? 2 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * 2);
+      let offset = 0;
+      for (let i = 0; i < chirps; i++) {
+        const f0 = 2600 + Math.random() * 2400;
+        const f1 = f0 * (1.04 + Math.random() * 0.18);
+        const dur = 0.055 + Math.random() * 0.09;
+        const vol = 0.014 + Math.random() * 0.012;
+        this.musicTone(ctx, amb, 'sine', f0, f1, dur, vol, t + offset);
+        if (Math.random() > 0.35) {
+          this.musicTone(ctx, amb, 'triangle', f0 * 1.48, f0 * 1.52, dur * 0.75, vol * 0.45, t + offset + 0.008);
+        }
+        offset += dur + 0.05 + Math.random() * 0.14;
+      }
     });
   }
 
@@ -1277,5 +1323,11 @@ export class AudioBus {
     if (!this.started || !this.ctx || !this.sfx || this.muted) return;
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     fn(this.ctx, this.sfx);
+  }
+
+  private withAmbient(fn: (ctx: AudioContext, amb: GainNode) => void): void {
+    if (!this.started || !this.ctx || !this.ambient || this.muted) return;
+    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    fn(this.ctx, this.ambient);
   }
 }

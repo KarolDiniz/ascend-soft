@@ -79,7 +79,8 @@ export type DecorKind =
   | 'snowflake'
   | 'lightRing'
   | 'softOrb'
-  | 'abstractMote';
+  | 'abstractMote'
+  | 'bird';
 
 export type OverlayKind = 'mottle' | 'sugarVeil' | 'caustics' | 'frostEdge' | 'goldBloom';
 
@@ -218,7 +219,7 @@ const DECOR: Record<MaterialId, DecorKind[]> = {
   butterSlime: ['creamCloud', 'bigBubble', 'softOrb', 'abstractMote'],
   amoeba: ['softOrb', 'bigBubble', 'abstractMote', 'softOrb'],
   moss: ['leaf', 'stone', 'abstractMote', 'leaf'],
-  grass: ['leaf', 'abstractMote', 'leaf', 'stone'],
+  grass: ['bird', 'leaf', 'bird', 'stone'],
   cotton: ['creamCloud', 'softOrb', 'abstractMote', 'creamCloud'],
   cloud: ['creamCloud', 'softOrb', 'bigBubble', 'abstractMote'],
   paper: ['abstractMote', 'stone', 'abstractMote', 'spoon'],

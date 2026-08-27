@@ -9,10 +9,11 @@ export function drawDecor(
   s: number,
   phase: number,
   color: string,
+  flyDir = 1,
 ): void {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(Math.sin(phase) * 0.08);
+  if (kind !== 'bird') ctx.rotate(Math.sin(phase) * 0.08);
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
 
@@ -64,6 +65,9 @@ export function drawDecor(
       break;
     case 'softOrb':
       drawSoftOrb(ctx, s, phase);
+      break;
+    case 'bird':
+      drawBird(ctx, s, phase, color, flyDir);
       break;
     default:
       drawAbstractMote(ctx, s, phase);
@@ -317,5 +321,66 @@ function drawAbstractMote(ctx: CanvasRenderingContext2D, s: number, phase: numbe
   ctx.globalAlpha *= 0.5;
   ctx.beginPath();
   ctx.ellipse(s * 0.2, -s * 0.1, s * 0.35, s * 0.28, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** Pássaro pastel sobrevoando — asas batendo, direção horizontal */
+function drawBird(
+  ctx: CanvasRenderingContext2D,
+  s: number,
+  phase: number,
+  color: string,
+  flyDir: number,
+): void {
+  const dir = flyDir >= 0 ? 1 : -1;
+  ctx.scale(dir, 1);
+
+  const glide = Math.sin(phase * 0.55) * s * 0.06;
+  const flap = Math.sin(phase * 13.5);
+  const wingUp = flap > 0;
+
+  // Corpo
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, glide, s * 0.38, s * 0.22, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cabeça
+  ctx.beginPath();
+  ctx.arc(s * 0.28, glide - s * 0.08, s * 0.17, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bico
+  ctx.fillStyle = 'rgba(255, 210, 150, 0.85)';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.4, glide - s * 0.06);
+  ctx.lineTo(s * 0.58, glide - s * 0.02);
+  ctx.lineTo(s * 0.4, glide + s * 0.02);
+  ctx.closePath();
+  ctx.fill();
+
+  // Asa (batida)
+  ctx.fillStyle = color;
+  ctx.globalAlpha *= 0.88;
+  const wingY = glide + (wingUp ? -s * 0.18 : s * 0.1);
+  const wingTilt = wingUp ? -0.55 : 0.35;
+  ctx.beginPath();
+  ctx.ellipse(-s * 0.08, wingY, s * 0.42, s * 0.14, wingTilt, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cauda
+  ctx.globalAlpha *= 0.75;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.32, glide);
+  ctx.lineTo(-s * 0.58, glide - s * 0.12);
+  ctx.lineTo(-s * 0.52, glide + s * 0.06);
+  ctx.closePath();
+  ctx.fill();
+
+  // Olho
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(40, 50, 60, 0.55)';
+  ctx.beginPath();
+  ctx.arc(s * 0.32, glide - s * 0.1, s * 0.035, 0, Math.PI * 2);
   ctx.fill();
 }

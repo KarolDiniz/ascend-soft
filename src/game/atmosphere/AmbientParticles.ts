@@ -275,6 +275,7 @@ export class AmbientParticles {
     }
     if (kind === 'lightRing' || kind === 'softOrb') return Math.random() > 0.5 ? 'lightOrb' : 'emberSoft';
     if (kind === 'citrus') return 'petal';
+    if (kind === 'bird') return Math.random() > 0.6 ? 'pollen' : 'petal';
     return null;
   }
 
