@@ -30,9 +30,14 @@ export class AudioBus {
   private readonly musicBpm = 66;
   private murmurTimer: ReturnType<typeof setTimeout> | null = null;
   private murmurEndAt = 0;
-  private murmurIndex = 0;
   private murmurMouthCallback: ((open: boolean) => void) | null = null;
   private murmurPauseMs = 120;
+  private murmurMood = {
+    basePitch: 620,
+    energy: 0.72,
+    syllablesInPhrase: 0,
+    phraseLen: 6,
+  };
   /** Canto de pássaros na fase grama */
   private birdChirpAcc = 0;
   private birdChirpCooldown = 0;
@@ -619,7 +624,7 @@ export class AudioBus {
     });
   }
 
-  /** Criaturinha mística falando — ritmo do texto, sussurro etéreo */
+  /** Personagem murmurando o banner — voz de criaturinha pequena e fofa */
   playCreatureSpeech(
     text: string,
     durationMs = 5600,
@@ -631,10 +636,15 @@ export class AudioBus {
       return;
     }
     this.murmurEndAt = performance.now() + durationMs;
-    this.murmurIndex = 0;
     this.murmurMouthCallback = onMouth ?? null;
+    this.murmurMood = {
+      basePitch: 540 + Math.random() * 220,
+      energy: 0.5 + Math.random() * 0.45,
+      syllablesInPhrase: 0,
+      phraseLen: 3 + Math.floor(Math.random() * 8),
+    };
     const syllables = this.estimateSyllables(text);
-    this.murmurPauseMs = Math.max(82, (durationMs - 260) / syllables);
+    this.murmurPauseMs = Math.max(52, ((durationMs - 260) / syllables) * 0.78);
     this.duckAmbient(Math.min(durationMs, 480));
     this.scheduleMurmurSyllable();
   }
@@ -666,16 +676,42 @@ export class AudioBus {
       return;
     }
     this.withCtx((ctx, sfx) => {
-      const dur = 0.032 + Math.random() * 0.072;
-      const t = ctx.currentTime + 0.01;
-      this.creatureSyllable(ctx, sfx, t, dur, this.murmurIndex++);
+      let cursor = ctx.currentTime + 0.008;
+      const cluster = Math.random();
+      const burstCount = cluster > 0.84 ? 3 : cluster > 0.52 ? 2 : 1;
+
+      for (let i = 0; i < burstCount; i++) {
+        const dur = 0.038 + Math.random() * 0.13;
+        this.littleCreatureMurmurSyllable(ctx, sfx, cursor, dur);
+        cursor += dur * (0.68 + Math.random() * 0.38) + Math.random() * 0.018;
+        this.murmurMood.syllablesInPhrase++;
+      }
+
       if (this.murmurMouthCallback) {
         this.murmurMouthCallback(true);
-        window.setTimeout(() => this.murmurMouthCallback?.(false), dur * 1000 * 0.52);
+        const mouthDur = Math.min(0.16, Math.max(0.05, cursor - ctx.currentTime));
+        window.setTimeout(() => this.murmurMouthCallback?.(false), mouthDur * 1000 * 0.55);
       }
     });
-    const comicBeat = this.murmurIndex % 6 === 0 ? 90 + Math.random() * 70 : 0;
-    const pauseMs = this.murmurPauseMs + (Math.random() - 0.5) * 36 + comicBeat;
+
+    let phraseBreak = 0;
+    if (this.murmurMood.syllablesInPhrase >= this.murmurMood.phraseLen) {
+      phraseBreak = 160 + Math.random() * 240;
+      this.murmurMood.syllablesInPhrase = 0;
+      this.murmurMood.phraseLen = 3 + Math.floor(Math.random() * 9);
+      this.murmurMood.energy = 0.42 + Math.random() * 0.52;
+      this.murmurMood.basePitch = clamp(
+        this.murmurMood.basePitch + (Math.random() - 0.5) * 55,
+        480,
+        980,
+      );
+    }
+
+    const hesitation = Math.random() > 0.9 ? 70 + Math.random() * 110 : 0;
+    const pauseMs =
+      this.murmurPauseMs * (0.55 + Math.random() * 0.75) * (1.1 - this.murmurMood.energy * 0.35) +
+      phraseBreak +
+      hesitation;
     this.murmurTimer = window.setTimeout(() => this.scheduleMurmurSyllable(), pauseMs);
   }
 
@@ -697,16 +733,17 @@ export class AudioBus {
       blip?: boolean;
       wobble?: boolean;
       pop?: boolean;
+      murmur?: boolean;
     } = {},
   ): void {
     vol *= this.creatureVolBoost;
 
     const hp = ctx.createBiquadFilter();
     hp.type = 'highpass';
-    hp.frequency.value = opts.squeak ? 520 : 400;
+    hp.frequency.value = opts.murmur ? 260 : opts.squeak ? 520 : 400;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = opts.blip ? 5200 : 4800;
+    lp.frequency.value = opts.murmur ? 4000 : opts.blip ? 5200 : 4800;
     lp.Q.value = 0.35;
     hp.connect(lp);
 
@@ -736,7 +773,7 @@ export class AudioBus {
       core.frequency.exponentialRampToValueAtTime(Math.max(400, peak), t + dur * 0.32);
       core.frequency.exponentialRampToValueAtTime(Math.max(360, f0End), t + dur);
     } else {
-      core.frequency.exponentialRampToValueAtTime(Math.max(360, f0End), t + dur);
+      core.frequency.exponentialRampToValueAtTime(Math.max(opts.murmur ? 240 : 360, f0End), t + dur);
     }
     vibrato.connect(vibratoG);
     vibratoG.connect(core.frequency);
@@ -750,12 +787,16 @@ export class AudioBus {
     vibrato.start(t);
     vibrato.stop(t + dur + 0.02);
 
-    if (opts.shimmer !== false && !opts.blip) {
+    const useShimmer = opts.shimmer ?? !opts.murmur;
+    if (useShimmer && !opts.blip) {
       for (const detune of [1.018, 0.982]) {
         const sh = ctx.createOscillator();
         sh.type = 'sine';
         sh.frequency.setValueAtTime(f0Start * detune, t);
-        sh.frequency.exponentialRampToValueAtTime(Math.max(360, f0End * detune), t + dur);
+        sh.frequency.exponentialRampToValueAtTime(
+          Math.max(opts.murmur ? 240 : 360, f0End * detune),
+          t + dur,
+        );
         const sg = ctx.createGain();
         sg.gain.value = 0.14;
         sh.connect(sg);
@@ -780,7 +821,7 @@ export class AudioBus {
       boing.stop(t + dur + 0.02);
     }
 
-    const breath = opts.breath ?? (opts.blip ? 0.22 : 0.38);
+    const breath = opts.breath ?? (opts.blip ? 0.22 : opts.murmur ? 0.44 : 0.38);
     this.softNoise(ctx, sfx, dur * 0.88, 1720 + Math.random() * 480, vol * breath * 0.5, t, 'bandpass', 0.68);
 
     if (opts.chime) {
@@ -788,52 +829,84 @@ export class AudioBus {
       this.tone(ctx, sfx, 'sine', chimeF, chimeF * 0.998, dur * 0.5, vol * 0.18, t + 0.004);
     }
 
-    if (opts.squeak || Math.random() > 0.68) {
+    if (opts.squeak) {
+      this.noiseBurst(
+        ctx,
+        sfx,
+        Math.min(0.022, dur * 0.18),
+        4800 + Math.random() * 900,
+        vol * (opts.murmur ? 0.12 : 0.2),
+        t,
+        'bandpass',
+      );
+    } else if (!opts.murmur && Math.random() > 0.68) {
       this.noiseBurst(ctx, sfx, Math.min(0.022, dur * 0.18), 4800 + Math.random() * 900, vol * 0.2, t, 'bandpass');
     }
   }
 
-  private creatureSyllable(
+  /** Murmurio fofo de criaturinha — gibberish cartoon, ritmo orgânico */
+  private littleCreatureMurmurSyllable(
     ctx: AudioContext,
     sfx: GainNode,
     t: number,
     dur: number,
-    index: number,
   ): void {
-    const vol = 0.068 + Math.random() * 0.028;
-    const kind = index % 8;
+    const mood = this.murmurMood;
+    mood.basePitch = clamp(mood.basePitch + (Math.random() - 0.5) * 48, 480, 980);
 
-    if (kind === 0) {
-      this.creatureVocal(ctx, sfx, t, dur * 0.55, 720, 1380, vol, { boing: true, pop: true, chime: true });
-      this.creatureVocal(ctx, sfx, t + dur * 0.52, dur * 0.45, 980, 680, vol * 0.82, { blip: true });
-      return;
-    }
-    if (kind === 1) {
-      this.creatureVocal(ctx, sfx, t, dur, 880 + Math.random() * 220, 520, vol, { squeak: true, wobble: true });
-      return;
-    }
-    if (kind === 2) {
-      this.creatureVocal(ctx, sfx, t, dur * 0.7, 620, 1240, vol, { boing: true, shimmer: true });
-      this.creatureVocal(ctx, sfx, t + dur * 0.62, dur * 0.35, 1120, 860, vol * 0.7, { blip: true, chime: true });
-      return;
-    }
-    if (kind === 3) {
-      this.creatureVocal(ctx, sfx, t, dur, 1040, 1480, vol, { squeak: true, pop: true, chime: Math.random() > 0.4 });
+    const vol = (0.044 + Math.random() * 0.034) * (0.68 + mood.energy * 0.52);
+    const roll = Math.random();
+    const f0 = mood.basePitch * (0.86 + Math.random() * 0.26);
+    const rising = Math.random() > 0.4;
+    const f0End = f0 * (rising ? 1.06 + Math.random() * 0.22 : 0.78 + Math.random() * 0.16);
+    const murmur = { murmur: true, chime: false } as const;
+
+    if (roll < 0.22) {
+      this.creatureVocal(ctx, sfx, t, dur * (0.48 + Math.random() * 0.2), f0 * 1.08, f0End * 1.12, vol, {
+        ...murmur,
+        squeak: true,
+        pop: true,
+        shimmer: false,
+      });
+      if (Math.random() > 0.35) {
+        this.creatureVocal(ctx, sfx, t + dur * 0.44, dur * (0.38 + Math.random() * 0.18), f0 * 0.9, f0End * 0.86, vol * 0.82, {
+          ...murmur,
+          blip: true,
+          shimmer: false,
+        });
+      }
       return;
     }
 
-    const pitch = 0.9 + Math.random() * 0.2;
-    const f0 = (640 + Math.random() * 360) * pitch;
-    const rising = Math.random() > 0.38;
-    const f0End = f0 * (rising ? 1.1 + Math.random() * 0.22 : 0.82 + Math.random() * 0.14);
+    if (roll < 0.42) {
+      this.creatureVocal(ctx, sfx, t, dur * (0.88 + Math.random() * 0.28), f0, f0End, vol, {
+        ...murmur,
+        wobble: true,
+        boing: rising && Math.random() > 0.45,
+        pop: Math.random() > 0.55,
+        shimmer: Math.random() > 0.65,
+      });
+      return;
+    }
+
+    if (roll < 0.58) {
+      this.creatureVocal(ctx, sfx, t, dur * (1.02 + Math.random() * 0.35), f0 * 0.94, f0End * 0.88, vol * 0.78, {
+        ...murmur,
+        breath: 0.5,
+        wobble: Math.random() > 0.5,
+        shimmer: false,
+      });
+      return;
+    }
 
     this.creatureVocal(ctx, sfx, t, dur, f0, f0End, vol, {
-      breath: 0.32 + Math.random() * 0.22,
-      chime: index % 3 === 0 || Math.random() > 0.55,
-      shimmer: true,
-      boing: rising && Math.random() > 0.45,
-      wobble: !rising && Math.random() > 0.5,
-      blip: dur < 0.055,
+      ...murmur,
+      wobble: !rising && Math.random() > 0.4,
+      boing: rising && Math.random() > 0.58,
+      pop: Math.random() > 0.62,
+      blip: dur < 0.072,
+      shimmer: Math.random() > 0.58,
+      squeak: Math.random() > 0.82,
     });
   }
 
