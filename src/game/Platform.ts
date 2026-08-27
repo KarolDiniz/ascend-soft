@@ -373,17 +373,40 @@ export class Platform {
   ): void {
     if (!this.alive && this.opacity <= 0) return;
     const mat = MATERIALS[this.material];
-    const softWobble =
-      this.behavior === 'elastic'
-        ? Math.sin(this.wobble) * 0.04 * (1 - Math.min(1, Math.abs(this.pressAmount)))
-        : 0;
+    // Per-behavior live deform — each material "feels" different underfoot
+    const idleAmt = 1 - Math.min(1, Math.abs(this.pressAmount));
+    let softWobble = 0;
+    if (this.behavior === 'elastic') {
+      const amp =
+        this.material === 'mochi' ? 0.055 : this.material === 'butterSlime' ? 0.048 : 0.04;
+      softWobble = Math.sin(this.wobble) * amp * idleAmt;
+    } else if (this.behavior === 'foamPop') {
+      softWobble = Math.sin(this.wobble * 1.4) * 0.025 * idleAmt;
+    }
 
     const pressed = Math.max(0, this.pressAmount);
     const stretch = Math.max(0, -this.pressAmount);
+    const pressMulX =
+      this.behavior === 'melt'
+        ? 0.18
+        : this.behavior === 'shatter'
+          ? 0.05
+          : this.behavior === 'squeeze'
+            ? 0.14
+            : 0.12;
+    const pressMulY =
+      this.behavior === 'melt'
+        ? 0.32
+        : this.behavior === 'shatter'
+          ? 0.1
+          : this.behavior === 'foamPop'
+            ? 0.28
+            : 0.22;
     const squashX =
-      (1 + pressed * 0.12 + softWobble - stretch * 0.06) * this.deformX;
+      (1 + pressed * pressMulX + softWobble - stretch * 0.06) * this.deformX;
     const squashY =
-      (1 - pressed * 0.22 - softWobble * 0.5 + stretch * 0.14) * Math.max(0.2, this.deformY);
+      (1 - pressed * pressMulY - softWobble * 0.5 + stretch * 0.14) *
+      Math.max(0.2, this.deformY);
     const cy = this.y - this.sink;
 
     const hitHw = (this.w / 2) * Math.max(0.85, squashX);
@@ -428,6 +451,8 @@ export class Platform {
           flash: this.flash,
           integrity: this.integrity,
           behavior: this.behavior,
+          pressTime: this.pressTime,
+          phase: this.phase,
         },
       );
     } else {

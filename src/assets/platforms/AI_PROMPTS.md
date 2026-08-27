@@ -1,195 +1,183 @@
-# Prompts IA — Sprite sheets Ascend Soft
+# Prompts IA — Sprite sheets Ascend Soft (v2 Pastel)
 
-Use estes prompts em **Midjourney, Flux, DALL·E, Ideogram** ou **Stable Diffusion**.
-Gere **6 frames** numa faixa horizontal (1536×160) ou gere 6 imagens e monte no Photopea/Figma.
+Use em **Midjourney, Flux, DALL·E, Ideogram** ou **Stable Diffusion**.
+Gere **idle** primeiro; monte a faixa com `python scripts/build_sprite_sheet.py`.
+
+Direção completa: `DESIGN_BIBLE.md`
 
 ---
 
 ## Estilo global (cole no início de TODO prompt)
 
 ```
-Photorealistic ASMR food/soap texture, studio softbox lighting from top-left,
-macro close-up, shallow depth of field, satisfying tactile surface,
-clean transparent background, no text, no watermark, no hands, no utensils,
-game asset sprite, centered object, slight 3/4 top-down angle,
-consistent style series, ultra detailed surface texture, 8k quality
+Photorealistic ASMR food/soap texture, soft pastel color palette only,
+studio softbox lighting from top-left, macro close-up, shallow depth of field,
+satisfying tactile surface, clean white or transparent background,
+no text, no watermark, no hands, no utensils, game asset sprite,
+centered object, slight 3/4 top-down angle, consistent style series,
+ultra detailed surface texture, dreamy cream mint blush butter tones,
+never neon, never dark brown, never purple saturated
 ```
 
 **Negative prompt (SD/Flux):**
 ```
 cartoon, flat, low poly, blurry, text, logo, watermark, hands, fingers,
-busy background, dark moody, purple neon, anime, pixel art, low resolution
+busy background, dark moody, purple neon, anime, pixel art, low resolution,
+harsh contrast, black shadows, saturated orange, deep brown chocolate
 ```
 
 ---
 
-## Template por material (6 frames)
+## Template por material (idle → sheet automática)
 
-Peça explicitamente:
+Peça o **idle** isolado (16:9 ou 1:1). Depois:
 
-> Sprite sheet horizontal, 6 frames, 1536x160 pixels total, each frame 256x160,
-> transparent background, same object sequence: frame1 idle, frames 2-5 progressive squash when pressed, frame6 slight rebound bounce
+```bash
+python scripts/build_sprite_sheet.py {id} src/assets/platforms/source/{id}-idle-v2.png
+# ou
+python scripts/build_sprite_sheet.py --all
+```
+
+A sheet 1536×160 usa curva de squash **única por material**.
 
 ---
 
-### 1. jelly.png — Gelatina
+### 1. jelly — Gelatina (elastic / wobble)
 
 ```
-[ESTILO GLOBAL] Translucent green jelly cube on clear surface, wobbly gelatin dessert,
-internal bubbles, wet glossy highlight, soft jiggle ASMR texture.
-6-frame sprite strip: resting → pressed down → max squash → recovering → slight overshoot bounce.
-```
-
-Variante rosa:
-```
-Translucent strawberry jelly dome, pink-red, bouncy wobble, wet shine
-```
-
----
-
-### 2. butter.png — Manteiga
-
-```
-[ESTILO GLOBAL] Yellow butter pat with knife score marks, creamy oily sheen,
-European butter block slightly melted edges, ASMR cooking aesthetic.
-6-frame strip: intact pat → finger press indent → flattened spread → rebound.
+[ESTILO GLOBAL] Translucent pastel mint seafoam jelly cube, soft ASMR gelatin,
+internal bubbles, wet glossy highlight, colors #C9E4DE #B8D9D0 only.
+Rounded cube, dreamy soft food photography, white background.
+Personality: eternal jiggle — addictive wobble when landed on.
 ```
 
 ---
 
-### 3. mochi.png — Mochi
+### 2. butter — Manteiga (melt / derrete)
 
 ```
-[ESTILO GLOBAL] Soft white mochi rice cake ball, powdered sugar dusting,
-subtle pink filling peek, matte fluffy texture, Japanese wagashi.
-6-frame: round mochi → squished flat ellipse → bounce back.
-```
-
----
-
-### 4. chocolate.png — Ganache
-
-```
-[ESTILO GLOBAL] Dark chocolate bar segment with glossy ganache surface,
-sharp specular band, segmented squares like premium tablet chocolate.
-6-frame: rigid bar → slight flex indent → spring back minimal (dense).
+[ESTILO GLOBAL] Soft pastel butter yellow creamy butter pat, gentle knife score marks,
+slightly soft edges, oily cream sheen, colors #F3E2A8 #EBD4A0 #F0C9B0.
+ASMR cooking macro, white background.
+Personality: melts into a puddle when pressed — creamy indent then slow collapse.
 ```
 
 ---
 
-### 5. citrus.png — Fatia cítrica
+### 3. mochi — Mochi (elastic / bounce extremo)
 
 ```
-[ESTILO GLOBAL] Fresh orange fruit wedge slice, visible pulp segments,
-bright orange pulp, white pith rim, citrus pores on peel, juicy ASMR.
-6-frame: wedge → compressed pulp → juice squeeze → rebound. Wedge shape NOT rectangle.
-```
-
----
-
-### 6. honeycomb.png — Mel
-
-```
-[ESTILO GLOBAL] Golden honeycomb chunk with hexagonal cells, amber honey glow,
-viscous sticky shine, translucent wax cells.
-6-frame: hex block → sticky compress → slow rebound with honey stretch hint.
+[ESTILO GLOBAL] Soft blush pink-white mochi rice cake ball, powdered sugar dusting,
+matte fluffy chewy texture, subtle pink filling peek, colors #F0D5D8 #E8B4BC.
+Japanese wagashi ASMR, white background.
+Personality: deepest squash + tallest rebound — marshmallow bounce.
 ```
 
 ---
 
-### 7. glycerin.png — Sabonete glicerina
+### 4. chocolate — Ganache (melt + shatter opcional)
 
 ```
-[ESTILO GLOBAL] Translucent glycerin soap bar, soft pink or aqua, internal glitter particles,
-glass-like refraction, soap cutting ASMR aesthetic, chamfered edges.
-6-frame: soap bar → pressed dent → elastic recovery.
-```
-
----
-
-### 8. whipped.png — Sabonete batido
-
-```
-[ESTILO GLOBAL] Whipped soap frosting peaks like soft serve, dense foam mountains,
-white-pastel pink, shadowed valleys between peaks, fluffy ASMR soap whip.
-6-frame: tall peaks → peaks flatten → foam squish → partial rise back.
-Tall silhouette, NOT flat bar.
+[ESTILO GLOBAL] Soft caramel milk ganache square, glossy pastel surface NOT dark brown,
+specular band, colors #E2C4A8 #D4B090 peach. Premium tablet look, white background.
+Personality: dense flex; melts slowly or shatters on hard impact.
 ```
 
 ---
 
-### 9. kinetic.png — Areia cinética
+### 5. citrus — Casca cítrica (squeeze)
 
 ```
-[ESTILO GLOBAL] Kinetic sand mound, granular compressed sand texture,
-warm beige, moldable sand ASMR, visible grains, soft sculpted pile.
-6-frame: sand mound → footprint compress → grains scatter slightly → settle.
-```
-
----
-
-### 10. iceSoap.png — Sabonete gelo
-
-```
-[ESTILO GLOBAL] Frozen soap ice block, frosty blue-white, micro frost crystals,
-hairline cracks, cold glassy surface, ice soap ASMR carving aesthetic.
-6-frame: ice block → crack on impact → minimal bounce (rigid).
+[ESTILO GLOBAL] Soft pastel citrus fruit wedge, visible pulp segments,
+pale peach pulp #F2D4A0 #F5E0B8, white pith rim, peel pores, WEDGE shape not bar.
+Juicy ASMR, white background.
+Personality: pulp compresses; juice squeeze; gone on 2nd land.
 ```
 
 ---
 
-### 11. clearSlime.png — Slime cristal
+### 6. honeycomb — Mel (melt / escorre)
 
 ```
-[ESTILO GLOBAL] Clear transparent slime puddle, large internal bubbles,
-high transparency, surface tension rim, light caustics, wet ASMR slime.
-6-frame: blob puddle → spread wider → drip edge → elastic pull back.
-```
-
----
-
-### 12. butterSlime.png — Butter slime
-
-```
-[ESTILO GLOBAL] Opaque butter slime clay, peachy yellow, smooth fold swirls,
-matte creamy texture, spreadable clay ASMR, soft folds like kneaded dough.
-6-frame: folded blob → flattened → swirl reform.
+[ESTILO GLOBAL] Soft golden pastel honeycomb chunk, hexagonal wax cells,
+amber honey glow #EBD4A0 #F3E2A8, viscous sticky shine, white background.
+Personality: sticky compress then honey drip melt.
 ```
 
 ---
 
-## Montagem manual (se a IA gerar frames separados)
+### 7. glycerin — Sabonete glicerina (shatter)
 
-1. Abra **Photopea** (grátis) ou Figma
-2. Canvas **1536 × 160 px**, fundo transparente
-3. Coloque 6 frames de **256 × 160** lado a lado
-4. Alinhe a **base** de todos os objetos na mesma linha (~y = 115)
-5. Exporte PNG → salve em `public/assets/platforms/{id}.png`
-6. Recarregue o jogo — console mostra `sprites: X/12 IA`
-
----
-
-## Fluxo recomendado (Midjourney)
-
-1. Gere **frame idle** primeiro até ficar perfeito
-2. Use `--sref` / character reference para manter estilo
-3. Gere variações "pressed", "squashed", "rebound" com mesmo seed
-4. Monte a strip manualmente (MJ ainda não faz 6 frames consistentes numa imagem)
-
-## Fluxo recomendado (Stable Diffusion + ControlNet)
-
-1. Modelo fotorealista (RealVisXL, Juggernaut)
-2. ControlNet depth ou canny para manter silhueta entre frames
-3. Batch de 6 prompts com squash factor crescente
-4. Automatize montagem com script Python (PIL)
+```
+[ESTILO GLOBAL] Translucent soft sky-blue glycerin soap bar, internal glitter,
+glass refraction, chamfered edges, colors #D2E4F0 #C5D8E8, white background.
+Personality: almost rigid — micro dent then crystal crack shatter.
+```
 
 ---
 
-## Checklist antes de usar no jogo
+### 8. whipped — Sabonete batido (foamPop)
 
-- [ ] 1536×160 px exatos
-- [ ] Fundo 100% transparente
-- [ ] Objeto legível em 256px de largura
-- [ ] Mesma escala entre os 6 frames
-- [ ] Base do objeto alinhada
-- [ ] Nome do arquivo = `{materialId}.png`
+```
+[ESTILO GLOBAL] Whipped soap frosting peaks like soft serve mountains,
+white + blush pink tips #FFFCF8 #F0D5D8, tall silhouette NOT flat bar, white background.
+Personality: peaks collapse underfoot then foam POP.
+```
+
+---
+
+### 9. kinetic — Areia cinética (crumble)
+
+```
+[ESTILO GLOBAL] Kinetic sand mound, warm beige pastel #E8D5C4 #F0E4D8,
+visible grains, soft sculpted pile ASMR, white background.
+Personality: footprint compress then grains crumble away.
+```
+
+---
+
+### 10. iceSoap — Sabonete gelo (shatter)
+
+```
+[ESTILO GLOBAL] Frosty ice soap block, powder blue white #C5D8E8 #E8EEF2,
+micro frost crystals, glassy cold surface, white background.
+Personality: brittle — hairline cracks then shatter (easier than glycerin).
+```
+
+---
+
+### 11. clearSlime — Slime cristal (foamPop)
+
+```
+[ESTILO GLOBAL] Clear transparent slime puddle, large soft bubbles,
+mint seafoam #C9E4DE, surface tension rim, light caustics, white background.
+Personality: spreads wide then bubble burst pop.
+```
+
+---
+
+### 12. butterSlime — Butter slime (elastic seguro)
+
+```
+[ESTILO GLOBAL] Opaque butter slime clay, peachy #F0C9B0 coral soft folds,
+matte creamy kneaded dough swirls, white background.
+Personality: safe elastic dough fold — soft forever platform.
+```
+
+---
+
+## Montagem (se gerar frames separados)
+
+1. Canvas **1536 × 160**, fundo transparente
+2. 6 frames **256 × 160**, base alinhada ~y=115
+3. Preferir o script Python (curvas únicas) em vez de squash manual genérico
+4. Salvar em `public/assets/platforms/{id}.png`
+
+## Checklist
+
+- [ ] Idle pastel coerente com a família
+- [ ] Sheet 1536×160
+- [ ] Fundo transparente
+- [ ] Base alinhada
+- [ ] Nome = `{materialId}.png`
+- [ ] Console: `sprites: 12/12 IA`

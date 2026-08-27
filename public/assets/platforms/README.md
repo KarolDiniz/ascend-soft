@@ -1,8 +1,8 @@
-# Platform sprite sheets (IA)
+# Platform sprite sheets (IA) — v2 Pastel
 
-Coloque aqui os PNGs gerados por IA. O jogo carrega automaticamente.
+Coloque aqui os PNGs. O jogo carrega automaticamente.
 
-## Formato obrigatório
+## Formato
 
 | Propriedade | Valor |
 |---|---|
@@ -12,63 +12,40 @@ Coloque aqui os PNGs gerados por IA. O jogo carrega automaticamente.
 | Frame unitário | **256 × 160 px** |
 | Fundo | **transparente** |
 
-### Nomes dos arquivos
+### Pack v2 (12/12)
 
 ```
-jelly.png
-butter.png
-mochi.png
-chocolate.png
-citrus.png
-honeycomb.png
-glycerin.png
-whipped.png
-kinetic.png
-iceSoap.png
-clearSlime.png
-butterSlime.png
+jelly.png       — gelatina (elastic wobble)
+butter.png      — manteiga (melt)
+mochi.png       — mochi (elastic bounce)
+chocolate.png   — ganache (melt / shatter)
+citrus.png      — casca cítrica (squeeze)
+honeycomb.png   — mel (melt sticky)
+glycerin.png    — sabonete glicerina (shatter)
+whipped.png     — sabonete batido (foamPop)
+kinetic.png     — areia cinética (crumble)
+iceSoap.png     — sabonete gelo (shatter)
+clearSlime.png  — slime cristal (foamPop)
+butterSlime.png — butter slime (elastic)
 ```
 
-### Sequência dos frames (esquerda → direita)
+### Frames (esquerda → direita)
 
-1. **Idle** — repouso
-2. **Squash 1** — toque inicial
-3. **Squash 2** — compressão máxima
-4. **Squash 3** — ainda comprimido
-5. **Squash 4** — começando a voltar
-6. **Rebound** — leve overshoot elástico
+1. **Idle** — respiração
+2. **Squash 1** — toque
+3. **Squash 2** — compressão
+4. **Squash 3** — compressão forte
+5. **Squash 4** — pico (melt/foam/max press) — usado no jogo
+6. **Rebound** — overshoot
 
-## Já incluídos (IA — pack completo 12/12)
+Cada material tem curva de squash própria no `scripts/build_sprite_sheet.py`.
 
-- `jelly.png` — gelatina
-- `butter.png` — manteiga
-- `mochi.png` — mochi
-- `chocolate.png` — chocolate
-- `citrus.png` — casca cítrica
-- `honeycomb.png` — mel / honeycomb
-- `glycerin.png` — sabonete glicerina
-- `whipped.png` — sabonete batido
-- `kinetic.png` — areia cinética
-- `iceSoap.png` — sabonete gelo
-- `clearSlime.png` — slime cristal
-- `butterSlime.png` — butter slime
+## Rebuild
 
-Fontes raw: `src/assets/platforms/source/`  
-Montar faixa: `python scripts/build_sprite_sheet.py <id> <idle.png>`
+```bash
+# fontes: src/assets/platforms/source/{id}-idle-v2.png
+python scripts/build_sprite_sheet.py --all
+```
 
-## Como funciona no jogo
-
-1. Ao iniciar, o jogo gera **placeholders** procedurais (6 frames).
-2. Tenta carregar `/assets/platforms/{id}.png`.
-3. Se existir, **substitui** o placeholder pelo sprite IA.
-4. Animação de pouso usa os frames 1–5; idle oscila entre 0 e 6.
-
-## Dicas para IA
-
-- Vista **3/4 top-down** (como ASMR cutting board)
-- Objeto **centralizado** no frame, base alinhada ~72% da altura
-- **Mesmo estilo** em todos os 12 (luz de estúdio, soft box, fundo transparente)
-- Exportar frames numa **única imagem** horizontal (sprite strip)
-- WebP também funciona se renomear extensão para `.png` ou ajustar loader
-
-Prompts prontos: `src/assets/platforms/AI_PROMPTS.md`
+Design: `src/assets/platforms/DESIGN_BIBLE.md`  
+Prompts: `src/assets/platforms/AI_PROMPTS.md`
