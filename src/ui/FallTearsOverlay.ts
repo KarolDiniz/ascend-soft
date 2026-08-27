@@ -100,10 +100,10 @@ export class FallTearsOverlay {
     for (const eye of pick) {
       const outward = eye.side === 'left' ? -1 : 1;
       this.tears.push({
-        x: eye.x + (Math.random() - 0.5) * 2,
-        y: eye.y + Math.random() * 2,
-        vx: outward * (28 + Math.random() * 22),
-        vy: 48 + Math.random() * 36,
+        x: eye.x + (Math.random() - 0.5) * 1.5,
+        y: eye.y + Math.random() * 1,
+        vx: outward * (8 + Math.random() * 10),
+        vy: 10 + Math.random() * 14,
         size: Math.random() > 0.45 ? 5 : 4,
       });
     }

@@ -51,15 +51,15 @@ export class FallMascot {
 
     const canvasRect = this.canvas.getBoundingClientRect();
     const overlayRect = overlay.getBoundingClientRect();
-    const sx = canvasRect.width / this.canvas.width;
-    const sy = canvasRect.height / this.canvas.height;
+    const scaleX = canvasRect.width / this.canvas.width;
+    const scaleY = canvasRect.height / this.canvas.height;
 
     return local.map(({ x, y }, i) => {
-      const px = cx + sway + x * squash * cos - y * sin * stretch;
-      const py = baseY + x * squash * sin + y * stretch * cos;
+      const sx = cx + sway + x * squash * cos - y * sin * stretch;
+      const sy = baseY + x * squash * sin + y * stretch * cos;
       return {
-        x: canvasRect.left - overlayRect.left + px * sx,
-        y: canvasRect.top - overlayRect.top + py * sy,
+        x: canvasRect.left - overlayRect.left + sx * scaleX,
+        y: canvasRect.top - overlayRect.top + sy * scaleY,
         side: i === 0 ? 'left' : 'right',
       };
     });

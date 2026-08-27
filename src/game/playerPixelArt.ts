@@ -46,13 +46,13 @@ export interface PlayerFaceOptions {
 /** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
 export function getDefeatEyeTearOrigins(facing = 1, look = 0): { x: number; y: number }[] {
   const eyeOff = 5 * facing;
-  const lk = look + facing;
+  const lookFull = look + facing;
   const eyeY = -u * 5;
-  const eyeW = u * 4;
-  const eyeH = u * 5;
+  const eyeFill = u * 3;
+  const tearY = eyeY + eyeFill - u * 0.5;
   return [
-    { x: eyeOff - u * 4 + lk + eyeW * 0.5, y: eyeY + eyeH },
-    { x: eyeOff + u * 1 + lk + eyeW * 0.5, y: eyeY + eyeH },
+    { x: eyeOff - u * 1.5 + lookFull, y: tearY },
+    { x: eyeOff + u * 3.5 + lookFull, y: tearY },
   ];
 }
 
