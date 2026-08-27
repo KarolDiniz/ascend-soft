@@ -4,6 +4,7 @@ import { PIXEL, fillPx, px } from '../../theme/pixel';
 import { MATERIAL_LEDGE } from './ledgeSizes';
 import type { PlatformBehavior } from './behaviors';
 import { scaledCount, type PlatformPersonality } from './platformPersonality';
+import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -59,7 +60,7 @@ function tonedMat(mat: MaterialDef, shift: number): MaterialDef {
 export function renderPixelPlatform(
   ctx: CanvasRenderingContext2D,
   material: MaterialId,
-  _variant: PlatformVariant,
+  variant: PlatformVariant,
   mat: MaterialDef,
   s: PlatformDrawState,
   overlay?: PixelPlatformOverlay,
@@ -69,14 +70,22 @@ export function renderPixelPlatform(
   const integrity = overlay?.integrity ?? 1;
   const personality = overlay?.personality;
   const ledge = MATERIAL_LEDGE[material];
+  const vScale = getVariantScale(variant);
+  const pW = personality?.widthStretch ?? 1;
+  const pH = personality?.heightStretch ?? 1;
   const cx = s.cx;
   const sy = s.surfaceY;
-  const w = Math.max(u * 12, px(s.w * ledge.visualSpread * (1 + melt * 0.3)));
+  const w = Math.max(
+    u * 10,
+    px(s.w * ledge.visualSpread * vScale.wMul * pW * (1 + melt * 0.3)),
+  );
   const h = Math.max(
     u * 4,
     px(
       s.h *
         ledge.visualDepth *
+        vScale.hMul *
+        pH *
         (1.4 + (1 - Math.max(0.2, s.squashY)) * 0.45) *
         Math.max(0.35, integrity),
     ),
@@ -171,6 +180,10 @@ export function renderPixelPlatform(
       drawButter(args);
   }
 
+  drawVariantAccent(args, variant);
+  drawPersonalitySurfaceMark(args);
+  drawPersonalityTopProfile(args);
+
   drawShelfFrontFace(args);
   drawHangingDetails(args);
   drawRelaxSparkles(args);
@@ -221,6 +234,108 @@ type DrawArgs = {
   melt: number;
   personality?: PlatformPersonality;
 };
+
+/** Marca superficial única por seed — cada prateleira ganha um detalhe diferente */
+function drawPersonalitySurfaceMark(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, u, mat, seed, time, personality } = a;
+  if (!personality) return;
+  const x = cx - w / 2;
+  const mark = personality.surfaceMark;
+  const n = 2 + personality.ornamentExtra;
+
+  switch (mark) {
+    case 0: {
+      for (let i = 0; i < n; i++) {
+        fillPx(
+          ctx,
+          x + u * 2 + seeded(seed, i + 700) * (w - u * 4),
+          sy + u * 2 + seeded(seed, i + 710) * (h - u * 4),
+          u,
+          u,
+          rgba(mat.particle, 0.55 + seeded(seed, i + 720) * 0.3),
+        );
+      }
+      break;
+    }
+    case 1: {
+      const side = personality.edgeBias > 0 ? 1 : -1;
+      fillPx(ctx, cx + side * w * 0.38, sy + h * 0.35, u * 2, u * 2, rgba(PASTEL.white, 0.45));
+      fillPx(ctx, cx + side * w * 0.36, sy + h * 0.38, u, u, mat.particle);
+      break;
+    }
+    case 2: {
+      for (let i = 0; i < n + 1; i++) {
+        fillPx(
+          ctx,
+          x + u + i * ((w - u * 2) / (n + 1)),
+          sy + h * 0.45,
+          u,
+          u * 2,
+          rgba(mat.stroke, 0.35),
+        );
+      }
+      break;
+    }
+    case 3: {
+      if (Math.sin(time * 2.5 + seed) > 0) {
+        fillPx(ctx, cx - u, sy - u * 2, u * 2, u, rgba(PASTEL.white, 0.65));
+        fillPx(ctx, cx, sy - u * 3, u, u, mat.particle);
+      }
+      break;
+    }
+    case 4: {
+      const ly = sy + h * (0.3 + seeded(seed, 730) * 0.35);
+      fillPx(ctx, cx - w * 0.28, ly, w * 0.56, u, rgba(mat.particle, 0.5));
+      fillPx(ctx, cx - u * 2, ly - u, u * 4, u, rgba(PASTEL.white, 0.35));
+      break;
+    }
+    case 5: {
+      drawBubbleRing(ctx, cx + (seeded(seed, 740) - 0.5) * w * 0.5, sy + h * 0.4, u * 2, u, rgba(mat.particle, 0.6));
+      if (seeded(seed, 741) > 0.45) {
+        drawBubbleRing(ctx, cx + (seeded(seed, 742) - 0.5) * w * 0.4, sy + h * 0.55, u * 2, u, rgba(mat.fill, 0.55));
+      }
+      break;
+    }
+  }
+}
+
+/** Perfil de topo exclusivo — domo, dentes, inclinado ou ondulado */
+function drawPersonalityTopProfile(a: DrawArgs): void {
+  const { ctx, cx, sy, w, u, mat, wobble, personality } = a;
+  if (!personality) return;
+  const lean = personality.lean;
+  const x = cx - w / 2 + lean * w * 0.08;
+
+  switch (personality.topProfile) {
+    case 1: {
+      for (let i = 0; i < 4; i++) {
+        const tw = w * (0.5 + i * 0.1);
+        fillPx(ctx, cx - tw / 2 + lean * u * i, sy - u * (i + 1), tw, u, rgba(mat.fill, 0.9 - i * 0.1));
+      }
+      break;
+    }
+    case 2: {
+      for (let i = 0; i < 5; i++) {
+        const px0 = x + (i / 4) * (w - u * 2);
+        const ph = u * (2 + (i % 2));
+        fillPx(ctx, px0, sy - ph, u * 2, ph, mat.fill);
+      }
+      break;
+    }
+    case 3: {
+      for (let i = 0; i < 6; i++) {
+        const wave = Math.sin(wobble + i * 0.9) * u;
+        fillPx(ctx, x + (i / 5) * w, sy - u + wave, u * 2, u, rgba(mat.particle, 0.55));
+      }
+      break;
+    }
+    default:
+      if (Math.abs(lean) > 0.06) {
+        fillPx(ctx, cx + lean * w * 0.35, sy - u, u * 2, u, rgba(PASTEL.white, 0.35));
+      }
+      break;
+  }
+}
 
 /** Front lip + under-shelf shadow for depth */
 function drawShelfFrontFace(a: DrawArgs): void {
@@ -731,6 +846,7 @@ function drawSoapPink(a: DrawArgs): void {
   fillPx(ctx, x + u * 3, sy, w - u * 6, u, rgba(PASTEL.white, 0.65));
   fillPx(ctx, x + u * 2, sy + h - u, w - u * 4, u, mat.stroke);
   fillPx(ctx, x + u * 4, sy + h * 0.45, w - u * 8, u, rgba(PASTEL.white, 0.4));
+  fillPx(ctx, x + w * 0.72, sy + u * 2, u * 2, u * 3, rgba(PASTEL.blush, 0.4));
   for (let i = 0; i < 18; i++) {
     const tw = Math.sin(time * 4.5 + i * 1.8 + wobble);
     if (tw < -0.35) continue;
@@ -1147,6 +1263,8 @@ function drawLavenderSoap(a: DrawArgs): void {
       i % 2 ? PASTEL.white : mat.particle,
     );
   }
+  fillPx(ctx, cx, sy + h * 0.28, u, u * 3, rgba(PASTEL.lilac, 0.45));
+  fillPx(ctx, cx - u * 2, sy + h * 0.35, u * 5, u, rgba(PASTEL.lilac, 0.35));
   drawShimmerBand(a, 0);
   drawPressIndent(a);
   drawEdgeFlecks(a, 4, mat.particle);

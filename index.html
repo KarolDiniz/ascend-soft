@@ -39,10 +39,17 @@
         </header>
 
         <div id="material-toast" class="material-toast hidden" aria-live="polite">
-          <div class="toast-banner-head">
-            <span id="toast-phase" class="toast-phase"></span>
+          <div class="toast-banner-layout">
+            <div id="toast-speaker-panel" class="toast-speaker-panel" aria-hidden="true">
+              <canvas id="toast-speaker" class="toast-speaker" width="56" height="72"></canvas>
+            </div>
+            <div class="toast-banner-body">
+              <div class="toast-banner-head">
+                <span id="toast-phase" class="toast-phase"></span>
+              </div>
+              <p id="toast-quote" class="toast-quote"></p>
+            </div>
           </div>
-          <p id="toast-quote" class="toast-quote"></p>
         </div>
 
         <section id="title-screen" class="overlay title-screen">

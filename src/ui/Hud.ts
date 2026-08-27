@@ -1,3 +1,5 @@
+import { ToastSpeaker } from './ToastSpeaker';
+
 export class Hud {
   private root: HTMLElement;
   private heightEl: HTMLElement;
@@ -12,9 +14,11 @@ export class Hud {
   private toastEl: HTMLElement;
   private toastPhaseEl: HTMLElement;
   private toastQuoteEl: HTMLElement;
+  private speaker: ToastSpeaker;
   private toastTimer = 0;
   private toastLiveTimer = 0;
   private leaveTimer = 0;
+  private readonly toastDuration = 5600;
 
   constructor() {
     this.root = document.getElementById('hud')!;
@@ -30,6 +34,7 @@ export class Hud {
     this.toastEl = document.getElementById('material-toast')!;
     this.toastPhaseEl = document.getElementById('toast-phase')!;
     this.toastQuoteEl = document.getElementById('toast-quote')!;
+    this.speaker = new ToastSpeaker();
   }
 
   showTitle(best: number): void {
@@ -120,6 +125,7 @@ export class Hud {
     this.toastQuoteEl.textContent = quote;
     this.toastEl.classList.remove('hidden', 'toast-out', 'toast-live');
     this.toastEl.classList.add('toast-in');
+    this.speaker.start(this.toastDuration);
 
     window.clearTimeout(this.toastTimer);
     window.clearTimeout(this.toastLiveTimer);
@@ -129,10 +135,11 @@ export class Hud {
     }, 420);
 
     this.toastTimer = window.setTimeout(() => {
+      this.speaker.stop();
       this.toastEl.classList.remove('toast-live');
       this.toastEl.classList.add('toast-out');
       window.setTimeout(() => this.toastEl.classList.add('hidden'), 500);
-    }, 5600);
+    }, this.toastDuration);
   }
 
   setMuteLabel(muted: boolean): void {

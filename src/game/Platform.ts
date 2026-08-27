@@ -97,10 +97,11 @@ export class Platform {
     this.personality = buildPlatformPersonality(this.seed, this.material);
     this.variantDef = pickVariant(this.material, makeRand(this.seed));
     const ledge = MATERIAL_LEDGE[this.material];
+    const v = this.variantDef;
     this.variantDef = {
-      ...this.variantDef,
-      visualDepth: ledge.visualDepth,
-      visualSpread: ledge.visualSpread,
+      ...v,
+      visualDepth: ledge.visualDepth * (v.visualDepth / 1.32),
+      visualSpread: ledge.visualSpread * (v.visualSpread / 1.06),
     };
     this.variant = this.variantDef.id;
     this.behaviorDef = getBehaviorDef(this.material);

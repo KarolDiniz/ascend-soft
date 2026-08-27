@@ -151,7 +151,7 @@ body {
   bottom: calc(20px + var(--safe-bottom));
   top: auto;
   transform: translateX(-50%);
-  max-width: min(94vw, 520px);
+  max-width: min(94vw, 560px);
   text-align: center;
   padding: 0;
   background: rgba(255, 250, 245, 0.96);
@@ -162,6 +162,50 @@ body {
   border-radius: 0;
   image-rendering: pixelated;
   overflow: hidden;
+}
+
+.toast-banner-layout {
+  display: flex;
+  align-items: stretch;
+  min-height: 100%;
+}
+
+.toast-speaker-panel {
+  flex: 0 0 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.35rem 0.2rem 0.45rem;
+  background: rgba(255, 252, 248, 0.85);
+  border-right: 3px solid var(--ink);
+}
+
+.toast-speaker-panel.is-talking {
+  animation: toast-speaker-bob 0.55s steps(4) infinite;
+}
+
+.toast-speaker {
+  display: block;
+  width: 56px;
+  height: 72px;
+  image-rendering: pixelated;
+}
+
+.toast-banner-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes toast-speaker-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
 }
 
 .toast-banner-head {
@@ -185,7 +229,7 @@ body {
 .toast-quote {
   display: block;
   margin: 0;
-  padding: 0.9rem 1.15rem 1rem;
+  padding: 0.9rem 1rem 1rem 0.85rem;
   font-family: 'Nunito', system-ui, sans-serif;
   font-size: clamp(0.92rem, 3.4vw, 1.08rem);
   font-weight: 600;
@@ -193,6 +237,7 @@ body {
   color: var(--ink-soft);
   letter-spacing: 0.01em;
   line-height: 1.55;
+  text-align: left;
 }
 
 .material-toast.toast-in {
