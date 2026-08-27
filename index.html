@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#d8ebe4" />
+    <meta name="description" content="Ascend Soft — torre sensorial ASMR. Suba. Pouse. Ouça." />
+    <title>Ascend Soft</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" aria-label="Ascend Soft"></canvas>
+
+      <div id="ui" class="ui">
+        <header id="hud" class="hud hidden" aria-live="polite">
+          <div class="hud-block">
+            <span class="hud-label">altura</span>
+            <span id="hud-height" class="hud-value">0</span>
+          </div>
+          <div class="hud-block hud-block--center">
+            <span id="hud-streak" class="hud-streak hidden"></span>
+            <span class="hud-label">respiros</span>
+            <span id="hud-breaths" class="hud-value hud-value--sm">0</span>
+          </div>
+          <div class="hud-block hud-block--right">
+            <span class="hud-label">melhor</span>
+            <span id="hud-best" class="hud-value">0</span>
+          </div>
+        </header>
+
+        <div id="material-toast" class="material-toast hidden" aria-live="polite"></div>
+
+        <section id="title-screen" class="overlay title-screen">
+          <div class="title-glow" aria-hidden="true"></div>
+          <p class="eyebrow">torre sensorial</p>
+          <h1 class="brand">Ascend Soft</h1>
+          <p class="tagline">Pouse na manteiga. Ouça o sabonete. Suba de novo.</p>
+          <button id="btn-start" class="btn btn-primary btn-soap" type="button">Subir</button>
+          <div class="audio-row">
+            <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
+              Som ligado
+            </button>
+            <label class="volume">
+              <span class="sr-only">Volume</span>
+              <input id="volume" type="range" min="0" max="100" value="55" />
+            </label>
+          </div>
+          <p class="hint">A / D ou toque nas laterais · Espaço ou centro para pular</p>
+        </section>
+
+        <section id="fall-screen" class="overlay fall-screen hidden">
+          <p class="fall-title">quase…</p>
+          <p id="fall-score" class="fall-score">altura 0</p>
+          <button id="btn-retry" class="btn btn-primary btn-soap" type="button">de novo</button>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

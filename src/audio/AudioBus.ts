@@ -1,0 +1,405 @@
+import type { MaterialId } from './materials';
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+export class AudioBus {
+  private ctx: AudioContext | null = null;
+  private master: GainNode | null = null;
+  private sfx: GainNode | null = null;
+  private ambient: GainNode | null = null;
+  private ambientGainBase = 0.14;
+  private noiseCache = new Map<number, AudioBuffer>();
+  private started = false;
+  private muted = false;
+  private volume = 0.55;
+
+  get isMuted(): boolean {
+    return this.muted;
+  }
+
+  get isReady(): boolean {
+    return this.started;
+  }
+
+  async unlock(): Promise<void> {
+    if (this.started) {
+      if (this.ctx?.state === 'suspended') await this.ctx.resume();
+      return;
+    }
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    this.ctx = new Ctx();
+    this.master = this.ctx.createGain();
+    this.sfx = this.ctx.createGain();
+    this.ambient = this.ctx.createGain();
+    this.sfx.connect(this.master);
+    this.ambient.connect(this.master);
+    this.master.connect(this.ctx.destination);
+    this.applyGains();
+    this.startAmbient();
+    this.started = true;
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
+  }
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    this.applyGains();
+  }
+
+  setVolume(v: number): void {
+    this.volume = clamp(v, 0, 1);
+    this.applyGains();
+  }
+
+  private applyGains(): void {
+    if (!this.master || !this.sfx || !this.ambient || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    const m = this.muted ? 0 : this.volume;
+    this.master.gain.setTargetAtTime(m, now, 0.05);
+    this.sfx.gain.setTargetAtTime(0.95, now, 0.05);
+    this.ambient.gain.setTargetAtTime(this.ambientGainBase, now, 0.08);
+  }
+
+  private duckAmbient(ms = 100): void {
+    if (!this.ambient || !this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const g = this.ambient.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(this.ambientGainBase * 0.35, t + 0.02);
+    g.linearRampToValueAtTime(this.ambientGainBase, t + ms / 1000);
+  }
+
+  private startAmbient(): void {
+    if (!this.ctx || !this.ambient) return;
+    const ctx = this.ctx;
+
+    // Warm pink-ish noise bed
+    const noise = this.noiseBuffer(ctx, 2, true);
+    const src = ctx.createBufferSource();
+    src.buffer = noise;
+    src.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 420;
+    const ng = ctx.createGain();
+    ng.gain.value = 0.035;
+    src.connect(filter);
+    filter.connect(ng);
+    ng.connect(this.ambient);
+    src.start();
+
+    // Soft detuned sines
+    for (const f of [98, 146.8, 196.2]) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.004);
+      g.gain.value = 0.028;
+      const lfo = ctx.createOscillator();
+      const lfoG = ctx.createGain();
+      lfo.frequency.value = 0.04 + Math.random() * 0.03;
+      lfoG.gain.value = 0.008;
+      lfo.connect(lfoG);
+      lfoG.connect(g.gain);
+      osc.connect(g);
+      g.connect(this.ambient);
+      osc.start();
+      lfo.start();
+    }
+  }
+
+  playJump(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const noise = this.noiseBuffer(ctx, 0.2);
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(900, t);
+      filter.frequency.exponentialRampToValueAtTime(400, t + 0.15);
+      filter.Q.value = 0.7;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.1, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(sfx);
+      src.start(t);
+      src.stop(t + 0.18);
+    });
+  }
+
+  playLand(material: MaterialId, perfect: boolean, streak = 0): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(110);
+      const pitch = 0.92 + Math.random() * 0.16;
+      const handlers: Record<MaterialId, () => void> = {
+        jelly: () => this.jellyPloop(ctx, sfx, pitch),
+        butter: () => this.butterThup(ctx, sfx, pitch),
+        mochi: () => this.mochiBounce(ctx, sfx, pitch),
+        chocolate: () => this.chocolateRipple(ctx, sfx, pitch),
+        citrus: () => this.citrusZest(ctx, sfx, pitch),
+        honeycomb: () => this.honeyDrip(ctx, sfx, pitch),
+        glycerin: () => this.soapSquish(ctx, sfx, pitch),
+        whipped: () => this.whippedFoam(ctx, sfx, pitch),
+        kinetic: () => this.kineticShush(ctx, sfx, pitch),
+        iceSoap: () => this.iceTing(ctx, sfx, pitch),
+        clearSlime: () => this.slimeBlorp(ctx, sfx, pitch),
+        butterSlime: () => this.butterSlimeFold(ctx, sfx, pitch),
+      };
+      handlers[material]();
+      if (perfect) this.perfectChime(ctx, sfx, pitch, streak);
+    });
+  }
+
+  playFall(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const noise = this.noiseBuffer(ctx, 0.85);
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(700, t);
+      filter.frequency.exponentialRampToValueAtTime(140, t + 0.7);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.07, t + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(sfx);
+      src.start(t);
+      src.stop(t + 0.85);
+
+      const osc = ctx.createOscillator();
+      const og = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, t);
+      osc.frequency.exponentialRampToValueAtTime(55, t + 0.65);
+      og.gain.setValueAtTime(0.05, t);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      osc.connect(og);
+      og.connect(sfx);
+      osc.start(t);
+      osc.stop(t + 0.72);
+    });
+  }
+
+  playBreath(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const noise = this.noiseBuffer(ctx, 0.35);
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(500, t);
+      filter.frequency.exponentialRampToValueAtTime(900, t + 0.25);
+      filter.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.08, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(sfx);
+      src.start(t);
+      src.stop(t + 0.35);
+    });
+  }
+
+  playRecord(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      for (const [i, f] of [523.25, 659.25, 783.99].entries()) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        const st = t + i * 0.08;
+        g.gain.setValueAtTime(0.0001, st);
+        g.gain.exponentialRampToValueAtTime(0.06, st + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
+        osc.connect(g);
+        g.connect(sfx);
+        osc.start(st);
+        osc.stop(st + 0.4);
+      }
+    });
+  }
+
+  // —— Material one-shots ——
+
+  private jellyPloop(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 200 * pitch, 80 * pitch, 0.2, 0.17, t);
+    this.tone(ctx, sfx, 'triangle', 120 * pitch, 90 * pitch, 0.1, 0.09, t);
+    this.noiseBurst(ctx, sfx, 0.06, 600, 0.05, t);
+  }
+
+  private butterThup(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 160 * pitch, 70 * pitch, 0.14, 0.14, t);
+    this.noiseBurst(ctx, sfx, 0.05, 400, 0.07, t);
+  }
+
+  private mochiBounce(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 280 * pitch, 140 * pitch, 0.22, 0.14, t);
+    this.tone(ctx, sfx, 'triangle', 180 * pitch, 100 * pitch, 0.12, 0.08, t + 0.04);
+  }
+
+  private chocolateRipple(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 140 * pitch, 60 * pitch, 0.25, 0.12, t);
+    this.noiseBurst(ctx, sfx, 0.08, 280, 0.06, t);
+  }
+
+  private citrusZest(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.noiseBurst(ctx, sfx, 0.07, 2200 * pitch, 0.09, t, 'bandpass');
+    this.tone(ctx, sfx, 'triangle', 520 * pitch, 260 * pitch, 0.08, 0.06, t);
+  }
+
+  private honeyDrip(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 240 * pitch, 90 * pitch, 0.28, 0.11, t);
+    this.tone(ctx, sfx, 'sine', 180 * pitch, 70 * pitch, 0.2, 0.06, t + 0.05);
+  }
+
+  private soapSquish(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 300 * pitch, 120 * pitch, 0.14, 0.1, t);
+    this.noiseBurst(ctx, sfx, 0.12, 1800, 0.07, t, 'highpass');
+  }
+
+  private whippedFoam(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.noiseBurst(ctx, sfx, 0.18, 900 * pitch, 0.1, t);
+    this.tone(ctx, sfx, 'triangle', 220 * pitch, 110 * pitch, 0.12, 0.05, t);
+  }
+
+  private kineticShush(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.noiseBurst(ctx, sfx, 0.2, 700 * pitch, 0.11, t);
+    this.noiseBurst(ctx, sfx, 0.12, 1400, 0.05, t + 0.03, 'bandpass');
+  }
+
+  private iceTing(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 760 * pitch, 760 * pitch, 0.32, 0.07, t);
+    this.tone(ctx, sfx, 'sine', 1140 * pitch, 1140 * pitch, 0.22, 0.035, t);
+  }
+
+  private slimeBlorp(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 260 * pitch, 70 * pitch, 0.22, 0.15, t);
+    this.tone(ctx, sfx, 'triangle', 150 * pitch, 60 * pitch, 0.18, 0.08, t + 0.02);
+    this.noiseBurst(ctx, sfx, 0.08, 500, 0.05, t);
+  }
+
+  private butterSlimeFold(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    this.tone(ctx, sfx, 'sine', 190 * pitch, 80 * pitch, 0.2, 0.13, t);
+    this.noiseBurst(ctx, sfx, 0.1, 450, 0.07, t);
+  }
+
+  private perfectChime(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    streak: number,
+  ): void {
+    const t = ctx.currentTime;
+    const base = 660 * pitch * (1 + Math.min(4, streak) * 0.03);
+    this.tone(ctx, sfx, 'sine', base, base, 0.4, 0.055, t);
+    this.tone(ctx, sfx, 'sine', base * 1.5, base * 1.5, 0.32, 0.03, t + 0.02);
+  }
+
+  private tone(
+    ctx: AudioContext,
+    sfx: GainNode,
+    type: OscillatorType,
+    f0: number,
+    f1: number,
+    dur: number,
+    vol: number,
+    t: number,
+  ): void {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(Math.max(40, f0), t);
+    if (f0 !== f1) osc.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(sfx);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  private noiseBurst(
+    ctx: AudioContext,
+    sfx: GainNode,
+    dur: number,
+    freq: number,
+    vol: number,
+    t: number,
+    kind: BiquadFilterType = 'lowpass',
+  ): void {
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(ctx, Math.max(0.05, dur));
+    const filter = ctx.createBiquadFilter();
+    filter.type = kind;
+    filter.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(sfx);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
+  private noiseBuffer(ctx: AudioContext, duration: number, pink = false): AudioBuffer {
+    const key = Math.floor(duration * 1000) * (pink ? 1 : -1);
+    const cached = this.noiseCache.get(key);
+    if (cached) return cached;
+    const len = Math.floor(ctx.sampleRate * duration);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let b0 = 0,
+      b1 = 0,
+      b2 = 0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      if (pink) {
+        b0 = 0.99765 * b0 + white * 0.099046;
+        b1 = 0.963 * b1 + white * 0.032158;
+        b2 = 0.57 * b2 + white * 0.0165;
+        data[i] = b0 + b1 + b2 + white * 0.02;
+      } else {
+        data[i] = white;
+      }
+    }
+    this.noiseCache.set(key, buf);
+    return buf;
+  }
+
+  private withCtx(fn: (ctx: AudioContext, sfx: GainNode) => void): void {
+    if (!this.started || !this.ctx || !this.sfx || this.muted) return;
+    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    fn(this.ctx, this.sfx);
+  }
+}
