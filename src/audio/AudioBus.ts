@@ -1,4 +1,5 @@
 import type { MaterialId } from './materials';
+import type { LandIntensity } from '../game/GameSettings';
 import { getPhaseRun } from '../game/PhaseRunOrder';
 
 function clamp(n: number, min: number, max: number): number {
@@ -42,6 +43,10 @@ export class AudioBus {
     return this.muted;
   }
 
+  get isVoiceEnabled(): boolean {
+    return this.voiceEnabled;
+  }
+
   get isReady(): boolean {
     return this.started;
   }
@@ -83,6 +88,18 @@ export class AudioBus {
   setLightLandAudio(simple: boolean): void {
     this.lightLandAudio = simple;
   }
+
+  setVoiceEnabled(enabled: boolean): void {
+    this.voiceEnabled = enabled;
+    if (!enabled) this.stopSoftMurmur();
+  }
+
+  setLandIntensity(level: LandIntensity): void {
+    this.landIntensityMul = { low: 0.52, medium: 1, high: 1.42 }[level];
+  }
+
+  private voiceEnabled = true;
+  private landIntensityMul = 1;
 
   private applyGains(): void {
     if (!this.master || !this.sfx || !this.ambient || !this.ctx) return;
@@ -279,8 +296,10 @@ export class AudioBus {
   playJump(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      this.creatureVocal(ctx, sfx, t, 0.075, 480, 1520, 0.058, { boing: true, chime: true, pop: true });
-      this.creatureVocal(ctx, sfx, t + 0.06, 0.045, 1040, 760, 0.032, { blip: true });
+      if (this.voiceEnabled) {
+        this.creatureVocal(ctx, sfx, t, 0.075, 480, 1520, 0.058, { boing: true, chime: true, pop: true });
+        this.creatureVocal(ctx, sfx, t + 0.06, 0.045, 1040, 760, 0.032, { blip: true });
+      }
 
       const noise = this.noiseBuffer(ctx, 0.12);
       const src = ctx.createBufferSource();
@@ -306,7 +325,7 @@ export class AudioBus {
     this.withCtx((ctx, sfx) => {
       this.duckAmbient(220, 0.1);
       const land = ctx.createGain();
-      land.gain.value = this.landBusGain;
+      land.gain.value = this.landBusGain * this.landIntensityMul;
       land.connect(sfx);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
@@ -403,8 +422,10 @@ export class AudioBus {
   playFall(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      this.creatureVocal(ctx, sfx, t, 0.2, 620, 1480, 0.052, { wobble: true, boing: true });
-      this.creatureVocal(ctx, sfx, t + 0.19, 0.11, 960, 420, 0.044, { squeak: true, pop: true });
+      if (this.voiceEnabled) {
+        this.creatureVocal(ctx, sfx, t, 0.2, 620, 1480, 0.052, { wobble: true, boing: true });
+        this.creatureVocal(ctx, sfx, t + 0.19, 0.11, 960, 420, 0.044, { squeak: true, pop: true });
+      }
 
       const noise = this.noiseBuffer(ctx, 0.55);
       const src = ctx.createBufferSource();
@@ -426,6 +447,7 @@ export class AudioBus {
   }
 
   playBreath(): void {
+    if (!this.voiceEnabled) return;
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
       this.creatureVocal(ctx, sfx, t, 0.09, 920, 580, 0.04, { boing: true, chime: true });
@@ -593,6 +615,10 @@ export class AudioBus {
     onMouth?: (open: boolean) => void,
   ): void {
     this.stopSoftMurmur();
+    if (!this.voiceEnabled) {
+      onMouth?.(false);
+      return;
+    }
     this.murmurEndAt = performance.now() + durationMs;
     this.murmurIndex = 0;
     this.murmurMouthCallback = onMouth ?? null;

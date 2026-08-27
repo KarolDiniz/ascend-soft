@@ -462,9 +462,67 @@ body {
   position: relative;
   z-index: 1;
   width: min(92vw, 320px);
+  max-height: min(78vh, 520px);
   margin: 0;
   padding: 1rem 1rem 1.05rem;
   animation: panel-pop 0.35s steps(6) both;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-body {
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+.settings-section {
+  margin: 14px 0 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.48rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  text-transform: lowercase;
+}
+
+.settings-section:first-child {
+  margin-top: 0;
+}
+
+.settings-audio {
+  margin-top: 0;
+  margin-bottom: 4px;
+  justify-content: flex-start;
+}
+
+.setting-row--select {
+  align-items: center;
+  cursor: default;
+}
+
+.setting-select {
+  flex-shrink: 0;
+  min-width: 108px;
+  padding: 6px 8px;
+  border: 2px solid rgba(90, 97, 108, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.setting-select:focus {
+  outline: 2px solid var(--coral);
+  outline-offset: 1px;
+}
+
+.reduce-motion .title-floaters,
+.reduce-motion .press-blink,
+.reduce-motion .floater {
+  animation: none !important;
 }
 
 .title-settings-head {

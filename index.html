@@ -109,13 +109,65 @@
                   ×
                 </button>
               </div>
-              <label class="setting-row">
-                <input id="light-mode" type="checkbox" />
-                <span class="setting-label">
-                  <span class="setting-title">Modo leve</span>
-                  <span class="setting-hint">menos partículas · ideal p/ celular</span>
-                </span>
-              </label>
+              <div class="settings-body">
+                <p class="settings-section">Som</p>
+                <div class="audio-row settings-audio">
+                  <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
+                    Som
+                  </button>
+                  <label class="volume">
+                    <span class="sr-only">Volume</span>
+                    <input id="volume" type="range" min="0" max="100" value="55" />
+                  </label>
+                </div>
+                <label class="setting-row">
+                  <input id="voice-enabled" type="checkbox" checked />
+                  <span class="setting-label">
+                    <span class="setting-title">Murmúrio do personagem</span>
+                    <span class="setting-hint">voz suave nos saltos e reflexões</span>
+                  </span>
+                </label>
+                <label class="setting-row setting-row--select">
+                  <span class="setting-label">
+                    <span class="setting-title">Intensidade dos pousos</span>
+                    <span class="setting-hint">volume do som ao tocar plataformas</span>
+                  </span>
+                  <select id="land-intensity" class="setting-select" aria-label="Intensidade dos pousos">
+                    <option value="low">Baixo</option>
+                    <option value="medium" selected>Médio</option>
+                    <option value="high">Alto</option>
+                  </select>
+                </label>
+
+                <p class="settings-section">Visual</p>
+                <label class="setting-row">
+                  <input id="light-mode" type="checkbox" />
+                  <span class="setting-label">
+                    <span class="setting-title">Modo leve</span>
+                    <span class="setting-hint">menos partículas · ideal p/ celular</span>
+                  </span>
+                </label>
+                <label class="setting-row">
+                  <input id="reduce-motion" type="checkbox" />
+                  <span class="setting-label">
+                    <span class="setting-title">Menos movimento</span>
+                    <span class="setting-hint">menos tremores, confete e animações</span>
+                  </span>
+                </label>
+
+                <p class="settings-section">Jogo</p>
+                <label class="setting-row setting-row--select">
+                  <span class="setting-label">
+                    <span class="setting-title">Banners de reflexão</span>
+                    <span class="setting-hint">textos ao entrar em cada fase</span>
+                  </span>
+                  <select id="banner-mode" class="setting-select" aria-label="Banners de reflexão">
+                    <option value="first" selected>1ª vez por partida</option>
+                    <option value="always">Sempre</option>
+                    <option value="never">Nunca</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -132,15 +184,6 @@
                 Subir
               </button>
               <p class="press-blink" aria-hidden="true">aperte subir</p>
-              <div class="audio-row">
-                <button id="btn-mute" class="btn btn-ghost" type="button" aria-pressed="false">
-                  Som
-                </button>
-                <label class="volume">
-                  <span class="sr-only">Volume</span>
-                  <input id="volume" type="range" min="0" max="100" value="55" />
-                </label>
-              </div>
               <p class="hint">← → mover · espaço pular</p>
             </div>
           </div>

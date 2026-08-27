@@ -18,7 +18,7 @@ import { PhaseRunOrder, setPhaseRun } from './PhaseRunOrder';
 import { materialMood } from './ThemedPhases';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
-import { getPerfProfile, loadLightMode, saveLightMode } from './GameSettings';
+import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 
 const BEST_KEY = 'ascend-soft-best';
@@ -79,7 +79,8 @@ export class Game {
   private shownPhaseToasts = new Set<MaterialId>();
   private runBestBroken = false;
   private startBest = 0;
-  private lightMode = loadLightMode();
+  private userSettings: UserSettings = loadSettings();
+  private lightMode = this.userSettings.lightMode;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -106,12 +107,31 @@ export class Game {
     return this.lightMode;
   }
 
+  isReduceMotion(): boolean {
+    return this.userSettings.reduceMotion;
+  }
+
+  applyUserSettings(settings: UserSettings): void {
+    this.userSettings = { ...settings };
+    document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion);
+
+    if (this.lightMode !== settings.lightMode) {
+      this.lightMode = settings.lightMode;
+      this.applyPerfSettings();
+      this.resize();
+    }
+
+    this.audio.setVolume(settings.volume / 100);
+    this.audio.setMuted(settings.muted);
+    this.audio.setVoiceEnabled(settings.voiceEnabled);
+    this.audio.setLandIntensity(settings.landIntensity);
+    this.hud.setMuteLabel(settings.muted || settings.volume === 0);
+  }
+
   setLightMode(enabled: boolean): void {
-    if (this.lightMode === enabled) return;
-    this.lightMode = enabled;
-    saveLightMode(enabled);
-    this.applyPerfSettings();
-    this.resize();
+    const next = { ...this.userSettings, lightMode: enabled };
+    saveSettings(next);
+    this.applyUserSettings(next);
   }
 
   private perfProfile() {
@@ -212,15 +232,19 @@ export class Game {
     this.shownPhaseToasts.clear();
   }
 
-  /** Exibe banner de reflexão só na primeira vez que a fase aparece na rodada */
+  /** Exibe banner de reflexão conforme preferência do jogador */
   private tryShowPhaseToast(
     id: MaterialId,
     label: string,
     quote: string,
     accent?: string,
   ): void {
-    if (this.shownPhaseToasts.has(id)) return;
-    this.shownPhaseToasts.add(id);
+    const mode = this.userSettings.bannerMode;
+    if (mode === 'never') return;
+    if (mode === 'first') {
+      if (this.shownPhaseToasts.has(id)) return;
+      this.shownPhaseToasts.add(id);
+    }
     this.hud.showPhaseToast(label, quote, accent);
   }
 
@@ -303,15 +327,17 @@ export class Game {
       this.tryShowPhaseToast(z.id, z.label, z.quote, this.atmosphere.getAccent());
       this.hud.setAmbientColors(pal.top, pal.mid);
       this.audio.playBiomeEnter(z.id);
-      this.screenPunch = Math.max(this.screenPunch, 0.32);
-      this.particles.burst(
-        this.player.x,
-        this.player.y + 30,
-        this.atmosphere.getAccent(),
-        14,
-        'glitter',
-        false,
-      );
+      if (!this.userSettings.reduceMotion) {
+        this.screenPunch = Math.max(this.screenPunch, 0.32);
+        this.particles.burst(
+          this.player.x,
+          this.player.y + 30,
+          this.atmosphere.getAccent(),
+          14,
+          'glitter',
+          false,
+        );
+      }
     }
 
     if (this.state === 'playing') {
@@ -331,8 +357,12 @@ export class Game {
       this.camera.follow(42 + Math.sin(this.time * 0.28) * 10, this.H * 0.14);
       this.camera.update(dt);
       for (const p of this.spawner.platforms) {
-        const wave = Math.sin(this.time * 2.05 + p.x * 0.04 + p.y * 0.01);
-        const soft = Math.sin(this.time * 0.9 + p.x * 0.02) * 0.06;
+        const wave = this.userSettings.reduceMotion
+          ? 0.2
+          : Math.sin(this.time * 2.05 + p.x * 0.04 + p.y * 0.01);
+        const soft = this.userSettings.reduceMotion
+          ? 0
+          : Math.sin(this.time * 0.9 + p.x * 0.02) * 0.06;
         p.setPreviewSquash(0.2 + wave * 0.16 + soft);
         p.update(dt, this.time);
       }
@@ -472,7 +502,9 @@ export class Game {
       if (!this.runBestBroken && this.height > this.startBest && this.startBest > 0) {
         this.runBestBroken = true;
         this.audio.playRecord();
-        this.particles.confetti(this.player.x, this.player.y + 20);
+        if (!this.userSettings.reduceMotion) {
+          this.particles.confetti(this.player.x, this.player.y + 20);
+        }
         this.addFloater(this.player.x, this.player.y + 40, 'recorde!', '#e8a090');
       } else if (!this.runBestBroken && this.startBest === 0 && this.height >= 30) {
         this.runBestBroken = true;
@@ -649,8 +681,10 @@ export class Game {
 
       if (perfect) {
         this.perfectStreak += 1;
-        this.camera.nudgePerfect(5 + Math.min(4, this.perfectStreak));
-        this.screenPunch = 0.55;
+        if (!this.userSettings.reduceMotion) {
+          this.camera.nudgePerfect(5 + Math.min(4, this.perfectStreak));
+          this.screenPunch = 0.55;
+        }
         this.addFloater(
           this.player.x,
           platformTop + 18,
@@ -723,7 +757,9 @@ export class Game {
           this.particles.burst(p.x, p.surfaceY, '#d0e8f8', 10, 'glitter', false);
         }
         this.audio.playShatter();
-        this.screenPunch = Math.max(this.screenPunch, 0.4);
+        if (!this.userSettings.reduceMotion) {
+          this.screenPunch = Math.max(this.screenPunch, 0.4);
+        }
         this.noteReaction(ev.floater, p.x, p.surfaceY + 22, '#a8d8ff');
         break;
       case 'crumbleSand':
@@ -742,7 +778,9 @@ export class Game {
       case 'foamPop':
         this.particles.foamPopStorm(p.x, p.surfaceY, mat.particle);
         this.audio.playFoamPop();
-        this.screenPunch = Math.max(this.screenPunch, 0.35);
+        if (!this.userSettings.reduceMotion) {
+          this.screenPunch = Math.max(this.screenPunch, 0.35);
+        }
         this.noteReaction(ev.floater, p.x, p.surfaceY + 20, '#fff5fa');
         break;
       case 'squeeze':
@@ -807,7 +845,9 @@ export class Game {
     enablePixelMode(ctx);
     ctx.clearRect(0, 0, this.W, this.H);
 
-    const punch = 1 + this.screenPunch * 0.012 + this.camera.punch * 0.008;
+    const punch = this.userSettings.reduceMotion
+      ? 1
+      : 1 + this.screenPunch * 0.012 + this.camera.punch * 0.008;
     ctx.save();
     if (punch !== 1) {
       ctx.translate(this.W / 2, this.H / 2);
@@ -865,7 +905,9 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
-    this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);
+    if (!this.userSettings.reduceMotion) {
+      this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);
+    }
 
     if (this.debug) this.drawDebug(ctx);
 

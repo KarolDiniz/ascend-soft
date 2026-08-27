@@ -131,14 +131,17 @@ export class Hud {
     this.toastEl.setAttribute('aria-label', `${phaseName}: ${quote}`);
     this.toastEl.classList.remove('hidden', 'toast-out', 'toast-live', 'toast-active');
     this.toastEl.classList.add('toast-in', 'toast-active');
-    this.speaker.start(this.toastDuration);
-    this.audio?.stopSoftMurmur();
 
     const muted = this.audio?.isMuted ?? false;
-    if (!muted) {
+    const voiceOn = this.audio?.isVoiceEnabled ?? true;
+    if (voiceOn && !muted) {
+      this.speaker.start(this.toastDuration);
       this.audio?.playCreatureSpeech(quote, this.toastDuration, (open) =>
         this.speaker.setMouthOpen(open),
       );
+    } else {
+      this.speaker.stop();
+      this.audio?.stopSoftMurmur();
     }
 
     window.clearTimeout(this.toastTimer);

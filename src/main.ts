@@ -9,7 +9,7 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
 const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
-const titleSettings = new TitleSettings(game);
+const titleSettings = new TitleSettings(game, audio, hud);
 
 void spriteAtlas.init().then(() => {
   console.info(
@@ -19,8 +19,6 @@ void spriteAtlas.init().then(() => {
 
 const btnStart = document.getElementById('btn-start')!;
 const btnRetry = document.getElementById('btn-retry')!;
-const btnMute = document.getElementById('btn-mute')!;
-const volume = document.getElementById('volume') as HTMLInputElement;
 
 async function unlockAndPlay(): Promise<void> {
   if (titleSettings.isOpen()) return;
@@ -28,7 +26,7 @@ async function unlockAndPlay(): Promise<void> {
     return;
   }
   await audio.unlock();
-  audio.setVolume(Number(volume.value) / 100);
+  audio.setVolume(titleSettings.getVolume() / 100);
   hud.leaveTitle(() => game.beginPlay());
 }
 
@@ -58,27 +56,5 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-btnMute.addEventListener('click', () => {
-  void audio.unlock().then(() => {
-    audio.setMuted(!audio.isMuted);
-    hud.setMuteLabel(audio.isMuted);
-  });
-});
-
-volume.addEventListener('input', () => {
-  void audio.unlock().then(() => {
-    const v = Number(volume.value) / 100;
-    audio.setVolume(v);
-    if (v === 0) {
-      audio.setMuted(true);
-      hud.setMuteLabel(true);
-    } else if (audio.isMuted) {
-      audio.setMuted(false);
-      hud.setMuteLabel(false);
-    }
-  });
-});
-
-hud.setMuteLabel(false);
 game.initTitle();
 game.start();

@@ -1,19 +1,76 @@
 export const LIGHT_MODE_KEY = 'ascend-soft-light-mode';
+export const SETTINGS_KEY = 'ascend-soft-settings';
 
-export function loadLightMode(): boolean {
+export type BannerMode = 'first' | 'always' | 'never';
+export type LandIntensity = 'low' | 'medium' | 'high';
+
+export interface UserSettings {
+  lightMode: boolean;
+  volume: number;
+  muted: boolean;
+  voiceEnabled: boolean;
+  landIntensity: LandIntensity;
+  bannerMode: BannerMode;
+  reduceMotion: boolean;
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  lightMode: false,
+  volume: 55,
+  muted: false,
+  voiceEnabled: true,
+  landIntensity: 'medium',
+  bannerMode: 'first',
+  reduceMotion: false,
+};
+
+export function loadSettings(): UserSettings {
   try {
-    return localStorage.getItem(LIGHT_MODE_KEY) === '1';
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<UserSettings>;
+      return { ...DEFAULT_SETTINGS, ...sanitize(parsed) };
+    }
+    const legacyLight = localStorage.getItem(LIGHT_MODE_KEY) === '1';
+    return { ...DEFAULT_SETTINGS, lightMode: legacyLight };
   } catch {
-    return false;
+    return { ...DEFAULT_SETTINGS };
   }
 }
 
-export function saveLightMode(enabled: boolean): void {
+export function saveSettings(settings: UserSettings): void {
   try {
-    localStorage.setItem(LIGHT_MODE_KEY, enabled ? '1' : '0');
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(LIGHT_MODE_KEY, settings.lightMode ? '1' : '0');
   } catch {
     /* ignore */
   }
+}
+
+function sanitize(p: Partial<UserSettings>): Partial<UserSettings> {
+  const out: Partial<UserSettings> = {};
+  if (typeof p.lightMode === 'boolean') out.lightMode = p.lightMode;
+  if (typeof p.volume === 'number') out.volume = clamp(Math.round(p.volume), 0, 100);
+  if (typeof p.muted === 'boolean') out.muted = p.muted;
+  if (typeof p.voiceEnabled === 'boolean') out.voiceEnabled = p.voiceEnabled;
+  if (p.landIntensity === 'low' || p.landIntensity === 'medium' || p.landIntensity === 'high') {
+    out.landIntensity = p.landIntensity;
+  }
+  if (p.bannerMode === 'first' || p.bannerMode === 'always' || p.bannerMode === 'never') {
+    out.bannerMode = p.bannerMode;
+  }
+  if (typeof p.reduceMotion === 'boolean') out.reduceMotion = p.reduceMotion;
+  return out;
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+export function landIntensityGain(level: LandIntensity): number {
+  if (level === 'low') return 0.52;
+  if (level === 'high') return 1.42;
+  return 1;
 }
 
 /** Perfil de performance — normal vs modo leve */
@@ -66,4 +123,12 @@ export function getPerfProfile(lightMode: boolean): PerfProfile {
     simplifyLandAudio: true,
     birdAmbience: false,
   };
+}
+
+export function loadLightMode(): boolean {
+  return loadSettings().lightMode;
+}
+
+export function saveLightMode(enabled: boolean): void {
+  saveSettings({ ...loadSettings(), lightMode: enabled });
 }
