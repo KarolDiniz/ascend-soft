@@ -53,25 +53,76 @@ export function drawAmoeba(a: ExtraDrawArgs): void {
   }
 }
 
-/** Garrafa PET — cilindro translúcido com rótulo */
+/** Garrafa PET — corpo translúcido, rótulo, tampa e nervuras */
 export function drawPlasticBottle(a: ExtraDrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed } = a;
-  const x = cx - w / 2;
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble, overlay } = a;
+  const press = overlay?.pressAmount ?? 0;
+  const crack = overlay?.crackLevel ?? 0;
+  const squash = 1 - press * 0.1;
   const body = mat.fill;
-  const label = rgba(mat.particle, 0.55);
+  const shimmer = Math.sin(time * 2.8 + wobble) * u * 0.55;
+  const bodyTop = sy + u * 3;
+  const bodyH = h * 0.86 * squash;
 
-  fillPx(ctx, x + u * 2, sy + u * 2, w - u * 4, h - u * 2, body);
-  fillPx(ctx, x + u, sy + u * 3, w - u * 2, h - u * 4, rgba(body, 0.85));
-  fillPx(ctx, cx - u * 2, sy - u * 3, u * 4, u * 3, body);
-  fillPx(ctx, cx - u, sy - u * 5, u * 2, u * 2, rgba(body, 0.9));
-  fillPx(ctx, cx - u * 0.5, sy - u * 6, u, u * 2, mat.stroke);
-  fillPx(ctx, x + u * 3, sy + h * 0.35, w - u * 6, h * 0.35, label);
-  fillPx(ctx, x + u * 4, sy + h * 0.42, w - u * 8, u, rgba('#FFFFFF', 0.45));
-  fillPx(ctx, x + u * 2, sy + u, u, h - u * 2, rgba('#FFFFFF', 0.22));
-  fillPx(ctx, x + w - u * 3, sy + u, u, h - u * 2, rgba(mat.stroke, 0.25));
-  fillPx(ctx, cx + w * 0.28, sy + u * 2, u, u * 2, rgba('#FFFFFF', 0.35));
+  fillPx(ctx, cx - w * 0.3, sy + h - u * 0.5, w * 0.6, u, rgba(mat.stroke, 0.22));
+
+  for (let row = 0; row < bodyH; row += u) {
+    const t = row / Math.max(u, bodyH);
+    const bulge = 1 + Math.sin(t * Math.PI) * 0.14;
+    const halfW = w * 0.39 * bulge;
+    fillPx(ctx, cx - halfW, bodyTop + row, halfW * 2, u, rgba(body, 0.9));
+    fillPx(ctx, cx - halfW, bodyTop + row, u, u, rgba(PASTEL.white, 0.24));
+    fillPx(ctx, cx + halfW - u, bodyTop + row, u, u, rgba(mat.stroke, 0.16));
+  }
+
+  fillPx(ctx, cx - w * 0.3, sy + u * 2, w * 0.6, u * 2, rgba(body, 0.92));
+  fillPx(ctx, cx - w * 0.22, sy + u, w * 0.44, u * 2, rgba(body, 0.94));
+  fillPx(ctx, cx - u * 1.9, sy - u * 2, u * 3.8, u * 4, rgba(body, 0.96));
+  fillPx(ctx, cx - u * 1.3, sy - u * 4, u * 2.6, u * 2, rgba(body, 0.98));
+
+  fillPx(ctx, cx - u * 1.6, sy - u * 5.5, u * 3.2, u * 2, '#6AB0D8');
+  fillPx(ctx, cx - u * 1.1, sy - u * 6, u * 2.2, u, rgba(PASTEL.white, 0.4));
+  fillPx(ctx, cx - u * 0.5, sy - u * 6.5, u, u * 2, rgba('#4A98C8', 0.55));
+
+  const labelY = bodyTop + bodyH * 0.3;
+  const labelH = bodyH * 0.3;
+  fillPx(ctx, cx - w * 0.33, labelY, w * 0.66, labelH, rgba(mat.particle, 0.64));
+  fillPx(ctx, cx - w * 0.27, labelY + u, w * 0.54, u * 2, rgba(PASTEL.white, 0.58));
+  fillPx(ctx, cx - w * 0.2, labelY + u * 3.5, w * 0.4, u * 1.5, rgba(PASTEL.seafoam, 0.48));
+  fillPx(ctx, cx - w * 0.14, labelY + u * 5, w * 0.28, u, rgba(PASTEL.mint, 0.42));
+
   for (let i = 0; i < 5; i++) {
-    fillPx(ctx, x + u * 3 + seeded(seed, i) * (w - u * 8), sy + u * 4 + i * u, u, u, rgba('#FFFFFF', 0.18));
+    const ry = bodyTop + bodyH * (0.6 + i * 0.075);
+    fillPx(ctx, cx - w * 0.35, ry, w * 0.7, u, rgba(mat.stroke, 0.24));
+    fillPx(ctx, cx - w * 0.31, ry + u * 0.45, w * 0.62, u, rgba(PASTEL.white, 0.14));
+  }
+
+  fillPx(ctx, cx - w * 0.14 + shimmer, bodyTop + u * 2, u * 2, bodyH * 0.52, rgba(PASTEL.white, 0.16));
+  fillPx(ctx, cx + w * 0.1 + shimmer * 0.45, bodyTop + u * 5, u, bodyH * 0.32, rgba(PASTEL.white, 0.1));
+
+  for (let i = 0; i < 5; i++) {
+    if (Math.sin(time * 3.2 + i + seed * 0.01) <= 0.15) continue;
+    fillPx(
+      ctx,
+      cx - w * 0.28 + seeded(seed, i) * w * 0.56,
+      bodyTop + seeded(seed, i + 5) * bodyH * 0.55,
+      u,
+      u,
+      rgba(PASTEL.sky, 0.42),
+    );
+  }
+
+  if (crack > 0.02) {
+    for (let i = 0; i < 2 + Math.floor(crack * 4); i++) {
+      fillPx(
+        ctx,
+        cx + (seeded(seed, i + 40) - 0.5) * w * 0.38,
+        bodyTop + seeded(seed, i + 45) * bodyH * 0.65,
+        u,
+        u * 2,
+        rgba(PASTEL.white, 0.48 + crack * 0.38),
+      );
+    }
   }
 }
 
@@ -324,42 +375,206 @@ export function drawMarimba(a: ExtraDrawArgs): void {
   fillPx(ctx, cx - w * 0.45, sy + h - u, w * 0.9, u, rgba(mat.stroke, 0.5));
 }
 
-/** Cristal — facetas translúcidas */
-export function drawCrystal(a: ExtraDrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed } = a;
-  const x = cx - w / 2;
-  const shimmer = Math.sin(time * 3.5 + wobble) * u;
-  fillPx(ctx, x + u * 2, sy + h * 0.25, w - u * 4, h * 0.75, rgba(mat.fill, 0.72));
-  fillPx(ctx, cx - u * 2 + shimmer, sy + u, u * 4, h - u * 2, rgba(mat.particle, 0.55));
-  fillPx(ctx, cx - w * 0.35, sy + u * 2, w * 0.7, h * 0.55, mat.fill);
-  fillPx(ctx, cx - u + shimmer, sy + u, u * 2, h * 0.4, rgba('#FFFFFF', 0.45));
-  for (let i = 0; i < 5; i++) {
-    const fx = x + u * 3 + seeded(seed, i) * (w - u * 6);
-    const fy = sy + u * 2 + seeded(seed, i + 5) * (h - u * 5);
-    fillPx(ctx, fx, fy, u, u * (2 + (i % 2)), rgba(PASTEL.white, 0.35 + Math.sin(time * 4 + i) * 0.15));
+/** Faceta de gema — trapézio em scanlines pixel */
+function fillPxCrystalShard(
+  ctx: CanvasRenderingContext2D,
+  apexX: number,
+  apexY: number,
+  baseLeftX: number,
+  baseRightX: number,
+  baseY: number,
+  u: number,
+  color: string,
+): void {
+  const height = baseY - apexY;
+  const rows = Math.max(1, Math.ceil(height / u));
+  for (let row = 0; row < rows; row++) {
+    const t = (row + 1) / rows;
+    const y = apexY + row * u;
+    const left = apexX + (baseLeftX - apexX) * t;
+    const right = apexX + (baseRightX - apexX) * t;
+    const ww = right - left;
+    if (ww >= u * 0.35) fillPx(ctx, left, y, ww, u, color);
   }
-  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, rgba(mat.stroke, 0.4));
 }
 
-/** Cerâmica — prato esmaltado */
-export function drawCeramic(a: ExtraDrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed } = a;
-  const x = cx - w / 2;
-  const press = a.overlay?.pressAmount ?? 0;
-  fillPx(ctx, x + u, sy + h * 0.35, w - u * 2, h * 0.65, mat.fill);
-  fillPx(ctx, x, sy + h * 0.5, w, h * 0.5, rgba(mat.particle, 0.65));
-  fillPx(ctx, x + u * 2, sy + h * 0.42, w - u * 4, u * 2, rgba('#FFFFFF', 0.35));
-  for (let i = 0; i < 6; i++) {
-    fillPx(
+/** Cristal — gema facetada com brilho prismático */
+export function drawCrystal(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed, overlay } = a;
+  const press = overlay?.pressAmount ?? 0;
+  const crack = overlay?.crackLevel ?? 0;
+  const shimmer = Math.sin(time * 3.8 + wobble) * u * 1.1;
+  const baseY = sy + h * 0.9;
+  const apexY = sy - h * (0.3 - press * 0.05);
+
+  fillPx(ctx, cx - w * 0.26, baseY, w * 0.52, u, rgba(mat.stroke, 0.24));
+
+  fillPxCrystalShard(
+    ctx,
+    cx - w * 0.06,
+    apexY + h * 0.06,
+    cx - w * 0.46,
+    cx - w * 0.04,
+    baseY,
+    u,
+    rgba(mat.stroke, 0.58),
+  );
+  fillPxCrystalShard(
+    ctx,
+    cx + w * 0.05,
+    apexY + h * 0.04,
+    cx + w * 0.02,
+    cx + w * 0.46,
+    baseY,
+    u,
+    rgba(mat.fill, 0.76),
+  );
+  fillPxCrystalShard(
+    ctx,
+    cx,
+    apexY,
+    cx - w * 0.2,
+    cx + w * 0.24,
+    baseY,
+    u,
+    rgba(mat.fill, 0.9),
+  );
+
+  fillPx(
+    ctx,
+    cx - w * 0.1 + shimmer * 0.18,
+    apexY + u * 2,
+    u,
+    baseY - apexY - u * 4,
+    rgba(mat.stroke, 0.32),
+  );
+  fillPx(
+    ctx,
+    cx + w * 0.11 + shimmer * 0.12,
+    apexY + u * 3,
+    u,
+    baseY - apexY - u * 5,
+    rgba(PASTEL.white, 0.28),
+  );
+
+  fillPx(ctx, cx - u, apexY, u * 2, u * 2, rgba(PASTEL.white, 0.88));
+  fillPx(ctx, cx - u * 0.5, apexY - u, u, u, rgba(PASTEL.white, 0.96));
+
+  fillPx(ctx, cx - w * 0.4, sy, w * 0.8, u * 2, rgba(mat.particle, 0.62));
+  fillPx(ctx, cx - w * 0.3 + shimmer * 0.25, sy, w * 0.6, u, rgba(PASTEL.white, 0.78));
+
+  const satellites = [
+    { ox: -0.4, scale: 0.52, tilt: -0.1 },
+    { ox: 0.38, scale: 0.46, tilt: 0.09 },
+  ];
+  for (let i = 0; i < satellites.length; i++) {
+    const s = satellites[i]!;
+    const sx = cx + s.ox * w;
+    const shardH = h * s.scale;
+    const say = sy + h * 0.06 - shardH * 0.32;
+    const sbase = sy + h * 0.7;
+    fillPxCrystalShard(
       ctx,
-      x + u * 2 + seeded(seed, i) * (w - u * 6),
-      sy + h * 0.48 + (i % 2) * u,
-      u * 2,
+      sx + s.tilt * w,
+      say,
+      sx - w * 0.11 * s.scale,
+      sx + w * 0.13 * s.scale,
+      sbase,
       u,
-      rgba(mat.stroke, 0.22 + press * 0.15),
+      rgba(mat.fill, 0.68 - i * 0.06),
     );
+    fillPx(ctx, sx - u, say + u, u * 2, u, rgba(PASTEL.white, 0.52));
+    fillPx(ctx, sx + u * 0.2, say + shardH * 0.35, u, u * 2, rgba(PASTEL.lilac, 0.22));
   }
-  fillPx(ctx, cx - w * 0.28, sy + h * 0.55, w * 0.56, u, rgba(mat.stroke, 0.3));
+
+  const bandY = sy + h * (0.28 + Math.sin(time * 2.3 + wobble) * 0.07);
+  fillPx(ctx, cx - w * 0.24 + shimmer, bandY, w * 0.48, u, rgba(PASTEL.white, 0.42));
+  fillPx(ctx, cx - w * 0.14 + shimmer * 0.55, bandY + u, w * 0.28, u, rgba(PASTEL.lilac, 0.3));
+  fillPx(ctx, cx + w * 0.04 + shimmer * 0.35, bandY + u * 2, w * 0.16, u, rgba(PASTEL.mint, 0.26));
+
+  for (let i = 0; i < 9; i++) {
+    if (Math.sin(time * 4.8 + i * 1.25 + seed * 0.01) < 0.12) continue;
+    const fx = cx + (seeded(seed, i) - 0.5) * w * 0.52;
+    const fy = sy + u * 2 + seeded(seed, i + 5) * h * 0.58;
+    fillPx(ctx, fx, fy, u, u, rgba(PASTEL.white, 0.5 + seeded(seed, i + 10) * 0.38));
+    if (i % 3 === 0) {
+      fillPx(ctx, fx + u, fy - u, u, u, rgba(PASTEL.mint, 0.42));
+      fillPx(ctx, fx - u, fy, u, u, rgba(PASTEL.lilac, 0.35));
+    }
+  }
+
+  if (crack > 0.02) {
+    for (let i = 0; i < 2 + Math.floor(crack * 5); i++) {
+      const ox = cx + (seeded(seed, i + 50) - 0.5) * w * 0.38;
+      const oy = sy + h * (0.12 + seeded(seed, i + 55) * 0.52);
+      const segs = 2 + Math.floor(crack * 3);
+      for (let j = 0; j < segs; j++) {
+        fillPx(ctx, ox + j * u, oy + j * u * 1.15, u, u * 2, rgba(PASTEL.white, 0.48 + crack * 0.42));
+      }
+    }
+    fillPx(ctx, cx - w * 0.08, sy + h * 0.35, u * 2, u * 3, rgba(PASTEL.white, 0.35 * crack));
+  }
+
+  if (press > 0.15) {
+    fillPx(ctx, cx - w * 0.34, sy + u, w * 0.68, u, rgba(PASTEL.white, 0.22 + press * 0.18));
+  }
+
+  fillPx(ctx, cx - w * 0.42, baseY - u, w * 0.84, u, rgba(mat.stroke, 0.36));
+}
+
+/** Cerâmica — tigela esmaltada com borda e pés */
+export function drawCeramic(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble, overlay } = a;
+  const press = overlay?.pressAmount ?? 0;
+  const crack = overlay?.crackLevel ?? 0;
+  const footY = sy + h * 0.9;
+  const bowlH = footY - sy;
+  const shimmer = Math.sin(time * 2.4 + wobble) * u * 0.35;
+
+  for (let row = 0; row < bowlH; row += u) {
+    const t = row / Math.max(u, bowlH);
+    const halfW = w * (0.47 - t * t * 0.26);
+    const wall = u * 2.4;
+    fillPx(ctx, cx - halfW, sy + row, halfW * 2, u, mat.stroke);
+    const inner = halfW - wall;
+    if (inner > u * 1.5) {
+      fillPx(ctx, cx - inner, sy + row, inner * 2, u, row < u * 3 ? rgba(mat.particle, 0.72) : mat.fill);
+    }
+  }
+
+  fillPx(ctx, cx - w * 0.49, sy - u, w * 0.98, u * 2, mat.fill);
+  fillPx(ctx, cx - w * 0.45, sy - u, w * 0.9, u, rgba(PASTEL.white, 0.48));
+  fillPx(ctx, cx - w * 0.4, sy, w * 0.8, u, rgba(mat.particle, 0.55));
+
+  fillPx(ctx, cx - w * 0.19, footY - u, w * 0.38, u * 2, mat.stroke);
+  fillPx(ctx, cx - w * 0.15, footY, w * 0.3, u, rgba(mat.stroke, 0.58));
+  fillPx(ctx, cx - u * 2, footY + u * 0.5, u * 4, u, rgba(mat.stroke, 0.35));
+
+  const motifY = sy + bowlH * 0.42;
+  for (let i = 0; i < 5; i++) {
+    const mx = cx - w * 0.3 + i * w * 0.15;
+    fillPx(ctx, mx, motifY, u * 1.6, u * 1.6, rgba(PASTEL.caramelDeep, 0.42));
+    fillPx(ctx, mx + u * 0.3, motifY + u * 0.3, u, u, rgba(PASTEL.white, 0.38));
+  }
+  fillPx(ctx, cx - w * 0.28, motifY + u * 2, w * 0.56, u, rgba(PASTEL.caramel, 0.32));
+  fillPx(ctx, cx - w * 0.12, motifY + u * 3, u * 3, u, rgba(PASTEL.caramelDeep, 0.28));
+
+  fillPx(ctx, cx - w * 0.2 + shimmer, sy + u * 2, w * 0.32, bowlH * 0.38, rgba(PASTEL.white, 0.1));
+  fillPx(ctx, cx + w * 0.08 + shimmer * 0.5, sy + u * 3, u * 2, u * 3, rgba(PASTEL.white, 0.22));
+
+  if (press > 0.12) {
+    fillPx(ctx, cx - w * 0.28, sy + u, w * 0.56, u, rgba(mat.particle, 0.22 + press * 0.18));
+  }
+
+  if (crack > 0.02) {
+    for (let i = 0; i < 2 + Math.floor(crack * 5); i++) {
+      const ox = cx + (seeded(seed, i + 60) - 0.5) * w * 0.32;
+      const oy = sy + bowlH * (0.18 + seeded(seed, i + 65) * 0.52);
+      for (let j = 0; j < 2 + Math.floor(crack * 2); j++) {
+        fillPx(ctx, ox + j * u, oy + j * u, u, u * 2, rgba(PASTEL.white, 0.42 + crack * 0.38));
+      }
+    }
+  }
 }
 
 /** Argila — torrão modelável */

@@ -124,6 +124,7 @@ export function renderPixelPlatform(
     ),
   );
   const roundOrb = isRoundOrbMaterial(material);
+  const foamMass = isFoamMassMaterial(material);
   if (roundOrb) {
     const d = Math.max(w, h);
     w = d;
@@ -266,9 +267,9 @@ export function renderPixelPlatform(
 
   drawVariantAccent(args, variant);
   drawPersonalitySurfaceMark(args);
-  if (!roundOrb) drawPersonalityTopProfile(args);
+  if (!roundOrb && !foamMass) drawPersonalityTopProfile(args);
 
-  if (!roundOrb) drawShelfFrontFace(args);
+  if (!roundOrb && !foamMass) drawShelfFrontFace(args);
   const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
   if (shouldDrawSoftSpill(material, behavior)) {
     drawSoftSpillDrips(args, behavior);
@@ -442,8 +443,15 @@ function drawShelfFrontFace(a: DrawArgs): void {
 /** Bolha de sabão — orbe perfeita, sem base retangular */
 const ROUND_ORB_MATERIALS: ReadonlySet<MaterialId> = new Set(['soapBubble']);
 
+/** Espumas — aglomerado de células, sem base retangular nem gotejamentos */
+const FOAM_MASS_MATERIALS: ReadonlySet<MaterialId> = new Set(['whipped', 'bathFoam']);
+
 function isRoundOrbMaterial(material: MaterialId): boolean {
   return ROUND_ORB_MATERIALS.has(material);
+}
+
+function isFoamMassMaterial(material: MaterialId): boolean {
+  return FOAM_MASS_MATERIALS.has(material);
 }
 
 /** Penduricalhos na base — só chiclete, tecidos e grama */
@@ -461,7 +469,7 @@ function shouldDrawPersonalityHangs(material: MaterialId): boolean {
 
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
   if (material === 'keyboard' || material === 'marimba') return false;
-  if (isRoundOrbMaterial(material)) return false;
+  if (isRoundOrbMaterial(material) || isFoamMassMaterial(material)) return false;
   if (BOTTOM_HANG_MATERIALS.has(material)) return true;
   return behavior === 'melt' || behavior === 'foamPop';
 }
@@ -937,53 +945,92 @@ function drawChocolate(a: DrawArgs): void {
   drawAmbientSpecks(a, 5, mat.particle);
 }
 
-/** Cítrico — cunha / meia-lua com casca e polpa */
+/** Cítrico — meia-laranja em corte, gomos e casca */
 function drawCitrus(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
-  const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
+  const segments = 8;
+  const R = w * 0.5;
+  const peel = '#D97842';
+  const pith = rgba(PASTEL.white, 0.84);
+  const coreY = sy + h * 0.9;
+
   for (let row = 0; row < h; row += u) {
-    const t = row / Math.max(1, h - u);
-    const ww = w * (0.45 + t * 0.55);
-    fillPx(ctx, cx - ww / 2, sy + row, ww, u, mat.fill);
+    const depth = row;
+    const halfW = Math.sqrt(Math.max(0, R * R - depth * depth));
+    if (halfW < u * 0.35) continue;
+
+    fillPx(ctx, cx - halfW, sy + row, halfW * 2, u, mat.fill);
+
+    const peelBand = u * 2.8;
+    fillPx(ctx, cx - halfW, sy + row, peelBand, u, peel);
+    fillPx(ctx, cx + halfW - peelBand, sy + row, peelBand, u, peel);
+    fillPx(ctx, cx - halfW + peelBand, sy + row, u * 1.6, u, pith);
+    fillPx(ctx, cx + halfW - peelBand - u * 1.6, sy + row, u * 1.6, u, pith);
+
+    if (depth < u * 2) {
+      fillPx(ctx, cx - halfW + peelBand, sy + row, halfW * 2 - peelBand * 2, u, rgba(mat.particle, 0.42));
+    }
   }
-  fillPx(ctx, x + w * 0.15, sy, w * 0.7, u, PASTEL.white);
-  fillPx(ctx, x + w * 0.18, sy + u, w * 0.64, u, rgba(PASTEL.white, 0.45));
-  fillPx(ctx, x + w * 0.05, sy + h - u * 2, w * 0.9, u * 2, mat.stroke);
-  for (let i = 0; i < 10; i++) {
-    fillPx(
-      ctx,
-      x + w * 0.08 + seeded(seed, i + 30) * w * 0.84,
-      sy + h - u * 3 + seeded(seed, i + 35) * u * 2,
-      u,
-      u,
-      rgba(mat.stroke, 0.55),
-    );
+
+  for (let i = 1; i < segments; i++) {
+    const topX = cx - w * 0.46 + (i / segments) * w * 0.92;
+    const rows = Math.floor(h * 0.86 / u);
+    for (let r = 0; r < rows; r++) {
+      const t = r / Math.max(1, rows);
+      const x = topX + (cx - topX) * t * t;
+      const alpha = 0.28 + (1 - t) * 0.14;
+      fillPx(ctx, x, sy + r * u, u, u, rgba(PASTEL.white, alpha));
+    }
   }
-  for (let i = 0; i < 7; i++) {
-    fillPx(ctx, cx - u / 2 + (i - 3) * u * 2.2, sy + u * 2, u, h - u * 4, rgba(PASTEL.white, 0.4));
+
+  fillPx(ctx, cx - w * 0.48, sy, w * 0.96, u, rgba(mat.particle, 0.58));
+  fillPx(ctx, cx - w * 0.34, sy, w * 0.68, u, rgba(PASTEL.white, 0.48));
+
+  for (let i = 0; i < segments; i++) {
+    if (i % 2 !== 0) continue;
+    const t0 = i / segments;
+    const t1 = (i + 1) / segments;
+    const lx = cx - w * 0.42 + t0 * w * 0.84;
+    const rx = cx - w * 0.42 + t1 * w * 0.84;
+    const midX = (lx + rx) * 0.5;
+    fillPx(ctx, midX - u, sy + u, u * 2, u * 2, rgba(mat.particle, 0.35));
   }
-  const pulse = 1 + Math.sin(time * 5 + wobble) * 0.35;
-  fillPx(ctx, cx - u * pulse, sy + h * 0.35, u * 2 * pulse, u * 2 * pulse, PASTEL.white);
-  fillPx(ctx, cx - u / 2, sy + h * 0.4, u, u, mat.particle);
-  // Juice beads when pressed
+
+  for (let i = 0; i < 14; i++) {
+    const vx = cx + (seeded(seed, i + 30) - 0.5) * w * 0.72;
+    const vy = sy + u * 2 + seeded(seed, i + 35) * h * 0.72;
+    if (Math.abs(vx - cx) > w * 0.44) continue;
+    fillPx(ctx, vx, vy, u, u, rgba(PASTEL.white, 0.38 + seeded(seed, i + 40) * 0.28));
+  }
+
+  const pulse = 1 + Math.sin(time * 4.2 + wobble) * 0.28;
+  fillPx(ctx, cx - u * pulse, sy + h * 0.42, u * 2 * pulse, u * 2 * pulse, rgba(PASTEL.white, 0.58));
+  fillPx(ctx, cx - u * 0.5, sy + h * 0.45, u, u, mat.particle);
+
+  fillPx(ctx, cx + w * 0.3, sy - u, u * 2, u, '#78B868');
+  fillPx(ctx, cx + w * 0.36, sy - u * 2, u, u, rgba('#88C878', 0.85));
+  fillPx(ctx, cx + w * 0.28, sy - u * 2, u * 2, u, rgba('#68A858', 0.55));
+
   if (press > 0.1) {
-    for (let i = 0; i < 2 + Math.floor(press * 4); i++) {
+    for (let i = 0; i < 2 + Math.floor(press * 5); i++) {
       fillPx(
         ctx,
-        cx + (seeded(seed, i + 210) - 0.5) * w * 0.5,
-        sy - u * (1 + i % 3),
+        cx + (seeded(seed, i + 210) - 0.5) * w * 0.55,
+        sy - u * (1 + (i % 3)),
         u,
         u,
         mat.particle,
       );
+      fillPx(ctx, cx + (seeded(seed, i + 215) - 0.5) * w * 0.35, sy - u * (2 + (i % 2)), u, u, rgba(PASTEL.white, 0.65));
     }
+    fillPx(ctx, cx - w * 0.28, sy + u, w * 0.56, u, rgba(mat.particle, 0.35 + press * 0.2));
   }
+
+  fillPx(ctx, cx - u, coreY, u * 2, u, rgba(PASTEL.white, 0.45));
   drawPressIndent(a);
-  drawSurfaceGrain(a, 6, PASTEL.white, 0.3);
-  drawEdgeFlecks(a, 6, mat.particle);
-  drawDebris(a, 6, mat.particle);
-  drawAmbientSpecks(a, 7, mat.particle);
+  drawSurfaceGrain(a, 5, PASTEL.white, 0.28);
+  drawAmbientSpecks(a, 6, mat.particle);
 }
 
 /** Mel — borda dentada hex + células */
@@ -1088,56 +1135,140 @@ function drawSoapCenterStream(a: DrawArgs): void {
   }
 }
 
-/** Espuma — picos altos tipo chantilly */
-function drawWhipped(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
-  const x = cx - w / 2;
-  const press = a.overlay?.pressAmount ?? 0;
-  const collapse = Math.min(1, press * 1.2);
+/** Célula de espuma — bolha arredondada com brilho */
+function fillPxFoamCell(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  u: number,
+  fill: string,
+  highlight: string,
+): void {
+  const r = Math.max(u * 0.85, radius);
+  fillPxDisc(ctx, cx, cy, r, u, fill);
+  fillPxDisc(ctx, cx - r * 0.3, cy - r * 0.34, r * 0.44, u, highlight);
+  fillPxDisc(ctx, cx + r * 0.18, cy + r * 0.12, r * 0.2, u, rgba(highlight, 0.32));
+}
 
-  fillPx(ctx, x + u, sy + h * 0.35, w - u * 2, h * 0.65, mat.fill);
-  fillPx(ctx, x, sy + h * 0.5, w, h * 0.5, mat.fill);
-  const peaks = 7;
-  for (let i = 0; i < peaks; i++) {
-    const px0 = x + u * 2 + (i / (peaks - 1)) * (w - u * 4);
-    const ph = h * (0.55 + seeded(seed, i) * 0.45) * (1 - collapse * 0.55) + Math.sin(wobble + i) * u;
-    for (let row = 0; row < ph; row += u) {
-      const tw = u * 2 + (row / ph) * u * 5;
-      fillPx(ctx, px0 - tw / 2, sy + h * 0.4 - row, tw, u, i === 2 || i === 4 ? PASTEL.blush : mat.fill);
-    }
-    fillPx(ctx, px0 - u, sy + h * 0.4 - ph, u * 2, u, PASTEL.white);
-    fillPx(ctx, px0, sy + h * 0.4 - ph * 0.5, u, u, rgba(PASTEL.white, 0.4));
-    fillPx(ctx, px0 - u, sy + h * 0.4 - ph * 0.3, u, u, rgba(mat.particle, 0.35));
+type FoamStyle = 'bath' | 'whipped';
+
+/** Massa de espuma — aglomerado poroso de bolhas sobrepostas */
+function drawFoamMass(a: DrawArgs, style: FoamStyle): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
+  const press = a.overlay?.pressAmount ?? 0;
+  const squash = 1 - press * 0.2;
+  const baseY = sy + h * 0.84;
+  const moundH = h * 0.62;
+
+  for (let row = 0; row < moundH; row += u) {
+    const t = row / Math.max(u, moundH);
+    const wave =
+      Math.sin(t * Math.PI * 2.8 + seed * 0.017 + wobble * 0.35) * u * 1.4 +
+      Math.sin(t * Math.PI * 5.2 + wobble) * u * 0.45;
+    const ww = w * (0.68 + t * 0.26) + wave;
+    const tone =
+      style === 'bath' && Math.sin(t * 9 + seed) > 0.35
+        ? rgba(PASTEL.lilac, 0.22)
+        : style === 'whipped' && t > 0.55 && seeded(seed, Math.floor(t * 20)) > 0.62
+          ? rgba(PASTEL.blush, 0.18)
+          : rgba(mat.fill, 0.9 - t * 0.12);
+    fillPx(ctx, cx - ww / 2, baseY - row - u, ww, u, tone);
   }
-  // Floating foam flecks above peaks
-  for (let i = 0; i < 6; i++) {
-    if (Math.sin(time * 3 + i) > 0) {
-      fillPx(
+
+  const largeCount = style === 'bath' ? 10 : 9;
+  for (let i = 0; i < largeCount; i++) {
+    const along = (i + 0.5) / largeCount;
+    const fx = cx - w / 2 + along * w + Math.sin(wobble + i * 1.05) * u;
+    const cellR = u * (2.4 + seeded(seed, i) * 2.4) * squash;
+    const lift = moundH * (0.22 + seeded(seed, i + 10) * 0.42);
+    const fy = baseY - lift;
+    let fill = rgba(mat.fill, 0.9);
+    if (style === 'bath' && i % 3 === 1) fill = rgba(PASTEL.lilac, 0.38);
+    if (style === 'whipped' && (i === 2 || i === 5 || i === 7)) fill = rgba(PASTEL.blush, 0.26);
+    fillPxFoamCell(ctx, fx, fy, cellR, u, fill, rgba(PASTEL.white, 0.58));
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const fx = cx + (seeded(seed, i + 30) - 0.5) * w * 0.9;
+    const fy =
+      baseY -
+      moundH * (0.12 + seeded(seed, i + 35) * 0.58) * squash +
+      Math.sin(time * 2.2 + i + wobble) * u * 0.35;
+    const cellR = u * (1.4 + seeded(seed, i + 40) * 1.6) * squash;
+    const tint =
+      style === 'bath' && seeded(seed, i + 45) > 0.72
+        ? rgba(PASTEL.lilac, 0.32)
+        : rgba(mat.particle, 0.42 + seeded(seed, i + 50) * 0.28);
+    fillPxFoamCell(ctx, fx, fy, cellR, u, tint, rgba(PASTEL.white, 0.52));
+  }
+
+  if (style === 'whipped') {
+    const swirlX = cx + Math.sin(wobble * 0.75) * u * 0.8;
+    fillPxFoamCell(ctx, swirlX, baseY - moundH * 0.58 * squash, u * 3.6 * squash, u, mat.fill, PASTEL.white);
+    fillPxFoamCell(
+      ctx,
+      swirlX + u * 0.8,
+      baseY - moundH * 0.74 * squash,
+      u * 2.9 * squash,
+      u,
+      rgba(mat.particle, 0.48),
+      rgba(PASTEL.white, 0.82),
+    );
+    fillPxFoamCell(
+      ctx,
+      swirlX - u * 0.4,
+      baseY - moundH * 0.86 * squash,
+      u * 2.1 * squash,
+      u,
+      PASTEL.white,
+      rgba(PASTEL.white, 0.95),
+    );
+  } else {
+    for (let i = 0; i < 5; i++) {
+      const bx = cx + (seeded(seed, i + 80) - 0.5) * w * 0.55;
+      const by = baseY - moundH * (0.5 + seeded(seed, i + 85) * 0.28) * squash;
+      fillPxFoamCell(ctx, bx, by, u * (2.2 + seeded(seed, i + 90)), u, rgba(mat.fill, 0.82), PASTEL.white);
+    }
+  }
+
+  for (let i = 0; i < 14; i++) {
+    if (Math.sin(time * 2.6 + i + wobble + seed * 0.01) <= -0.15) continue;
+    const fx = cx + (seeded(seed, i + 100) - 0.5) * w * 0.92;
+    const fy = sy + h * (0.06 + seeded(seed, i + 105) * 0.42);
+    fillPxFoamCell(
+      ctx,
+      fx,
+      fy,
+      u * (0.9 + seeded(seed, i + 110) * 1.1),
+      u,
+      rgba(PASTEL.white, 0.68 + seeded(seed, i + 115) * 0.22),
+      rgba(PASTEL.white, 0.92),
+    );
+  }
+
+  if (press > 0.18) {
+    for (let i = 0; i < 8 + Math.floor(press * 8); i++) {
+      fillPxFoamCell(
         ctx,
-        cx + (seeded(seed, i + 220) - 0.5) * w * 0.8,
-        sy + h * 0.1 - Math.sin(time + i) * u * 2,
+        cx + (seeded(seed, i + 120) - 0.5) * w * 0.82,
+        baseY - moundH * (0.08 + seeded(seed, i + 125) * 0.35),
+        u * (1.1 + seeded(seed, i + 130) * 1.3),
         u,
-        u,
-        PASTEL.white,
+        i % 2 ? PASTEL.white : rgba(mat.particle, 0.55),
+        rgba(PASTEL.white, 0.75),
       );
     }
   }
-  if (press > 0.25) {
-    for (let i = 0; i < 6 + Math.floor(press * 6); i++) {
-      fillPx(
-        ctx,
-        cx + (seeded(seed, i + 16) - 0.5) * w * 0.85,
-        sy + h * 0.35 + seeded(seed, i + 20) * h * 0.3,
-        u,
-        u,
-        i % 2 ? PASTEL.white : mat.particle,
-      );
-    }
-  }
-  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
-  drawEdgeFlecks(a, 6, PASTEL.white);
-  drawDebris(a, 6, PASTEL.white);
-  drawAmbientSpecks(a, 8, mat.particle);
+
+  fillPx(ctx, cx - w * 0.36, baseY, w * 0.72, u, rgba(mat.stroke, 0.14));
+  drawAmbientSpecks(a, style === 'bath' ? 10 : 8, mat.particle);
+  if (style === 'whipped') drawEdgeFlecks(a, 4, PASTEL.white);
+}
+
+/** Espuma — chantilly com células fofas */
+function drawWhipped(a: DrawArgs): void {
+  drawFoamMass(a, 'whipped');
 }
 
 /** Areia — monte irregular granuloso */
@@ -1457,37 +1588,9 @@ function drawSoapBubble(a: DrawArgs): void {
   drawAmbientSpecks(a, 8, mat.particle);
 }
 
-/** Espuma de banho — nuvem lilac fofa */
+/** Espuma de banho — monte de bolhas lilás porosas */
 function drawBathFoam(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, seed, wobble, time } = a;
-  const x = cx - w / 2;
-  const press = a.overlay?.pressAmount ?? 0;
-  fillPx(ctx, x + u, sy + h * 0.35, w - u * 2, h * 0.65, mat.fill);
-  fillPx(ctx, x, sy + h * 0.5, w, h * 0.5, mat.fill);
-  for (let i = 0; i < 7; i++) {
-    const px0 = x + u * 2 + (i / 6) * (w - u * 4);
-    const ph = h * (0.4 + seeded(seed, i) * 0.45) * (1 - press * 0.4) + Math.sin(wobble + i) * u;
-    for (let row = 0; row < ph; row += u) {
-      const tw = u * 3 + (row / Math.max(1, ph)) * u * 4;
-      fillPx(ctx, px0 - tw / 2, sy + h * 0.45 - row, tw, u, i % 3 === 1 ? PASTEL.lilac : mat.fill);
-    }
-    fillPx(ctx, px0 - u, sy + h * 0.45 - ph, u * 2, u, PASTEL.white);
-  }
-  for (let i = 0; i < 8; i++) {
-    if (Math.sin(time * 3 + i) > 0) {
-      drawBubbleRing(
-        ctx,
-        cx + (seeded(seed, i + 20) - 0.5) * w * 0.8,
-        sy + seeded(seed, i + 25) * h * 0.5,
-        u * 2,
-        u,
-        rgba(mat.particle, 0.5),
-      );
-    }
-  }
-  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
-  drawDebris(a, 6, PASTEL.white);
-  drawAmbientSpecks(a, 8, mat.particle);
+  drawFoamMass(a, 'bath');
 }
 
 /** Teclado — fileira de teclas cinza pastel */

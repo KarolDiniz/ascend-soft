@@ -52,6 +52,10 @@ export function getVariantScale(variant: PlatformVariant): { wMul: number; hMul:
     keyboard_pad: { wMul: 0.92, hMul: 0.85 },
     bubbleWrap_sheet: { wMul: 1.08, hMul: 0.82 },
     bubbleWrap_pack: { wMul: 0.98, hMul: 1.05 },
+    plasticBottle_lay: { wMul: 1.15, hMul: 0.85 },
+    plasticBottle_up: { wMul: 0.9, hMul: 1.4 },
+    ceramic_plate: { wMul: 1.08, hMul: 0.72 },
+    ceramic_bowl: { wMul: 1.02, hMul: 1.05 },
   };
   return map[variant] ?? { wMul: 1, hMul: 1 };
 }
@@ -129,16 +133,29 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
       break;
     }
     case 'citrus_wedge': {
+      const wx = x + u * 2;
       for (let row = 0; row < h; row += u) {
-        const ww = w * (0.25 + (row / h) * 0.55);
-        fillPx(ctx, x + u * 2, sy + row, ww, u, mat.fill);
+        const t = row / Math.max(u, h);
+        const ww = w * (0.22 + t * 0.52);
+        fillPx(ctx, wx, sy + row, ww, u, mat.fill);
+        fillPx(ctx, wx, sy + row, u * 2, u, '#D97842');
+        fillPx(ctx, wx + u * 2, sy + row, u, u, rgba(PASTEL.white, 0.75));
       }
-      fillPx(ctx, x + u * 2, sy, u, h, PASTEL.white);
+      for (let i = 1; i < 4; i++) {
+        const topX = wx + (i / 4) * w * 0.48;
+        for (let r = 0; r < Math.floor(h * 0.8 / u); r++) {
+          const t = r / Math.max(1, Math.floor(h * 0.8 / u));
+          fillPx(ctx, topX + (wx + w * 0.18 - topX) * t * t, sy + r * u, u, u, rgba(PASTEL.white, 0.3));
+        }
+      }
+      fillPx(ctx, wx, sy, u, h, rgba(PASTEL.white, 0.55));
       break;
     }
     case 'citrus_half': {
-      fillPx(ctx, cx - w * 0.45, sy - u * 2, w * 0.9, u * 3, mat.fill);
-      fillPx(ctx, cx - u * 3, sy - u, u * 6, u, rgba(PASTEL.white, 0.55));
+      fillPx(ctx, cx - w * 0.46, sy - u * 2, w * 0.92, u * 2, '#D97842');
+      fillPx(ctx, cx - w * 0.42, sy - u, w * 0.84, u, rgba(PASTEL.white, 0.65));
+      fillPx(ctx, cx - w * 0.38, sy - u * 3, w * 0.76, u, mat.fill);
+      fillPx(ctx, cx + w * 0.34, sy - u * 2, u * 2, u, '#78B868');
       break;
     }
     case 'honey_drip': {
@@ -236,6 +253,33 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
       fillPx(ctx, x - u, sy, u * 2, h, rgba(mat.stroke, 0.45));
       fillPx(ctx, x + w - u, sy, u * 2, h, rgba(mat.stroke, 0.45));
       fillPx(ctx, x, sy - u, w, u, rgba(PASTEL.white, 0.45));
+      break;
+    }
+    case 'plasticBottle_lay': {
+      const ly = sy + h * 0.35;
+      fillPx(ctx, x + u * 2, ly, w - u * 4, h * 0.38, rgba(mat.fill, 0.88));
+      fillPx(ctx, x + w - u * 5, ly + u, u * 3, u * 2, rgba(mat.fill, 0.92));
+      fillPx(ctx, x + w - u * 3, ly - u, u * 2, u * 2, '#6AB0D8');
+      fillPx(ctx, x + u * 4, ly + u * 2, w * 0.38, h * 0.22, rgba(mat.particle, 0.55));
+      break;
+    }
+    case 'plasticBottle_up': {
+      fillPx(ctx, cx - u * 0.5, sy - u * 7, u, u * 3, rgba(PASTEL.white, 0.35));
+      fillPx(ctx, cx + w * 0.22, sy + h * 0.4, u, u * 2, rgba(PASTEL.sky, 0.4));
+      break;
+    }
+    case 'ceramic_plate': {
+      fillPx(ctx, cx - w * 0.5, sy - u * 0.5, w, u * 1.5, mat.fill);
+      fillPx(ctx, cx - w * 0.44, sy, w * 0.88, u, rgba(mat.particle, 0.6));
+      for (let i = 0; i < 4; i++) {
+        fillPx(ctx, cx - w * 0.28 + i * w * 0.18, sy + u, u, u, rgba(PASTEL.caramelDeep, 0.35));
+      }
+      break;
+    }
+    case 'ceramic_bowl': {
+      fillPx(ctx, cx - w * 0.22, sy + h * 0.35, w * 0.44, h * 0.35, rgba(mat.fill, 0.55));
+      fillPx(ctx, cx - w * 0.16, sy + h * 0.38, w * 0.32, u * 2, rgba(PASTEL.white, 0.18));
+      fillPx(ctx, cx - u * 2, sy + h * 0.55, u * 4, u, rgba(mat.stroke, 0.4));
       break;
     }
     default:
