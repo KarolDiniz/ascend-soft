@@ -561,6 +561,28 @@ export class AudioBus {
     });
   }
 
+  /** Miu-miu curto na tela inicial ao seguir o cursor */
+  playTitleFollowChirp(): void {
+    if (!this.voiceEnabled) return;
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const f0 = 500 + Math.random() * 200;
+      const f1 = f0 * (0.8 + Math.random() * 0.22);
+      const vol = 0.028 + Math.random() * 0.018;
+      this.creatureVocal(ctx, sfx, t, 0.045 + Math.random() * 0.07, f0, f1, vol, {
+        blip: true,
+        murmur: true,
+        shimmer: Math.random() > 0.45,
+      });
+      if (Math.random() > 0.5) {
+        this.creatureVocal(ctx, sfx, t + 0.055, 0.04 + Math.random() * 0.05, f0 * 0.94, f1 * 0.9, vol * 0.78, {
+          blip: true,
+          murmur: true,
+        });
+      }
+    });
+  }
+
   playCollect(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;

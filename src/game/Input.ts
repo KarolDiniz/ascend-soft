@@ -3,6 +3,10 @@ export class Input {
   right = false;
   jumpPressed = false;
   jumpHeld = false;
+  /** Posição do ponteiro na viewport (tela inicial). */
+  pointerX = 0;
+  pointerY = 0;
+  pointerKnown = false;
   private jumpBuffer = 0;
 
   private keys = new Set<string>();
@@ -70,6 +74,18 @@ export class Input {
       this.jumpHeld = false;
       this.left = false;
       this.right = false;
+      this.pointerKnown = false;
+    });
+
+    const onPointer = (e: PointerEvent) => {
+      this.pointerX = e.clientX;
+      this.pointerY = e.clientY;
+      this.pointerKnown = true;
+    };
+    window.addEventListener('pointermove', onPointer);
+    window.addEventListener('pointerdown', onPointer);
+    window.addEventListener('pointerleave', () => {
+      this.pointerKnown = false;
     });
   }
 

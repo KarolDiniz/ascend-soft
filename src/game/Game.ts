@@ -38,6 +38,16 @@ interface Floater {
   color: string;
 }
 
+interface TitleBabble {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  text: string;
+  life: number;
+  maxLife: number;
+}
+
 export class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -92,6 +102,12 @@ export class Game {
   private lightMode = this.userSettings.lightMode;
   private lastMarimbaBar = -1;
   private kittenWalkAcc = 0;
+  private titleChatterCd = 0;
+  private titleMouthT = 0;
+  private titleFollowSpeed = 0;
+  private titleBabbles: TitleBabble[] = [];
+  private titleBabbleCd = 0;
+  private titleBabbleStep = 0;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -112,6 +128,11 @@ export class Game {
     this.resize();
     this.applyPerfSettings();
     window.addEventListener('resize', () => this.resize());
+    window.addEventListener('pointerdown', () => {
+      if (this.state !== 'title' || !this.hud.isTitleVisible()) return;
+      void this.audio.unlock();
+      this.audio.setVolume(this.userSettings.volume / 100);
+    });
   }
 
   isLightMode(): boolean {
@@ -196,6 +217,13 @@ export class Game {
   initTitle(): void {
     this.resetRun();
     this.state = 'title';
+    this.titleChatterCd = 0;
+    this.titleMouthT = 0;
+    this.titleFollowSpeed = 0;
+    this.titleBabbles.length = 0;
+    this.titleBabbleCd = 0;
+    this.titleBabbleStep = 0;
+    this.player.mouthOpen = false;
     this.hud.showTitle(this.best);
     this.onCatalogRefresh?.();
   }
@@ -384,6 +412,7 @@ export class Game {
     if (this.state === 'title') {
       this.camera.follow(42 + Math.sin(this.time * 0.28) * 10, this.H * 0.14);
       this.camera.update(dt);
+      this.updateTitlePlayer(dt);
       this.collectibles.syncPlatforms(this.spawner.platforms);
       for (const p of this.spawner.platforms) {
         const wave = this.userSettings.reduceMotion
@@ -1102,6 +1131,123 @@ export class Game {
     return snapPt(s.x, s.y);
   };
 
+  private screenToWorld(sx: number, sy: number): { x: number; y: number } {
+    return {
+      x: sx - this.W / 2 + this.camera.x,
+      y: this.camera.y + this.H / 2 - sy,
+    };
+  }
+
+  private updateTitlePlayer(dt: number): void {
+    const p = this.player;
+    const reduce = this.userSettings.reduceMotion;
+    const followStrength = reduce ? 5.5 : 9.5;
+    const follow = 1 - Math.exp(-followStrength * dt);
+
+    const idleX = Math.sin(this.time * 0.48) * 22;
+    const idleY = 28 + Math.sin(this.time * 1.05) * 7;
+
+    let targetX = idleX;
+    let targetY = idleY;
+
+    if (this.input.pointerKnown) {
+      const world = this.screenToWorld(this.input.pointerX, this.input.pointerY);
+      const marginX = p.w * 0.45;
+      const marginY = p.h * 0.45;
+      const minX = -this.W / 2 + marginX;
+      const maxX = this.W / 2 - marginX;
+      const minY = this.camera.y - this.H / 2 + marginY;
+      const maxY = this.camera.y + this.H / 2 - marginY;
+      targetX = Math.max(minX, Math.min(maxX, world.x));
+      targetY = Math.max(minY, Math.min(maxY, world.y));
+    }
+
+    const bob =
+      this.input.pointerKnown && !reduce ? Math.sin(this.time * 8.5) * 2.2 * dt * 6 : 0;
+    this.titleFollowSpeed = p.updateTitleFollow(dt, targetX, targetY, follow, bob);
+
+    const moving = this.titleFollowSpeed > 12 && this.input.pointerKnown;
+    if (moving) {
+      p.mouthOpen = true;
+      this.titleMouthT = 0.22;
+      this.titleBabbleCd -= dt;
+      if (this.titleBabbleCd <= 0) {
+        this.spawnTitleBabble();
+        this.titleBabbleCd = 0.2 + Math.random() * 0.16;
+      }
+    } else {
+      this.titleBabbleCd = Math.max(0, this.titleBabbleCd - dt * 0.35);
+    }
+
+    if (moving && !reduce && this.audio.isReady && !this.audio.isMuted && this.audio.isVoiceEnabled) {
+      this.titleChatterCd -= dt;
+      if (this.titleChatterCd <= 0) {
+        this.audio.playTitleFollowChirp();
+        this.titleChatterCd = 0.32 + Math.random() * 0.42;
+        p.mouthOpen = true;
+        this.titleMouthT = 0.1 + Math.random() * 0.06;
+      }
+    } else {
+      this.titleChatterCd = Math.max(0, this.titleChatterCd - dt * 0.5);
+    }
+
+    if (this.titleMouthT > 0) {
+      this.titleMouthT -= dt;
+      if (this.titleMouthT <= 0) p.mouthOpen = false;
+    }
+
+    this.updateTitleBabbles(dt);
+  }
+
+  private spawnTitleBabble(): void {
+    const mouth = this.player.getMouthWorld();
+    const phrases = ['bla', 'bla bla', 'bla bla bla'] as const;
+    const text = phrases[this.titleBabbleStep % phrases.length]!;
+    this.titleBabbleStep++;
+    const facing = this.player.facing;
+    this.titleBabbles.push({
+      x: mouth.x + facing * 8 + (Math.random() - 0.5) * 6,
+      y: mouth.y + 2,
+      vx: facing * (24 + Math.random() * 16),
+      vy: 18 + Math.random() * 12,
+      text,
+      life: 1.05,
+      maxLife: 1.05,
+    });
+  }
+
+  private updateTitleBabbles(dt: number): void {
+    for (let i = this.titleBabbles.length - 1; i >= 0; i--) {
+      const b = this.titleBabbles[i]!;
+      b.life -= dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.vy += 8 * dt;
+      if (b.life <= 0) this.titleBabbles.splice(i, 1);
+    }
+  }
+
+  private drawTitleBabbles(ctx: CanvasRenderingContext2D): void {
+    if (this.titleBabbles.length === 0) return;
+    enablePixelMode(ctx);
+    ctx.font = "8px 'Press Start 2P', monospace";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const b of this.titleBabbles) {
+      const raw = this.toScreen(b.x, b.y);
+      const s = snapPt(raw.x, raw.y);
+      const t = 1 - b.life / b.maxLife;
+      const alpha = Math.min(1, b.life / b.maxLife) * Math.min(1, t * 5);
+      const wobble = Math.sin(t * 14 + b.x * 0.1) * 1.5;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#3F464F';
+      ctx.fillText(b.text, s.x + wobble, s.y - 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private draw(): void {
     const ctx = this.ctx;
     enablePixelMode(ctx);
@@ -1130,7 +1276,7 @@ export class Game {
     };
 
     const p = this.perfProfile();
-    if (p.useSoftPass) {
+    if (p.useSoftPass && this.state !== 'title') {
       this.softScenery.paint(ctx, this.W, this.H, paintScenery);
     } else {
       paintScenery(ctx);
@@ -1146,11 +1292,8 @@ export class Game {
     this.shards.draw(ctx, this.toScreen);
     this.ambient.drawNear(ctx, this.toScreen);
 
-    if (this.state === 'title') {
-      this.player.x = Math.sin(this.time * 0.48) * 22;
-      this.player.y = 28 + Math.sin(this.time * 1.05) * 7;
-    }
-    this.player.draw(ctx, this.toScreen);
+    const onTitle = this.state === 'title';
+    if (!onTitle) this.player.draw(ctx, this.toScreen);
 
     this.background.drawBiomeOverlays(ctx, this.W, this.H, this.atmosphere);
 
@@ -1168,8 +1311,13 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
-    if (!this.userSettings.reduceMotion) {
+    if (!this.userSettings.reduceMotion && !onTitle) {
       this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);
+    }
+
+    if (onTitle) {
+      this.player.draw(ctx, this.toScreen);
+      this.drawTitleBabbles(ctx);
     }
 
     if (this.debug) this.drawDebug(ctx);

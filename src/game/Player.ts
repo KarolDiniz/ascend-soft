@@ -40,6 +40,10 @@ export class Player {
   private animT = 0;
   private landFace: 'none' | 'bliss' | 'ooh' | 'pop' | 'sticky' = 'none';
   private landFaceT = 0;
+  /** Boca aberta — murmúrio na tela inicial */
+  mouthOpen = false;
+  /** Olhar lateral suave (tela inicial) */
+  lookOffset = 0;
   groundedPlatform: Platform | null = null;
 
   readonly gravity = PHYS.gravity;
@@ -78,6 +82,8 @@ export class Player {
     this.animT = 0;
     this.landFace = 'none';
     this.landFaceT = 0;
+    this.mouthOpen = false;
+    this.lookOffset = 0;
     this.jumpBoost = 1;
   }
 
@@ -149,6 +155,62 @@ export class Player {
     }
 
     return jumped;
+  }
+
+  /** Animação na tela inicial — segue o cursor com squash e olhar */
+  updateTitleFollow(
+    dt: number,
+    targetX: number,
+    targetY: number,
+    follow: number,
+    bob: number,
+  ): number {
+    const prevX = this.x;
+    const prevY = this.y;
+    this.x += (targetX - this.x) * follow;
+    this.y += (targetY - this.y) * follow + bob;
+    this.animT += dt;
+    this.blinkT -= dt;
+    if (this.blinkT < -2.2) this.blinkT = 0.12 + Math.random() * 0.08;
+
+    const dx = this.x - prevX;
+    const dy = this.y - prevY;
+    const speed = Math.hypot(dx, dy) / Math.max(0.001, dt);
+    if (Math.abs(dx) > 0.4) this.facing = dx > 0 ? 1 : -1;
+    this.lookOffset = Math.max(-2.5, Math.min(2.5, (targetX - this.x) * 0.12));
+
+    const speedT = Math.min(1, Math.pow(speed / 340, 1.1));
+    let targetSquash = 1;
+    let targetStretch = 1;
+
+    if (speedT > 0.03) {
+      const ax = Math.abs(dx) / (Math.abs(dx) + Math.abs(dy) + 0.001);
+      const ay = 1 - ax;
+      if (ax >= ay) {
+        targetSquash = 1 + speedT * (0.28 + ax * 0.72);
+        targetStretch = 1 - speedT * (0.22 + ax * 0.58);
+      } else {
+        targetSquash = 1 - speedT * (0.16 + ay * 0.42);
+        targetStretch = 1 + speedT * (0.32 + ay * 0.78);
+      }
+    } else {
+      const hop = Math.min(0.1, speed / 1200);
+      targetSquash = 1 + hop;
+      targetStretch = 1 - hop * 0.5;
+    }
+
+    const deformRate = 12 + speedT * 28;
+    this.squash += (targetSquash - this.squash) * Math.min(1, deformRate * dt);
+    this.stretch += (targetStretch - this.stretch) * Math.min(1, deformRate * dt);
+    return speed;
+  }
+
+  /** Posição da boca em coordenadas do mundo (balões na tela inicial) */
+  getMouthWorld(): { x: number; y: number } {
+    return {
+      x: this.x + this.facing * 6,
+      y: this.y - this.h * 0.1,
+    };
   }
 
   landOn(platform: Platform, _sinkHint = 0): void {
@@ -246,6 +308,9 @@ export class Player {
       blinking: this.blinkT > 0,
       animT: this.animT,
       showSparkle: this.onGround,
+      mouthOpen: this.mouthOpen,
+      excited: this.mouthOpen,
+      look: this.lookOffset,
       landBliss: this.landFace === 'bliss',
       landOoh: this.landFace === 'ooh',
       landPop: this.landFace === 'pop',
