@@ -108,6 +108,7 @@ export class Game {
   private titleBabbleCd = 0;
   private titleBabbleStep = 0;
   private titleMurmurActive = false;
+  private titleOverlayOpen = false;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -150,8 +151,19 @@ export class Game {
     this.player.nudgeHappy();
     this.player.mouthOpen = true;
     window.setTimeout(() => {
-      if (this.state === 'title') this.player.mouthOpen = false;
+      if (this.state === 'title' && !this.titleMurmurActive) this.player.mouthOpen = false;
     }, 220);
+  }
+
+  /** Modal da tela inicial — silencia o blob atrás enquanto estiver aberto */
+  setTitleOverlayOpen(open: boolean): void {
+    this.titleOverlayOpen = open;
+    if (!open || this.state !== 'title') return;
+    this.audio.stopSoftMurmur();
+    this.titleMurmurActive = false;
+    this.player.mouthOpen = false;
+    this.titleBabbles.length = 0;
+    this.titleBabbleCd = 0;
   }
 
   isLightMode(): boolean {
@@ -241,6 +253,7 @@ export class Game {
     this.titleBabbleCd = 0;
     this.titleBabbleStep = 0;
     this.titleMurmurActive = false;
+    this.titleOverlayOpen = false;
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
     this.hud.showTitle(this.best);
@@ -1187,7 +1200,9 @@ export class Game {
       this.input.pointerKnown && !reduce ? Math.sin(this.time * 8.5) * 2.2 * dt * 6 : 0;
     this.titleFollowSpeed = p.updateTitleFollow(dt, targetX, targetY, follow, bob);
 
-    const moving = this.titleFollowSpeed > 12 && this.input.pointerKnown;
+    const moving =
+      !this.titleOverlayOpen && this.titleFollowSpeed > 12 && this.input.pointerKnown;
+
     if (moving) {
       this.titleBabbleCd -= dt;
       if (this.titleBabbleCd <= 0) {
@@ -1207,7 +1222,7 @@ export class Game {
     const canVoice =
       this.audio.isReady && !this.audio.isMuted && this.audio.isVoiceEnabled;
 
-    if (!moving || !canVoice) {
+    if (this.titleOverlayOpen || !moving || !canVoice) {
       if (this.titleMurmurActive) {
         this.audio.stopSoftMurmur();
         this.titleMurmurActive = false;

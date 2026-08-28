@@ -19,7 +19,7 @@ export class TitleCatalog {
   private badgeEl: HTMLElement;
   private open = false;
 
-  constructor() {
+  constructor(private onOverlayChange?: (open: boolean) => void) {
     this.root = document.getElementById('title-catalog')!;
     this.btnOpen = document.getElementById('btn-catalog') as HTMLButtonElement;
     this.btnClose = document.getElementById('btn-catalog-close') as HTMLButtonElement;
@@ -103,6 +103,7 @@ export class TitleCatalog {
     this.root.setAttribute('aria-hidden', 'false');
     this.btnOpen.classList.add('is-open');
     this.btnOpen.setAttribute('aria-expanded', 'true');
+    this.onOverlayChange?.(true);
     this.btnClose.focus();
   }
 
@@ -113,6 +114,7 @@ export class TitleCatalog {
     this.root.setAttribute('aria-hidden', 'true');
     this.btnOpen.classList.remove('is-open');
     this.btnOpen.setAttribute('aria-expanded', 'false');
+    this.onOverlayChange?.(false);
     this.btnOpen.focus();
   }
 }

@@ -198,6 +198,7 @@ export class TitleCharacter {
     this.root.setAttribute('aria-hidden', 'false');
     this.btnOpen.classList.add('is-open');
     this.btnOpen.setAttribute('aria-expanded', 'true');
+    this.game.setTitleOverlayOpen(true);
     this.preview.start(this.appearance);
     this.btnClose.focus();
   }
@@ -210,6 +211,7 @@ export class TitleCharacter {
     this.root.setAttribute('aria-hidden', 'true');
     this.btnOpen.classList.remove('is-open');
     this.btnOpen.setAttribute('aria-expanded', 'false');
+    this.game.setTitleOverlayOpen(false);
     this.btnOpen.focus();
   }
 }

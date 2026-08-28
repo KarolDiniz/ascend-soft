@@ -506,7 +506,7 @@ body {
   position: absolute;
   inset: 0;
   border: none;
-  background: rgba(40, 48, 58, 0.28);
+  background: rgba(40, 48, 58, 0.14);
   cursor: pointer;
 }
 
@@ -712,7 +712,7 @@ body {
   inset: 0;
   border: none;
   padding: 0;
-  background: rgba(232, 210, 196, 0.48);
+  background: rgba(232, 210, 196, 0.2);
   cursor: pointer;
   animation: overlay-in 0.2s steps(4) both;
 }
@@ -980,7 +980,7 @@ body {
   inset: 0;
   border: none;
   padding: 0;
-  background: rgba(232, 210, 196, 0.42);
+  background: rgba(232, 210, 196, 0.2);
   cursor: pointer;
   animation: overlay-in 0.2s steps(4) both;
 }

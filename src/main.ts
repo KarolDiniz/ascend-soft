@@ -13,7 +13,7 @@ const audio = new AudioBus();
 const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
-const titleCatalog = new TitleCatalog();
+const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const leaveGuard = new LeaveGuard(audio);
 game.onCatalogRefresh = () => titleCatalog.refresh();
