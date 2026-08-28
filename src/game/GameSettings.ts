@@ -86,7 +86,6 @@ export interface PerfProfile {
   forceSceneryPerf: boolean;
   skipBiomeSprites: boolean;
   maxSceneryDraw: number;
-  simplifyLandAudio: boolean;
   birdAmbience: boolean;
 }
 
@@ -104,7 +103,6 @@ export function getPerfProfile(lightMode: boolean): PerfProfile {
       forceSceneryPerf: false,
       skipBiomeSprites: false,
       maxSceneryDraw: 68,
-      simplifyLandAudio: false,
       birdAmbience: true,
     };
   }
@@ -120,7 +118,6 @@ export function getPerfProfile(lightMode: boolean): PerfProfile {
     forceSceneryPerf: true,
     skipBiomeSprites: true,
     maxSceneryDraw: 44,
-    simplifyLandAudio: true,
     birdAmbience: false,
   };
 }

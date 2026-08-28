@@ -42,8 +42,6 @@ export class AudioBus {
   /** Canto de pássaros na fase grama */
   private birdChirpAcc = 0;
   private birdChirpCooldown = 0;
-  /** Pouso simplificado no modo leve */
-  private lightLandAudio = false;
   private readonly landSamples = new LandSampleBank();
 
   get isMuted(): boolean {
@@ -106,10 +104,6 @@ export class AudioBus {
   setVolume(v: number): void {
     this.volume = clamp(v, 0, 1);
     this.applyGains();
-  }
-
-  setLightLandAudio(simple: boolean): void {
-    this.lightLandAudio = simple;
   }
 
   setVoiceEnabled(enabled: boolean): void {
@@ -326,11 +320,6 @@ export class AudioBus {
       land.connect(landBus);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
-      if (this.lightLandAudio) {
-        this.landFallbackThud(ctx, land, pitch, imp);
-        if (perfect) this.perfectChime(ctx, land, pitch, streak);
-        return;
-      }
       const handlers: Record<MaterialId, () => void> = {
         jelly: () => this.landWithSample(ctx, land, 'jelly', pitch, imp, () => this.jellyPloop(ctx, land, pitch, imp)),
         butter: () => this.landWithSample(ctx, land, 'butter', pitch, imp, () => this.butterThup(ctx, land, pitch, imp)),

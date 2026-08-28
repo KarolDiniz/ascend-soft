@@ -210,7 +210,6 @@ export class Game {
       maxDraw: p.maxSceneryDraw,
       forceLow: p.forceSceneryPerf,
     });
-    this.audio.setLightLandAudio(p.simplifyLandAudio);
     if (p.forceSceneryPerf) this.scenery.setPerfMode(true);
     else if (!this.lightMode) this.scenery.setPerfMode(false);
     this.applyMobileScales();
