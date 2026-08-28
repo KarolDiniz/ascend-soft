@@ -47,8 +47,8 @@ const immortal = (
 
 export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
   jelly: immortal('elastic', 1, true),
-  /** queijo — bounce leve */
-  mochi: immortal('elastic', 1.06),
+  /** queijo — bounce leve, flutua devagar */
+  mochi: immortal('elastic', 1.06, true),
   marshmallow: immortal('elastic', 1.12, true),
   sponge: immortal('elastic', 1, true),
   butterSlime: immortal('elastic', 1, true),
@@ -231,7 +231,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     canMove: false,
   },
   blossom: immortal('elastic', 1.04, true),
-  marimba: immortal('elastic', 1.02),
+  marimba: immortal('elastic', 1.02, true),
   crystal: {
     behavior: 'shatter',
     lifetime: Infinity,

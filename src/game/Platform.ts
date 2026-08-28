@@ -114,6 +114,7 @@ export class Platform {
     moving?: boolean;
     fading?: boolean;
     moveAmp?: number;
+    moveSpeed?: number;
     seed?: number;
   }) {
     this.x = opts.x;
@@ -139,7 +140,9 @@ export class Platform {
     this.fadeLife = REACH.fadeVisibleMin + 0.8;
     this.baseX = opts.x;
     this.moveAmp = opts.moveAmp ?? 12;
-    this.moveSpeed = 0.4 + Math.random() * 0.25;
+    this.moveSpeed =
+      opts.moveSpeed ??
+      REACH.moveSpeedMin + Math.random() * (REACH.moveSpeedMax - REACH.moveSpeedMin);
     this.movePhase = Math.random() * Math.PI * 2;
   }
 

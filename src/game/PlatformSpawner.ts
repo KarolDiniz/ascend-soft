@@ -72,7 +72,7 @@ export class PlatformSpawner {
     this.lastWasFading = false;
     this.lastDir = 1;
 
-    const starters: { x: number; y: number; w: number; material: MaterialId; seed: number; moving?: boolean; moveAmp?: number }[] = [
+    const starters: { x: number; y: number; w: number; material: MaterialId; seed: number; moving?: boolean; moveAmp?: number; moveSpeed?: number }[] = [
       { x: 0, y: 0, w: 72, material: starterMaterial, seed: 101 },
       {
         x: -42,
@@ -81,9 +81,19 @@ export class PlatformSpawner {
         material: starterMaterial,
         seed: 202,
         moving: getBehaviorDef(starterMaterial).canMove,
-        moveAmp: 11,
+        moveAmp: 14,
+        moveSpeed: REACH.moveSpeedMin + 0.15,
       },
-      { x: 36, y: 112, w: 58, material: starterMaterial, seed: 303 },
+      {
+        x: 36,
+        y: 112,
+        w: 58,
+        material: starterMaterial,
+        seed: 303,
+        moving: getBehaviorDef(starterMaterial).canMove,
+        moveAmp: 16,
+        moveSpeed: REACH.moveSpeedMin + 0.35,
+      },
     ];
     for (const s of starters) {
       this.platforms.push(
@@ -95,6 +105,7 @@ export class PlatformSpawner {
           seed: s.seed,
           moving: s.moving,
           moveAmp: s.moveAmp,
+          moveSpeed: s.moveSpeed,
         }),
       );
     }
@@ -207,16 +218,18 @@ export class PlatformSpawner {
     const behavior = getBehaviorDef(material);
     let moving =
       behavior.canMove &&
-      height > 160 &&
-      difficulty > 0.2 &&
-      this.rand() < 0.18 + difficulty * 0.14;
-    let moveAmp = 12 + this.rand() * 10;
+      height > 70 &&
+      difficulty > 0.08 &&
+      this.rand() < 0.34 + difficulty * 0.26;
+    let moveAmp = 14 + this.rand() * 12;
+    let moveSpeed = REACH.moveSpeedMin + this.rand() * (REACH.moveSpeedMax - REACH.moveSpeedMin);
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
+      moveSpeed += difficulty * 0.22;
       const worstDx = Math.abs(x - last.x) + moveAmp;
       if (worstDx > finalMaxX * 0.95) {
         moveAmp = Math.max(0, finalMaxX * 0.9 - Math.abs(x - last.x));
-        if (moveAmp < 8) moving = false;
+        if (moveAmp < 9) moving = false;
       }
     }
 
@@ -242,6 +255,7 @@ export class PlatformSpawner {
         moving,
         fading,
         moveAmp: moving ? moveAmp : 0,
+        moveSpeed: moving ? moveSpeed : undefined,
         seed: height * 31.7 + this.platforms.length * 997 + material.charCodeAt(0),
       }),
     );

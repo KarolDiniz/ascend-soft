@@ -34,6 +34,10 @@ export const REACH = {
   minCenterGapX: 50,
   /** Extra edge clearance (world units) between AABB boxes when projecting on X */
   minEdgeClearance: 22,
-  moveAmpMax: 18,
+  /** Amplitude máxima da oscilação horizontal (centros) */
+  moveAmpMax: 24,
+  /** Velocidade angular sin(time * speed) — maior = mais rápido */
+  moveSpeedMin: 1.05,
+  moveSpeedMax: 1.85,
   fadeVisibleMin: 2.6,
 };
