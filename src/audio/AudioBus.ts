@@ -1,6 +1,7 @@
 import type { MaterialId } from './materials';
 import type { LandIntensity } from '../game/GameSettings';
 import { getPhaseRun } from '../game/PhaseRunOrder';
+import { LandSampleBank } from './landSamples';
 
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
@@ -10,15 +11,15 @@ export class AudioBus {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private sfx: GainNode | null = null;
+  /** Bus exclusivo de impacto nas plataformas — mais alto que SFX, música e ambiente */
+  private land: GainNode | null = null;
   private ambient: GainNode | null = null;
   private music: GainNode | null = null;
-  private ambientGainBase = 0.42;
+  private ambientGainBase = 0.36;
   /** Volume relativo da música generativa (abaixo das plataformas) */
-  private readonly musicGain = 0.32;
-  /** Volume do SFX de salto — discreto para não competir com o pouso */
-  private readonly jumpPeakGain = 0.032;
-  /** Ganho da voz da criaturinha (banner, pulo, queda, respiração) */
-  private readonly creatureVolBoost = 1.75;
+  private readonly musicGain = 0.26;
+  /** Ganho da voz da criaturinha (banner, pulo, queda, respiração) — abaixo do pouso */
+  private readonly creatureVolBoost = 1.45;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
@@ -43,6 +44,7 @@ export class AudioBus {
   private birdChirpCooldown = 0;
   /** Pouso simplificado no modo leve */
   private lightLandAudio = false;
+  private readonly landSamples = new LandSampleBank();
 
   get isMuted(): boolean {
     return this.muted;
@@ -59,6 +61,7 @@ export class AudioBus {
   async unlock(): Promise<void> {
     if (this.started) {
       if (this.ctx?.state === 'suspended') await this.ctx.resume();
+      void this.landSamples.load(this.ctx!);
       return;
     }
     const Ctx =
@@ -67,9 +70,11 @@ export class AudioBus {
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
     this.sfx = this.ctx.createGain();
+    this.land = this.ctx.createGain();
     this.ambient = this.ctx.createGain();
     this.music = this.ctx.createGain();
     this.sfx.connect(this.master);
+    this.land.connect(this.master);
     this.ambient.connect(this.master);
     this.music.connect(this.ambient);
     this.master.connect(this.ctx.destination);
@@ -77,6 +82,7 @@ export class AudioBus {
     // Resume before starting sources — required on Chrome/Safari
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     this.started = true;
+    void this.landSamples.load(this.ctx);
     this.startAmbient();
   }
 
@@ -107,11 +113,12 @@ export class AudioBus {
   private landIntensityMul = 1;
 
   private applyGains(): void {
-    if (!this.master || !this.sfx || !this.ambient || !this.ctx) return;
+    if (!this.master || !this.sfx || !this.land || !this.ambient || !this.ctx) return;
     const now = this.ctx.currentTime;
     const m = this.muted ? 0 : this.volume;
     this.master.gain.setTargetAtTime(m, now, 0.05);
-    this.sfx.gain.setTargetAtTime(0.95, now, 0.05);
+    this.sfx.gain.setTargetAtTime(0.78, now, 0.05);
+    this.land.gain.setTargetAtTime(1.08, now, 0.05);
     this.ambient.gain.setTargetAtTime(this.ambientGainBase, now, 0.08);
   }
 
@@ -298,40 +305,13 @@ export class AudioBus {
     src.stop(t + 0.45);
   }
 
-  playJump(): void {
-    this.withCtx((ctx, sfx) => {
-      const t = ctx.currentTime;
-      if (this.voiceEnabled) {
-        this.creatureVocal(ctx, sfx, t, 0.075, 480, 1520, 0.058, { boing: true, chime: true, pop: true });
-        this.creatureVocal(ctx, sfx, t + 0.06, 0.045, 1040, 760, 0.032, { blip: true });
-      }
-
-      const noise = this.noiseBuffer(ctx, 0.12);
-      const src = ctx.createBufferSource();
-      src.buffer = noise;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(720, t);
-      filter.frequency.exponentialRampToValueAtTime(380, t + 0.1);
-      filter.Q.value = 0.55;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(this.jumpPeakGain * 0.55, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      src.connect(filter);
-      filter.connect(g);
-      g.connect(sfx);
-      src.start(t);
-      src.stop(t + 0.14);
-    });
-  }
-
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1): void {
-    this.withCtx((ctx, sfx) => {
-      this.duckAmbient(220, 0.1);
+    if (!this.land) return;
+    this.withCtx((ctx, _sfx) => {
+      this.duckAmbient(300, 0.07);
       const land = ctx.createGain();
       land.gain.value = this.landBusGain * this.landIntensityMul;
-      land.connect(sfx);
+      land.connect(this.land!);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
       if (this.lightLandAudio) {
@@ -342,33 +322,72 @@ export class AudioBus {
         return;
       }
       const handlers: Record<MaterialId, () => void> = {
-        jelly: () => this.jellyPloop(ctx, land, pitch, imp),
+        jelly: () => {
+          if (this.playLandSample(ctx, land, 'jelly', pitch, imp)) return;
+          this.jellyPloop(ctx, land, pitch, imp);
+        },
         butter: () => this.butterThup(ctx, land, pitch, imp),
         mochi: () => this.cheeseLand(ctx, land, pitch, imp),
         marshmallow: () => this.marshmallowPuff(ctx, land, pitch, imp),
-        chocolate: () => this.chocolateRipple(ctx, land, pitch, imp),
-        sponge: () => this.spongeSquish(ctx, land, pitch, imp),
+        chocolate: () => {
+          if (this.playLandSample(ctx, land, 'chocolate', pitch, imp)) return;
+          this.chocolateRipple(ctx, land, pitch, imp);
+        },
+        sponge: () => {
+          if (this.playLandSample(ctx, land, 'sponge', pitch, imp)) return;
+          this.spongeSquish(ctx, land, pitch, imp);
+        },
         citrus: () => this.citrusZest(ctx, land, pitch, imp),
         honeycomb: () => this.honeyDrip(ctx, land, pitch, imp),
-        glycerin: () => this.soapSquish(ctx, land, pitch, imp),
+        glycerin: () => {
+          if (this.playLandSample(ctx, land, 'glycerin', pitch, imp)) return;
+          this.soapSquish(ctx, land, pitch, imp);
+        },
         whipped: () => this.whippedFoam(ctx, land, pitch, imp),
         soapBubble: () => this.soapBubblePop(ctx, land, pitch, imp),
-        bathFoam: () => this.bathFoamFizz(ctx, land, pitch, imp),
+        bathFoam: () => {
+          if (this.playLandSample(ctx, land, 'bathFoam', pitch, imp)) return;
+          this.bathFoamFizz(ctx, land, pitch, imp);
+        },
         lavenderSoap: () => this.lavenderSquish(ctx, land, pitch, imp),
         creamSoap: () => this.creamSquish(ctx, land, pitch, imp),
-        keyboard: () => this.keyboardClick(ctx, land, pitch, imp),
-        bubbleWrap: () => this.bubbleWrapPop(ctx, land, pitch, imp),
+        keyboard: () => {
+          if (this.playLandSample(ctx, land, 'keyboard', pitch, imp)) return;
+          this.keyboardClick(ctx, land, pitch, imp);
+        },
+        bubbleWrap: () => {
+          if (this.playLandSample(ctx, land, 'bubbleWrap', pitch, imp)) return;
+          this.bubbleWrapPop(ctx, land, pitch, imp);
+        },
         kinetic: () => this.kineticSand(ctx, land, pitch, imp),
-        iceSoap: () => this.iceTing(ctx, land, pitch, imp),
-        clearSlime: () => this.slimeBlorp(ctx, land, pitch, imp),
-        butterSlime: () => this.butterSlimeFold(ctx, land, pitch, imp),
+        iceSoap: () => {
+          if (this.playLandSample(ctx, land, 'iceSoap', pitch, imp)) return;
+          this.iceTing(ctx, land, pitch, imp);
+        },
+        clearSlime: () => {
+          if (this.playLandSample(ctx, land, 'clearSlime', pitch, imp)) return;
+          this.slimeBlorp(ctx, land, pitch, imp);
+        },
+        butterSlime: () => {
+          if (this.playLandSample(ctx, land, 'butterSlime', pitch, imp)) return;
+          this.butterSlimeFold(ctx, land, pitch, imp);
+        },
         amoeba: () => this.jellyPloop(ctx, land, pitch, imp),
         moss: () => this.marshmallowPuff(ctx, land, pitch, imp),
-        grass: () => this.spongeSquish(ctx, land, pitch, imp),
+        grass: () => {
+          if (this.playLandSample(ctx, land, 'grass', pitch, imp)) return;
+          this.spongeSquish(ctx, land, pitch, imp);
+        },
         cotton: () => this.marshmallowPuff(ctx, land, pitch, imp),
-        cloud: () => this.whippedFoam(ctx, land, pitch, imp),
+        cloud: () => {
+          if (this.playLandSample(ctx, land, 'cloud', pitch, imp)) return;
+          this.whippedFoam(ctx, land, pitch, imp);
+        },
         paper: () => this.keyboardClick(ctx, land, pitch, imp),
-        plasticBottle: () => this.bubbleWrapPop(ctx, land, pitch, imp),
+        plasticBottle: () => {
+          if (this.playLandSample(ctx, land, 'plasticBottle', pitch, imp)) return;
+          this.bubbleWrapPop(ctx, land, pitch, imp);
+        },
         velvet: () => this.creamSquish(ctx, land, pitch, imp),
       };
       handlers[material]();
@@ -913,9 +932,9 @@ export class AudioBus {
   // —— Material one-shots ——
 
   /** Ganho extra nos SFX de pouso — plataformas dominam o mix */
-  private readonly landVolBoost = 3.6;
-  /** Bus dedicado só para pouso — acima de murmúrio, música e outros SFX */
-  private readonly landBusGain = 2.15;
+  private readonly landVolBoost = 4.6;
+  /** Bus por impacto — acima de murmúrio, música e outros SFX */
+  private readonly landBusGain = 2.95;
 
   private impactVol(base: number, impact: number): number {
     return base * this.landVolBoost * (0.72 + Math.min(1.3, impact) * 0.42);
@@ -1328,6 +1347,20 @@ export class AudioBus {
     this.noiseBurst(ctx, sfx, 0.15, 1100, v * 0.4, t + 0.02, 'bandpass');
     this.noiseBurst(ctx, sfx, 0.12, 380, v * 0.5, t + 0.04);
     this.tone(ctx, sfx, 'sine', 160 * pitch, 80 * pitch, 0.1, v * 0.3, t);
+  }
+
+  private playLandSample(
+    ctx: AudioContext,
+    bus: GainNode,
+    material: MaterialId,
+    pitch: number,
+    impact: number,
+  ): boolean {
+    const vol = this.impactVol(0.15, impact) * 1.4;
+    return this.landSamples.play(ctx, bus, material, {
+      pitch: pitch * (0.94 + Math.random() * 0.1),
+      volume: vol,
+    });
   }
 
   private iceTing(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

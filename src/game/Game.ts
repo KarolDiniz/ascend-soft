@@ -407,17 +407,14 @@ export class Game {
     const prevBottom = this.player.bottom;
     const wasGrounded = this.player.onGround;
     const jumped = this.player.update(dt, this.input);
-    if (jumped) {
-      this.audio.playJump();
-      if (prevPlat) {
-        const mat = MATERIALS[prevPlat.material];
-        this.particles.releasePuff(
-          this.player.x,
-          prevPlat.surfaceY,
-          mat.particle,
-          this.atmosphere.getAccent(),
-        );
-      }
+    if (jumped && prevPlat) {
+      const mat = MATERIALS[prevPlat.material];
+      this.particles.releasePuff(
+        this.player.x,
+        prevPlat.surfaceY,
+        mat.particle,
+        this.atmosphere.getAccent(),
+      );
     }
 
     const wall = this.worldHalfW + 20;
