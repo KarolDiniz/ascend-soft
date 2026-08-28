@@ -16,44 +16,46 @@ function landFiles(...names: string[]): readonly string[] {
 }
 
 /**
- * Um slot de sample por material — arquivo em public/assets/audio/land/{nome}.mp3.
- * Materiais sem MP3 ainda usam fallback procedural em AudioBus.playLand().
+ * Sample de pouso por material — arquivos em public/assets/audio/land/.
+ * No disco hoje: bathFoam, bubbleWrap, bubbleWrap-poof, chocolate, cloud, glycerin,
+ * grass, handSoap, iceSoap, jelly, jelly-kick, keyboard, plasticBottle, slime, sponge.
+ * Materiais sem MP3 dedicado usam proxy sonoro; se o fetch falhar, AudioBus usa síntese procedural.
  */
 const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   jelly: landFiles('jelly.mp3', 'jelly-kick.mp3'),
-  butter: landFiles('butter.mp3'),
-  mochi: landFiles('mochi.mp3'),
-  marshmallow: landFiles('marshmallow.mp3'),
+  butter: landFiles('jelly.mp3'),
+  mochi: landFiles('sponge.mp3'),
+  marshmallow: landFiles('cloud.mp3'),
   chocolate: landFiles('chocolate.mp3'),
   sponge: landFiles('sponge.mp3'),
   glycerin: landFiles('handSoap.mp3', 'glycerin.mp3'),
-  citrus: landFiles('citrus.mp3'),
+  citrus: landFiles('sponge.mp3'),
   clearSlime: landFiles('slime.mp3'),
-  whipped: landFiles('whipped.mp3'),
-  honeycomb: landFiles('honeycomb.mp3'),
-  soapBubble: landFiles('soapBubble.mp3'),
+  whipped: landFiles('bathFoam.mp3'),
+  honeycomb: landFiles('chocolate.mp3'),
+  soapBubble: landFiles('bubbleWrap-poof.mp3', 'bathFoam.mp3'),
   bathFoam: landFiles('bathFoam.mp3'),
-  lavenderSoap: landFiles('lavenderSoap.mp3'),
-  creamSoap: landFiles('creamSoap.mp3'),
+  lavenderSoap: landFiles('handSoap.mp3', 'glycerin.mp3'),
+  creamSoap: landFiles('handSoap.mp3', 'glycerin.mp3'),
   keyboard: landFiles('keyboard.mp3'),
   bubbleWrap: landFiles('bubbleWrap.mp3', 'bubbleWrap-poof.mp3'),
-  kinetic: landFiles('kinetic.mp3'),
+  kinetic: landFiles('sponge.mp3'),
   iceSoap: landFiles('iceSoap.mp3'),
-  butterSlime: landFiles('butterSlime.mp3'),
-  amoeba: landFiles('amoeba.mp3'),
-  moss: landFiles('moss.mp3'),
+  butterSlime: landFiles('slime.mp3'),
+  amoeba: landFiles('slime.mp3'),
+  moss: landFiles('grass.mp3'),
   grass: landFiles('grass.mp3'),
-  cotton: landFiles('cotton.mp3'),
+  cotton: landFiles('cloud.mp3'),
   cloud: landFiles('cloud.mp3'),
-  paper: landFiles('paper.mp3'),
+  paper: landFiles('keyboard.mp3'),
   plasticBottle: landFiles('plasticBottle.mp3'),
-  velvet: landFiles('velvet.mp3'),
+  velvet: landFiles('cloud.mp3'),
   blossom: landFiles('grass.mp3'),
-  marimba: landFiles('keyboard.mp3'),
+  marimba: landFiles(), // tom procedural — nota muda por barra
   crystal: landFiles('iceSoap.mp3'),
   ceramic: landFiles('glycerin.mp3'),
-  clay: landFiles('kinetic.mp3'),
-  silk: landFiles('velvet.mp3'),
+  clay: landFiles('sponge.mp3'),
+  silk: landFiles('cloud.mp3'),
 };
 
 export class LandSampleBank {
