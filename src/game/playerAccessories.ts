@@ -79,6 +79,9 @@ export function drawPlayerAccessory(
     case 'marioCap':
       if (under) drawMarioCap(ctx, bw, bh, animT, facing);
       break;
+    case 'pirateHat':
+      if (under) drawPirateHat(ctx, bw, bh, animT, facing);
+      break;
     default:
       break;
   }
@@ -183,19 +186,7 @@ function drawSunhat(
   bh: number,
   animT: number,
 ): void {
-  const sway = Math.sin(animT * 2.2) * u * 0.2;
-  const cy = -bh * 0.38;
-  const brim = PASTEL.butter;
-  const brimLo = '#E8C878';
-  const band = PASTEL.coral;
-  const crown = '#F5E8C8';
-
-  fillPx(ctx, -bw * 0.52 + sway, cy + u, bw * 1.04, u * 1.5, brimLo);
-  fillPx(ctx, -bw * 0.48 + sway, cy + u * 0.5, bw * 0.96, u * 2, brim);
-  fillPx(ctx, -bw * 0.22 + sway, cy - u, bw * 0.44, u * 2.5, crown);
-  fillPx(ctx, -bw * 0.18 + sway, cy - u * 2.5, bw * 0.36, u * 2, crown);
-  fillPx(ctx, -bw * 0.2 + sway, cy + u * 0.2, bw * 0.4, u, band);
-  fillPx(ctx, -bw * 0.12 + sway, cy - u * 3, u * 2, u, rgba(PASTEL.white, 0.55));
+  drawSpriteHat(ctx, bw, bh, animT, STRAW_HAT_SPRITE, STRAW_HAT_COLORS, 1, 0.38, 2.4);
 }
 
 function drawSprout(
@@ -515,6 +506,105 @@ const MARIO_CAP_COLORS: Record<string, string> = {
   W: '#FFFFFF',
 };
 
+/** Chapéu de palha — sprite 26×13 extraído da referência */
+const STRAW_HAT_SPRITE = [
+  '........OOOOOOOOOO........',
+  '.......OSySySyyYYO........',
+  '.......OSSSSSyyYYSO.......',
+  '....OOOORSSSyyyYYYO.......',
+  '.OOOSRRORRSyyYYyySO.......',
+  'OSSSRRRORRSSSyyyySOOOOS...',
+  'OSSSRRRORRSSSyyySROyyyOO..',
+  'OSSSSRRRRRRSSSyRRRyyyyySO.',
+  'OSSSSSSRRRRRRRRRRyyyyyyyyO',
+  '.OSSSSSSSSRRSSyyyyyyyySyyO',
+  '..OOOSSSSSSyyyyyyyyyyyyySO',
+  '...SSOOSySSSSSSyyyyySyyOS.',
+  '......SOOOSSSSSSSSSOSOOO..',
+] as const;
+
+const STRAW_HAT_COLORS: Record<string, string> = {
+  O: '#141010',
+  Y: '#FAD040',
+  y: '#F8C33A',
+  L: '#FCE868',
+  S: '#E88B36',
+  s: '#C87830',
+  R: '#C84838',
+  D: '#882828',
+  B: '#985820',
+};
+
+/** Chapéu pirata — sprite 26×24 extraído da referência */
+const PIRATE_HAT_SPRITE = [
+  '.......HYH.....YYY........',
+  '....HHYHLLH...YYBYYYH.....',
+  '....HYLLBLHYYYYBBBBYY.....',
+  '....HYLLLBBYYYBBBBBYY.....',
+  'HYH..HHLBLBBBBBBBBBBH..YYH',
+  'HYHH.HLLBBBBWKWBBBBB..HYYH',
+  'LBYHHBBBBBBWwWBBBBBBHHYBBB',
+  'LBBBBBBBBBBLBLBBBBBBBBBBBB',
+  'HHHHHHHHHHHHHHHHHHHHHHHHHH',
+  'HHHHHDDDDDDDDDDDDDDDHHHHHH',
+  'HBBDDRRRRRRRRRRRRRRRDDDBBL',
+  '.BDRRRRRRRRRRRRRRRRRRDDDB.',
+  '..DDR...............RDDD..',
+  '..RD......................',
+  '..RR......................',
+  '..RD......................',
+  '..HD......................',
+  '..RDH.....................',
+  '..RRD.....................',
+  '..RRD.....................',
+  '..HRR.....................',
+  '...R......................',
+  '...R......................',
+  '...R......................',
+] as const;
+
+const PIRATE_HAT_COLORS: Record<string, string> = {
+  B: '#3C3C3C',
+  H: '#585858',
+  L: '#808080',
+  Y: '#FFAB18',
+  O: '#FFC363',
+  W: '#FFFFFF',
+  w: '#C8C8C8',
+  K: '#3A3A3A',
+  R: '#E05E5E',
+  D: '#8E1617',
+  r: '#BB2D2C',
+};
+
+function spriteHatPixel(bw: number): number {
+  const refBw = px(ACCESSORY_REF_BW);
+  const inGame = bw < refBw * 0.9;
+  return u * (bw / refBw) * (inGame ? 1.45 : 1);
+}
+
+function drawSpriteHat(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+  sprite: readonly string[],
+  colors: Record<string, string>,
+  facing: number,
+  anchorYFactor = 0.38,
+  yOffsetMul = 1.2,
+): void {
+  const bob = Math.sin(animT * 2.6) * u * 0.08;
+  const pixel = spriteHatPixel(bw);
+  const cols = sprite[0]!.length;
+  const rows = sprite.length;
+  const anchorY = -bh * anchorYFactor + bob;
+  const ox = -px((cols * pixel) / 2);
+  const oy = anchorY - rows * pixel + pixel * yOffsetMul;
+
+  drawPixelAccessorySprite(ctx, sprite, ox, oy, colors, facing, pixel);
+}
+
 function drawPixelAccessorySprite(
   ctx: CanvasRenderingContext2D,
   sprite: readonly string[],
@@ -550,9 +640,7 @@ function drawMarioCap(
   facing = 1,
 ): void {
   const bob = Math.sin(animT * 2.6) * u * 0.08;
-  const refBw = px(ACCESSORY_REF_BW);
-  const inGame = bw < refBw * 0.9;
-  const pixel = u * (bw / refBw) * (inGame ? 1.45 : 1);
+  const pixel = spriteHatPixel(bw);
   const cols = MARIO_CAP_SPRITE[0]!.length;
   const rows = MARIO_CAP_SPRITE.length;
   const anchorY = -bh * 0.36 + bob;
@@ -561,6 +649,17 @@ function drawMarioCap(
   const oy = anchorY - rows * pixel;
 
   drawPixelAccessorySprite(ctx, MARIO_CAP_SPRITE, ox, oy, MARIO_CAP_COLORS, facing, pixel);
+}
+
+/** Chapéu pirata — bicorne com caveira, borda dourada e bandana */
+function drawPirateHat(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+  facing = 1,
+): void {
+  drawSpriteHat(ctx, bw, bh, animT, PIRATE_HAT_SPRITE, PIRATE_HAT_COLORS, facing, 0.42, 3.4);
 }
 
 /** Mini ícone para botões do editor */
@@ -579,15 +678,19 @@ export function drawAccessoryIcon(
     id === 'headphones' ||
     id === 'alienAntenna' ||
     id === 'santaHat' ||
+    id === 'sunhat' ||
     id === 'catEars' ||
     id === 'mickeyEars' ||
-    id === 'marioCap';
+    id === 'marioCap' ||
+    id === 'pirateHat';
   const boost =
     id === 'alienAntenna' ||
     id === 'santaHat' ||
+    id === 'sunhat' ||
     id === 'catEars' ||
     id === 'mickeyEars' ||
-    id === 'marioCap'
+    id === 'marioCap' ||
+    id === 'pirateHat'
       ? 1.12
       : bigIcon
         ? 1
