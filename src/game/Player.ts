@@ -153,6 +153,9 @@ export class Player {
   }
 
   stickToSurface(platform: Platform): void {
+    if (platform.moving) {
+      this.x += platform.moveDeltaX;
+    }
     this.y = platform.surfaceY + this.h / 2;
     this.vy = 0;
     this.onGround = true;

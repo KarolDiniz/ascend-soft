@@ -49,6 +49,8 @@ export class Platform {
   moveAmp: number;
   moveSpeed: number;
   movePhase: number;
+  /** Deslocamento horizontal neste frame — para o jogador acompanhar */
+  moveDeltaX = 0;
   fading: boolean;
   fadeArmed = false;
   fadeLife: number;
@@ -285,6 +287,7 @@ export class Platform {
   }
 
   update(dt: number, time: number): void {
+    const prevX = this.x;
     this.wobble += dt * (this.behavior === 'elastic' || this.behavior === 'sticky' ? 3.4 : 2.4);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 8);
 
@@ -323,6 +326,7 @@ export class Platform {
     if (this.moving && this.solid) {
       this.x = this.baseX + Math.sin(time * this.moveSpeed + this.movePhase) * this.moveAmp;
     }
+    this.moveDeltaX = this.moving && this.solid ? this.x - prevX : 0;
 
     if (this.releaseTimer > 0) this.releaseTimer = Math.max(0, this.releaseTimer - dt);
 

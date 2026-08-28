@@ -26,11 +26,14 @@ export interface BehaviorDef {
   mortal: boolean;
   /** Extra jump multiplier when leaving this platform (sticky gum) */
   jumpBoost: number;
+  /** Pode oscilar horizontalmente ao spawnar */
+  canMove: boolean;
 }
 
 const immortal = (
   behavior: PlatformBehavior,
   jumpBoost = 1,
+  canMove = false,
 ): BehaviorDef => ({
   behavior,
   lifetime: Infinity,
@@ -39,22 +42,23 @@ const immortal = (
   floater: '',
   mortal: false,
   jumpBoost,
+  canMove,
 });
 
 export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
-  jelly: immortal('elastic'),
+  jelly: immortal('elastic', 1, true),
   /** queijo — bounce leve */
   mochi: immortal('elastic', 1.06),
-  marshmallow: immortal('elastic', 1.12),
-  sponge: immortal('elastic'),
-  butterSlime: immortal('elastic'),
+  marshmallow: immortal('elastic', 1.12, true),
+  sponge: immortal('elastic', 1, true),
+  butterSlime: immortal('elastic', 1, true),
   keyboard: immortal('elastic'),
   /** chiclete — gruda e ajuda a subir */
-  clearSlime: immortal('sticky', 1.32),
-  amoeba: immortal('elastic', 1.05),
-  moss: immortal('elastic'),
-  grass: immortal('elastic'),
-  cotton: immortal('elastic', 1.1),
+  clearSlime: immortal('sticky', 1.32, true),
+  amoeba: immortal('elastic', 1.05, true),
+  moss: immortal('elastic', 1, true),
+  grass: immortal('elastic', 1, true),
+  cotton: immortal('elastic', 1.1, true),
 
   butter: {
     behavior: 'melt',
@@ -64,6 +68,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'derreteu!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   chocolate: {
     behavior: 'melt',
@@ -73,6 +78,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'derreteu!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   honeycomb: {
     behavior: 'melt',
@@ -82,6 +88,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'escorreu!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   iceSoap: {
     behavior: 'shatter',
@@ -91,6 +98,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'quebra!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   glycerin: {
     behavior: 'shatter',
@@ -100,6 +108,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'quebra!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   lavenderSoap: {
     behavior: 'shatter',
@@ -109,6 +118,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'quebra!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   creamSoap: {
     behavior: 'shatter',
@@ -118,6 +128,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'quebra!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   plasticBottle: {
     behavior: 'shatter',
@@ -127,6 +138,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'esmagou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   kinetic: {
     behavior: 'crumble',
@@ -136,6 +148,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'desmanchou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   whipped: {
     behavior: 'foamPop',
@@ -145,6 +158,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'pop!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   soapBubble: {
     behavior: 'foamPop',
@@ -154,6 +168,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'estourou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   bathFoam: {
     behavior: 'foamPop',
@@ -163,6 +178,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'pop!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   bubbleWrap: {
     behavior: 'foamPop',
@@ -172,6 +188,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'pop!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   cloud: {
     behavior: 'foamPop',
@@ -181,6 +198,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'dispersou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: true,
   },
   paper: {
     behavior: 'crumble',
@@ -190,6 +208,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'amassou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   citrus: {
     behavior: 'squeeze',
@@ -199,6 +218,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'espremeu!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
   velvet: {
     behavior: 'squeeze',
@@ -208,6 +228,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     floater: 'achatou!',
     mortal: true,
     jumpBoost: 1,
+    canMove: false,
   },
 };
 

@@ -427,7 +427,19 @@ export class Game {
       this.player.vx *= -0.3;
     }
 
+    this.spawner.update(this.player.y, this.camera.y, this.H);
+    for (const p of this.spawner.platforms) p.update(dt, this.time);
+
     this.resolveCollisions(prevBottom);
+
+    if (this.player.groundedPlatform?.alive && this.player.groundedPlatform.solid) {
+      this.player.stickToSurface(this.player.groundedPlatform);
+    } else if (
+      this.player.groundedPlatform &&
+      (!this.player.groundedPlatform.solid || !this.player.groundedPlatform.alive)
+    ) {
+      this.player.grantVanishCoyote();
+    }
 
     // Walk-off / fall-off: release press on previous platform
     if (prevPlat && this.player.groundedPlatform !== prevPlat) {
@@ -474,22 +486,9 @@ export class Game {
       this.particles.emitPlatformIdle(dt, p.x, p.surfaceY, mat.particle, mat.particleStyle, p.material);
     }
 
-    this.spawner.update(this.player.y, this.camera.y, this.H);
-    for (const p of this.spawner.platforms) p.update(dt, this.time);
-
     // Behavior juice from platforms
     for (const p of this.spawner.platforms) {
       for (const ev of p.consumeEvents()) this.handlePlatformEvent(p, ev);
-    }
-
-    // After spring/melt update, glue feet only if still solid
-    if (this.player.groundedPlatform?.alive && this.player.groundedPlatform.solid) {
-      this.player.stickToSurface(this.player.groundedPlatform);
-    } else if (
-      this.player.groundedPlatform &&
-      (!this.player.groundedPlatform.solid || !this.player.groundedPlatform.alive)
-    ) {
-      this.player.grantVanishCoyote();
     }
 
     const plats = this.spawner.platforms;

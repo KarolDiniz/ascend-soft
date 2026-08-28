@@ -72,13 +72,31 @@ export class PlatformSpawner {
     this.lastWasFading = false;
     this.lastDir = 1;
 
-    const starters: { x: number; y: number; w: number; material: MaterialId; seed: number }[] = [
+    const starters: { x: number; y: number; w: number; material: MaterialId; seed: number; moving?: boolean; moveAmp?: number }[] = [
       { x: 0, y: 0, w: 72, material: starterMaterial, seed: 101 },
-      { x: -42, y: 56, w: 44, material: starterMaterial, seed: 202 },
+      {
+        x: -42,
+        y: 56,
+        w: 44,
+        material: starterMaterial,
+        seed: 202,
+        moving: getBehaviorDef(starterMaterial).canMove,
+        moveAmp: 11,
+      },
       { x: 36, y: 112, w: 58, material: starterMaterial, seed: 303 },
     ];
     for (const s of starters) {
-      this.platforms.push(new Platform(s));
+      this.platforms.push(
+        new Platform({
+          x: s.x,
+          y: s.y,
+          w: s.w,
+          material: s.material,
+          seed: s.seed,
+          moving: s.moving,
+          moveAmp: s.moveAmp,
+        }),
+      );
     }
     this.highestY = 112;
   }
@@ -186,9 +204,13 @@ export class PlatformSpawner {
       x = Math.max(-maxX, Math.min(maxX, x));
     }
 
+    const behavior = getBehaviorDef(material);
     let moving =
-      height > 380 && difficulty > 0.45 && this.rand() < 0.1 + difficulty * 0.06;
-    let moveAmp = 10 + this.rand() * 8;
+      behavior.canMove &&
+      height > 160 &&
+      difficulty > 0.2 &&
+      this.rand() < 0.18 + difficulty * 0.14;
+    let moveAmp = 12 + this.rand() * 10;
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
       const worstDx = Math.abs(x - last.x) + moveAmp;
@@ -199,7 +221,7 @@ export class PlatformSpawner {
     }
 
     let fading = false;
-    const mortal = getBehaviorDef(material).mortal;
+    const mortal = behavior.mortal;
     if (
       !mortal &&
       height > 650 &&
