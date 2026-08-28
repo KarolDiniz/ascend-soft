@@ -25,6 +25,7 @@ import {
   drawSilk,
   drawVelvet,
 } from './extraPlatforms';
+import { drawTwistedMarshmallowPlatform, MARSHMALLOW_TWIST } from './marshmallowVisual';
 import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
 import { drawSpongeFlies } from './spongeFlies';
 import { drawPlatformAmbientDecor } from './platformAmbientDecor';
@@ -139,7 +140,7 @@ export function renderPixelPlatform(
   const shadowA = personality ? 0.18 + Math.abs(personality.toneShift) * 0.08 : 0.14;
   if (roundOrb) {
     fillPx(ctx, cx - w * 0.2, sy + h - u * 0.5, w * 0.4, u, softShadow(matT, shadowA * 0.65));
-  } else {
+  } else if (hasShelfFrontFace(material)) {
     fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, softShadow(matT, shadowA));
   }
 
@@ -269,7 +270,7 @@ export function renderPixelPlatform(
   drawPersonalitySurfaceMark(args);
   if (!roundOrb && !foamMass) drawPersonalityTopProfile(args);
 
-  if (!roundOrb && !foamMass) drawShelfFrontFace(args);
+  if (hasShelfFrontFace(material)) drawShelfFrontFace(args);
   const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
   if (shouldDrawSoftSpill(material, behavior)) {
     drawSoftSpillDrips(args, behavior);
@@ -446,12 +447,24 @@ const ROUND_ORB_MATERIALS: ReadonlySet<MaterialId> = new Set(['soapBubble']);
 /** Espumas — aglomerado de células, sem base retangular nem gotejamentos */
 const FOAM_MASS_MATERIALS: ReadonlySet<MaterialId> = new Set(['whipped', 'bathFoam']);
 
+/** Silhueta orgânica — sem base retangular (drawShelfFrontFace) */
+const NO_SHELF_FACE_MATERIALS: ReadonlySet<MaterialId> = new Set([
+  'soapBubble',
+  'whipped',
+  'bathFoam',
+  'marshmallow',
+]);
+
 function isRoundOrbMaterial(material: MaterialId): boolean {
   return ROUND_ORB_MATERIALS.has(material);
 }
 
 function isFoamMassMaterial(material: MaterialId): boolean {
   return FOAM_MASS_MATERIALS.has(material);
+}
+
+function hasShelfFrontFace(material: MaterialId): boolean {
+  return !isRoundOrbMaterial(material) && !isFoamMassMaterial(material) && !NO_SHELF_FACE_MATERIALS.has(material);
 }
 
 /** Penduricalhos na base — só chiclete, tecidos e grama */
@@ -469,6 +482,7 @@ function shouldDrawPersonalityHangs(material: MaterialId): boolean {
 
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
   if (material === 'keyboard' || material === 'marimba') return false;
+  if (material === 'cloud') return false;
   if (isRoundOrbMaterial(material) || isFoamMassMaterial(material)) return false;
   if (BOTTOM_HANG_MATERIALS.has(material)) return true;
   return behavior === 'melt' || behavior === 'foamPop';
@@ -1452,35 +1466,29 @@ function drawDough(a: DrawArgs): void {
   drawAmbientSpecks(a, 6, mat.particle);
 }
 
-/** Marshmallow — cubo fofo com listras pastel */
+/** Marshmallow torcido — espiral rosa/creme fiel à referência */
 function drawMarshmallow(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, wobble, time } = a;
+  const { ctx, cx, sy, w, h, u, seed, time, wobble } = a;
   const x = cx - w / 2;
   const squash = (a.overlay?.pressAmount ?? 0) * u;
-  const bodyH = h - squash;
-  const stripeA = mat.particle;
-  const stripeB = mat.stroke;
-  const stripeH = u * 2;
 
-  for (let row = 0; row < bodyH; row += stripeH) {
-    const t = row / Math.max(1, bodyH);
-    const ww = w * (0.86 + Math.sin(t * Math.PI) * 0.14);
-    const color = Math.floor(row / stripeH) % 2 === 0 ? stripeA : stripeB;
-    fillPx(ctx, cx - ww / 2, sy + squash + row, ww, Math.min(stripeH, bodyH - row), color);
-  }
+  drawTwistedMarshmallowPlatform(ctx, x, sy, w, h, u, squash, seed);
 
-  fillPx(ctx, x + u, sy + squash, w - u * 2, bodyH, rgba(mat.fill, 0.12));
-  fillPx(ctx, x + u * 2, sy + squash, w - u * 4, u, rgba(PASTEL.white, 0.78));
-  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, rgba(stripeB, 0.55));
-
-  for (let i = 0; i < 5; i++) {
-    if (Math.sin(time * 2.5 + i + wobble) > 0.2) {
-      fillPx(ctx, cx + (i - 2) * u * 2, sy - u + Math.sin(time + i) * u * 0.5, u, u, PASTEL.white);
+  for (let i = 0; i < 4; i++) {
+    if (Math.sin(time * 2.5 + i + wobble) > 0.25) {
+      fillPx(
+        ctx,
+        cx + (i - 1.5) * u * 2.5,
+        sy - u + Math.sin(time + i) * u * 0.4,
+        u,
+        u,
+        rgba('#FFFFFF', 0.65),
+      );
     }
   }
   drawShimmerBand(a, 1);
   drawPressIndent(a);
-  drawAmbientSpecks(a, 5, mat.fill);
+  drawAmbientSpecks(a, 4, MARSHMALLOW_TWIST.pinkMid);
 }
 
 /** Esponja — amarela porosa + lado verde abrasivo */
@@ -1593,13 +1601,17 @@ function drawBathFoam(a: DrawArgs): void {
   drawFoamMass(a, 'bath');
 }
 
-/** Teclado — fileira de teclas cinza pastel */
+/** Teclado — base preta, teclas cinza */
 function drawKeyboard(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, mat, u, seed } = a;
   const x = cx - w / 2;
   const press = a.overlay?.pressAmount ?? 0;
-  fillPx(ctx, x, sy + u, w, h - u, mat.stroke);
-  fillPx(ctx, x + u, sy + u * 2, w - u * 2, h - u * 3, rgba(mat.fill, 0.85));
+  const chassis = mat.stroke;
+  const key = mat.fill;
+  const keyShadow = mat.particle;
+
+  fillPx(ctx, x, sy + u, w, h - u, chassis);
+  fillPx(ctx, x + u, sy + u * 2, w - u * 2, h - u * 3, rgba(chassis, 0.92));
   const cols = 6;
   const rows = 2;
   const kw = (w - u * 4) / cols;
@@ -1609,12 +1621,11 @@ function drawKeyboard(a: DrawArgs): void {
       const kx = x + u * 2 + c * kw;
       const ky = sy + u * 2 + r * kh;
       const sunk = press > 0.35 && seeded(seed, r * 10 + c) > 0.7 ? u : 0;
-      fillPx(ctx, kx + u * 0.3, ky + sunk, kw - u * 0.6, kh - u * 0.6, mat.fill);
-      fillPx(ctx, kx + u * 0.5, ky + u * 0.3 + sunk, kw - u, u, rgba(PASTEL.white, 0.45));
-      fillPx(ctx, kx + u, ky + kh - u * 1.2 + sunk, kw - u * 2, u, rgba(mat.stroke, 0.4));
-      // Letter speck
+      fillPx(ctx, kx + u * 0.3, ky + sunk, kw - u * 0.6, kh - u * 0.6, key);
+      fillPx(ctx, kx + u * 0.5, ky + u * 0.3 + sunk, kw - u, u, rgba('#B4BAC2', 0.42));
+      fillPx(ctx, kx + u, ky + kh - u * 1.2 + sunk, kw - u * 2, u, rgba(keyShadow, 0.65));
       if (seeded(seed, c + r * 7) > 0.4) {
-        fillPx(ctx, kx + kw * 0.35, ky + kh * 0.35 + sunk, u, u, rgba(mat.stroke, 0.5));
+        fillPx(ctx, kx + kw * 0.35, ky + kh * 0.35 + sunk, u, u, rgba(keyShadow, 0.75));
       }
     }
   }

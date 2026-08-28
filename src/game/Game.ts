@@ -905,7 +905,7 @@ export class Game {
           );
           break;
         case 'cloud':
-          this.particles.foamPopStorm(this.player.x, platformTop, mat.particle);
+          this.particles.cloudWaterFall(this.player.x, p.bottom, p.w, impact);
           break;
         case 'paper':
           this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'crumb', false);

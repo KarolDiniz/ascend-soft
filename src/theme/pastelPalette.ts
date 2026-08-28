@@ -200,10 +200,10 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     rgba(PASTEL.cream, 0.3),
   ),
   keyboard: matColors(
-    '#D8DEE8',
-    rgba(PASTEL.mist, 0.4),
-    '#F0F4F8',
-    rgba(PASTEL.mist, 0.28),
+    '#949AA2',
+    '#18181C',
+    '#787E86',
+    rgba('#3A3A42', 0.32),
   ),
   bubbleWrap: matColors(
     '#E0F0F0',

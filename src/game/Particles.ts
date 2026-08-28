@@ -1237,6 +1237,36 @@ export class Particles {
     }
   }
 
+  /** Chuva da nuvem — água cai da base ao pisar */
+  cloudWaterFall(x: number, y: number, platformW: number, impact = 1): void {
+    const spread = Math.max(38, platformW * 0.98);
+    const water = '#72C4F0';
+    const waterDeep = '#4898D8';
+    const mist = '#B8E4FC';
+    const imp = 0.8 + Math.min(1.3, impact) * 0.55;
+    const dropCount = this.cap(20 + Math.floor(imp * 16));
+
+    for (let i = 0; i < dropCount; i++) {
+      const t = (Math.random() - 0.5) * spread;
+      this.spawn(x + t, y, i % 3 === 0 ? waterDeep : water, 'drip', {
+        vx: (Math.random() - 0.5) * 22,
+        vy: -60 - Math.random() * 100 * imp,
+        life: 0.7 + Math.random() * 0.65,
+        size: 3 + Math.random() * 3.5,
+      });
+    }
+
+    for (let i = 0; i < this.cap(10 + Math.floor(imp * 6)); i++) {
+      const t = (Math.random() - 0.5) * spread * 0.75;
+      this.spawn(x + t, y + 2, mist, 'juice', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: -45 - Math.random() * 80 * imp,
+        life: 0.55 + Math.random() * 0.45,
+        size: 2.5 + Math.random() * 2.5,
+      });
+    }
+  }
+
   /** Esguicho forte de água ao espremer esponja — cai para baixo */
   waterSquirt(x: number, y: number, platformW: number, impact = 1): void {
     const spread = Math.max(40, platformW * 1.05);

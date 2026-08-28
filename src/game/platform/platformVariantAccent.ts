@@ -1,6 +1,7 @@
 import type { MaterialDef } from '../../audio/materials';
 import { PASTEL, rgba } from '../../theme/pastelPalette';
 import { fillPx } from '../../theme/pixel';
+import { MARSHMALLOW_TWIST } from './marshmallowVisual';
 import type { PlatformVariant } from './types';
 
 function seeded(seed: number, i: number): number {
@@ -216,8 +217,15 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
       break;
     }
     case 'marshmallow_puff': {
-      for (let i = 0; i < 4; i++) {
-        fillPx(ctx, cx + (i - 1.5) * u * 3, sy - u * (2 + (i % 2)), u * 3, u * 2, PASTEL.white);
+      for (let i = 0; i < 3; i++) {
+        fillPx(
+          ctx,
+          cx + (i - 1) * u * 3,
+          sy - u * (1 + (i % 2)),
+          u * 2,
+          u,
+          i % 2 === 0 ? MARSHMALLOW_TWIST.pinkHi : MARSHMALLOW_TWIST.creamHi,
+        );
       }
       break;
     }
@@ -245,8 +253,8 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
       break;
     }
     case 'keyboard_pad': {
-      fillPx(ctx, x + u, sy, w - u * 2, h, rgba(mat.fill, 0.9));
-      fillPx(ctx, x + u * 2, sy + u * 2, w - u * 4, h - u * 4, mat.stroke);
+      fillPx(ctx, x + u, sy, w - u * 2, h, mat.stroke);
+      fillPx(ctx, x + u * 2, sy + u * 2, w - u * 4, h - u * 4, mat.fill);
       break;
     }
     case 'bubbleWrap_pack': {

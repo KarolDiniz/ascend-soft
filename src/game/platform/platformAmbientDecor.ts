@@ -46,8 +46,8 @@ function decorKeyboardKeys(a: ExtraDrawArgs): void {
   if (Math.sin(time * 1.8 + seed) < 0.25) return;
   const kx = cx + (seeded(seed, 70) - 0.5) * w * 0.55;
   const ky = sy - u * (3 + Math.sin(time * 2.5) * 2);
-  fillPx(ctx, kx - u, ky, u * 2, u * 1.5, rgba(mat.fill, 0.9));
-  fillPx(ctx, kx - u * 0.75, ky + u * 0.15, u * 1.5, u * 0.85, PASTEL.white);
+  fillPx(ctx, kx - u, ky, u * 2, u * 1.5, rgba(mat.stroke, 0.95));
+  fillPx(ctx, kx - u * 0.75, ky + u * 0.15, u * 1.5, u * 0.85, mat.fill);
   fillPx(ctx, kx - u * 0.5, ky - u * 0.5, u, u, rgba(mat.stroke, 0.5));
 }
 

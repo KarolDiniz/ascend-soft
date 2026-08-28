@@ -14,14 +14,12 @@ const JELLY_FILLS = [
   '#A8D8F0', // azul céu
   '#F0C8A8', // pêssego
 ] as const;
-/** Listras pastel nos marshmallows — rosa/azul e variações */
+/** Marshmallow torcido — rosa + creme (referência) */
 const MARSHMALLOW_STRIPE_PRESETS = [
-  { fill: '#FFF8F5', stripeA: '#F0B8D0', stripeB: '#A8D0F0' },
-  { fill: '#FFFAF8', stripeA: '#E8A0C0', stripeB: '#90C0E8' },
-  { fill: '#FFF5FA', stripeA: '#F5C8E0', stripeB: '#B0D8F8' },
-  { fill: '#F8F5FF', stripeA: '#D8B8E8', stripeB: '#98C8F0' },
-  { fill: '#FFF8F2', stripeA: '#F0C0B8', stripeB: '#A8E0D8' },
-  { fill: '#FFFAF5', stripeA: '#F8D0A8', stripeB: '#C0D8F0' },
+  { fill: '#F5EDE5', stripeA: '#F05090', stripeB: '#FAF4EE' },
+  { fill: '#FAF4EE', stripeA: '#FF78A8', stripeB: '#F5EDE5' },
+  { fill: '#FFF8F2', stripeA: '#D03878', stripeB: '#F5EDE5' },
+  { fill: '#F5EDE5', stripeA: '#F05090', stripeB: '#FFFFFF' },
 ] as const;
 
 function jellyPaletteIndex(seed: number): number {
