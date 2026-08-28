@@ -915,7 +915,30 @@ function drawSoapBar(a: DrawArgs): void {
 
   drawShimmerBand(a, 0);
   drawPressIndent(a);
+  drawSoapCenterStream(a);
   drawSurfaceGrain(a, 4, mat.particle, 0.22);
+}
+
+/** Fio de sabão líquido saindo do centro da barra */
+function drawSoapCenterStream(a: DrawArgs): void {
+  const press = a.overlay?.pressAmount ?? 0;
+  if (press < 0.08) return;
+  const { ctx, cx, sy, h, u, mat, time, wobble } = a;
+  const pulse = 0.5 + Math.sin(time * 5.2 + wobble) * 0.5;
+  const streamLen = u * (4 + Math.floor((press + pulse * 0.45) * 10));
+  fillPx(ctx, cx - u / 2, sy + h, u, streamLen, mat.particle);
+  fillPx(ctx, cx - u, sy + h + streamLen - u, u * 2, u * 2, mat.fill);
+  fillPx(ctx, cx - u * 0.5, sy + h + streamLen, u, u, rgba(mat.particle, 0.8));
+  if (pulse > 0.45) {
+    fillPx(ctx, cx, sy + h + streamLen + u, u, u * 2, rgba(mat.particle, 0.7));
+    fillPx(ctx, cx - u / 2, sy + h + streamLen + u * 2, u, u, rgba(mat.particle, 0.55));
+    fillPx(ctx, cx - u * 0.5, sy + h + streamLen + u * 3, u, u, rgba(mat.particle, 0.4));
+  }
+  if (press > 0.2) {
+    const drip2 = u * (2 + Math.floor(press * 4 + pulse * 2));
+    fillPx(ctx, cx - u / 2, sy + h + streamLen + u, u, drip2, rgba(mat.particle, 0.65));
+    fillPx(ctx, cx - u, sy + h + streamLen + drip2, u * 2, u, rgba(mat.fill, 0.75));
+  }
 }
 
 /** Espuma — picos altos tipo chantilly */

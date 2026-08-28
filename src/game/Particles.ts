@@ -780,6 +780,18 @@ export class Particles {
         life: 0.5,
         size: 1.5 + Math.random() * 2,
       });
+    } else if (isSoapBarMaterial(materialId)) {
+      if (Math.random() < dt * 7 * rateBoost) {
+        this.soapLiquidJet(x, surfaceY, color, 0.35 + press * 0.55);
+      }
+      if (Math.random() < dt * 14 * rateBoost) {
+        this.spawn(x + (Math.random() - 0.5) * 10, surfaceY, accent, 'bubble', {
+          vx: (Math.random() - 0.5) * 12,
+          vy: 42 + Math.random() * 78,
+          life: 0.65 + Math.random() * 0.45,
+          size: 2 + Math.random() * 3.5,
+        });
+      }
     } else if (materialId === 'sponge' && Math.random() < dt * 4.5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, color, 'foam', {
         vx: (Math.random() - 0.5) * 16,
@@ -1160,11 +1172,35 @@ export class Particles {
     this.burst(x, y, '#ffffff', 10, 'bubble', false);
   }
 
+  /** Sabonete — jato central de líquido + bolhas para cima */
+  soapLiquidJet(x: number, y: number, color: string, impact = 1): void {
+    const imp = 0.75 + Math.min(1.35, impact);
+    const jets = this.cap(5 + Math.floor(imp * 5));
+    for (let i = 0; i < jets; i++) {
+      this.spawn(x + (Math.random() - 0.5) * 5, y + 1, color, 'drip', {
+        vx: (Math.random() - 0.5) * 10,
+        vy: 70 + Math.random() * 110 * imp,
+        life: 0.95 + Math.random() * 0.75,
+        size: 4.5 + Math.random() * 4.5,
+      });
+    }
+    for (let i = 0; i < this.cap(3 + Math.floor(imp * 3)); i++) {
+      this.spawn(x + (Math.random() - 0.5) * 4, y, color, 'drip', {
+        vx: (Math.random() - 0.5) * 8,
+        vy: 95 + Math.random() * 130 * imp,
+        life: 1.05 + Math.random() * 0.65,
+        size: 5 + Math.random() * 3.5,
+      });
+    }
+  }
+
   /** Sabonete — espuma + bolhas ao pisar */
   soapStepFoam(x: number, y: number, color: string, impact: number, width: number): void {
     const spread = width * 0.48;
     const foamN = this.cap(16 + Math.floor(impact * 14));
-    const bubbleN = this.cap(18 + Math.floor(impact * 16));
+    const bubbleN = this.cap(26 + Math.floor(impact * 22));
+
+    this.soapLiquidJet(x, y, color, impact);
 
     for (let i = 0; i < foamN; i++) {
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.85;
@@ -1185,19 +1221,23 @@ export class Particles {
       });
     }
     for (let i = 0; i < bubbleN; i++) {
-      this.spawn(x + (Math.random() - 0.5) * spread, y + Math.random() * 2, color, 'bubble', {
-        vx: (Math.random() - 0.5) * 36,
-        vy: 28 + Math.random() * 72,
-        life: 0.65 + Math.random() * 0.55,
-        size: 2.5 + Math.random() * 4.5,
+      const centerBias = i < Math.floor(bubbleN * 0.45);
+      const ox = centerBias ? (Math.random() - 0.5) * spread * 0.35 : (Math.random() - 0.5) * spread;
+      this.spawn(x + ox, y + Math.random() * 2, color, 'bubble', {
+        vx: (Math.random() - 0.5) * (centerBias ? 22 : 36),
+        vy: 48 + Math.random() * 95,
+        life: 0.75 + Math.random() * 0.65,
+        size: 2.5 + Math.random() * 5,
       });
     }
-    for (let i = 0; i < Math.floor(bubbleN * 0.55); i++) {
-      this.spawn(x + (Math.random() - 0.5) * spread * 0.9, y, '#ffffff', 'bubble', {
-        vx: (Math.random() - 0.5) * 28,
-        vy: 32 + Math.random() * 65,
-        life: 0.7 + Math.random() * 0.5,
-        size: 2 + Math.random() * 3.5,
+    for (let i = 0; i < Math.floor(bubbleN * 0.65); i++) {
+      const centerBias = i < Math.floor(bubbleN * 0.4);
+      const ox = centerBias ? (Math.random() - 0.5) * spread * 0.3 : (Math.random() - 0.5) * spread * 0.9;
+      this.spawn(x + ox, y, '#ffffff', 'bubble', {
+        vx: (Math.random() - 0.5) * (centerBias ? 18 : 28),
+        vy: 55 + Math.random() * 90,
+        life: 0.8 + Math.random() * 0.55,
+        size: 2 + Math.random() * 4,
       });
     }
     this.rings.push({

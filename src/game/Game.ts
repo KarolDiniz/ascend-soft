@@ -670,6 +670,7 @@ export class Game {
         case 'lavenderSoap':
         case 'creamSoap':
           this.particles.soapStepFoam(this.player.x, platformTop, mat.particle, impact, p.w);
+          this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 20 + Math.floor(impact * 14));
           break;
         case 'iceSoap':
         case 'whipped':
