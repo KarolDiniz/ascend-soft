@@ -9,7 +9,14 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  defaultBodyColors,
 } from './playerPixelArt';
+import {
+  getPlayerAppearance,
+  resolveBodyColors,
+  type PlayerAppearance,
+} from './playerAppearance';
+import { accessoryLayers, drawPlayerAccessory } from './playerAccessories';
 
 interface TrailPoint {
   x: number;
@@ -46,6 +53,21 @@ export class Player {
   lookOffset = 0;
   groundedPlatform: Platform | null = null;
 
+  /** Impulso de alegria — editor de personagem / feedback */
+  nudgeHappy(): void {
+    this.squash = 0.82;
+    this.stretch = 1.18;
+  }
+
+  setAppearance(app: PlayerAppearance): void {
+    const colors = resolveBodyColors(app);
+    this.trailColor = colors.trail;
+  }
+
+  getAppearance(): PlayerAppearance {
+    return getPlayerAppearance();
+  }
+
   readonly gravity = PHYS.gravity;
   readonly moveAccel = PHYS.moveAccel;
   readonly maxSpeed = PHYS.maxSpeed;
@@ -77,7 +99,7 @@ export class Player {
     this.stretch = 1;
     this.trail.length = 0;
     this.groundedPlatform = null;
-    this.trailColor = PLAYER_PASTEL.trail;
+    this.trailColor = resolveBodyColors(getPlayerAppearance()).trail;
     this.blinkT = 0;
     this.animT = 0;
     this.landFace = 'none';
@@ -312,9 +334,18 @@ export class Player {
     drawPlayerPixelShadow(ctx, bw, bh);
 
     // Body — stepped oval (cute pixel slime)
+    const colors = defaultBodyColors();
+    const accessory = getPlayerAppearance().accessory;
     drawPlayerPixelBody(ctx, bw, bh, this.animT, {
       boldOutline: titleBoost,
+      colors,
     });
+
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'underFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, this.facing);
+      }
+    }
 
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: this.facing,
@@ -330,6 +361,12 @@ export class Player {
       landPop: this.landFace === 'pop',
       landSticky: this.landFace === 'sticky',
     });
+
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'overFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'overFace', this.animT, this.facing);
+      }
+    }
 
     ctx.restore();
   }

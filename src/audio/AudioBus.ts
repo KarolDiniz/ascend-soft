@@ -603,6 +603,20 @@ export class AudioBus {
     });
   }
 
+  /** Tick suave ao customizar personagem — pop + campainha curta */
+  playCustomizeTick(variant = 0): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const pitch = 1 + variant * 0.08 + (Math.random() - 0.5) * 0.06;
+      const f0 = 420 * pitch;
+      const f1 = 680 * pitch;
+      this.tone(ctx, sfx, 'sine', f0, f1, 0.09, 0.055, t);
+      this.tone(ctx, sfx, 'triangle', f1 * 1.2, f1, 0.06, 0.028, t + 0.012);
+      this.softNoise(ctx, sfx, 0.04, 1800, 0.022, t + 0.008, 'bandpass', 1.1);
+      this.noiseBurst(ctx, sfx, 0.025, 520 * pitch, 0.032, t, 'bandpass');
+    });
+  }
+
   playRecord(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;

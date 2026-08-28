@@ -23,6 +23,7 @@ import type { FallSummary } from '../ui/fallCopy';
 import type { Hud } from '../ui/Hud';
 import type { PlatformEvent } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
+import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 
 const BEST_KEY = 'ascend-soft-best';
@@ -123,6 +124,8 @@ export class Game {
     } catch {
       /* ignore */
     }
+    this.applyUserSettings(this.userSettings);
+    this.applyPlayerAppearance(loadPlayerAppearance());
     this.input.bind(canvas);
     this.resize();
     this.applyPerfSettings();
@@ -134,6 +137,21 @@ export class Game {
         this.audio.setMuted(this.userSettings.muted);
       });
     });
+  }
+
+  applyPlayerAppearance(app: PlayerAppearance): void {
+    savePlayerAppearance(app);
+    this.player.setAppearance(app);
+  }
+
+  /** Squash feliz ao trocar cor/acessório no editor */
+  nudgeTitleCharacter(): void {
+    if (this.state !== 'title') return;
+    this.player.nudgeHappy();
+    this.player.mouthOpen = true;
+    window.setTimeout(() => {
+      if (this.state === 'title') this.player.mouthOpen = false;
+    }, 220);
   }
 
   isLightMode(): boolean {

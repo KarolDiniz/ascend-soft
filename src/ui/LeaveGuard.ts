@@ -3,10 +3,13 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  defaultBodyColors,
   getLeavePleaTearOrigins,
   PLAYER_DRAW_H,
   PLAYER_DRAW_W,
 } from '../game/playerPixelArt';
+import { getPlayerAppearance } from '../game/playerAppearance';
+import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -194,16 +197,29 @@ export class LeaveGuard {
     ctx.scale(squash, stretch);
 
     drawPlayerPixelShadow(ctx, bw, bh, 1 + Math.max(0, sob) * 0.05);
+    const colors = defaultBodyColors();
+    const accessory = getPlayerAppearance().accessory;
     drawPlayerPixelBody(ctx, bw, bh, t, {
       boldOutline: true,
       earWiggle: earDroop,
+      colors,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'underFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', t, 1);
+      }
+    }
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: 1,
       leavePlea: true,
       animT: t,
       titleBold: true,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'overFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'overFace', t, 1);
+      }
+    }
     ctx.restore();
 
     for (const tear of this.tears) {

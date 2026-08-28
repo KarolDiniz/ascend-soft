@@ -1,4 +1,6 @@
 import { PASTEL, PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
+import type { PlayerBodyColors } from './playerAppearance';
+import { resolveBodyColors, getPlayerAppearance } from './playerAppearance';
 import { PIXEL, fillPx, fillPixelCircle, px } from '../theme/pixel';
 
 export const PLAYER_DRAW_W = 30;
@@ -26,6 +28,12 @@ export interface PlayerBodyOptions {
   earWiggle?: number;
   /** Contorno mais forte (tela inicial) */
   boldOutline?: boolean;
+  /** Paleta do corpo — customização do jogador */
+  colors?: PlayerBodyColors;
+}
+
+export function defaultBodyColors(): PlayerBodyColors {
+  return resolveBodyColors(getPlayerAppearance());
 }
 
 export interface PlayerFaceOptions {
@@ -139,10 +147,10 @@ export function drawPlayerDefeatHeadBump(
   ctx.restore();
 }
 
-function bodyColorForRow(index: number, total: number): string {
-  if (index <= 1) return PLAYER_PASTEL.bodyTop;
-  if (index >= total - 2) return PLAYER_PASTEL.bodyBot;
-  return PLAYER_PASTEL.bodyMid;
+function bodyColorForRow(index: number, total: number, colors: PlayerBodyColors): string {
+  if (index <= 1) return colors.bodyTop;
+  if (index >= total - 2) return colors.bodyBot;
+  return colors.bodyMid;
 }
 
 function rowHeight(bh: number, index: number): number {
@@ -173,10 +181,11 @@ function drawSolidBlobBody(
   bw: number,
   bh: number,
   animT: number,
+  colors: PlayerBodyColors,
   earWiggle = 0,
   boldOutline = false,
 ): void {
-  const fill = PLAYER_PASTEL.bodySolid;
+  const fill = colors.bodySolid;
   const total = BODY_ROWS.length;
 
   for (let i = 0; i < total; i++) {
@@ -191,7 +200,7 @@ function drawSolidBlobBody(
   const earBounce = earWiggle * u;
   fillPx(ctx, -bw * 0.36, -bh * 0.38 - earBounce, u * 2, u * 2, fill);
   fillPx(ctx, bw * 0.28, -bh * 0.38 + earBounce * 0.6, u * 2, u * 2, fill);
-  fillPx(ctx, -bw * 0.34, -bh * 0.36 - earBounce, u, u, PLAYER_PASTEL.bodyHi);
+  fillPx(ctx, -bw * 0.34, -bh * 0.36 - earBounce, u, u, colors.bodyHi);
 
   fillPx(ctx, -bw * 0.16, -bh * 0.32, bw * 0.32, u * 2, PLAYER_PASTEL.bodyHi);
   if (Math.sin(animT * 4) > 0.6) {
@@ -210,35 +219,37 @@ export function drawPlayerPixelBody(
   opts: PlayerBodyOptions = {},
 ): void {
   if (opts.solid) {
-    drawSolidBlobBody(ctx, bw, bh, animT, opts.earWiggle ?? 0, opts.boldOutline);
+    const colors = opts.colors ?? defaultBodyColors();
+    drawSolidBlobBody(ctx, bw, bh, animT, colors, opts.earWiggle ?? 0, opts.boldOutline);
     return;
   }
 
+  const colors = opts.colors ?? defaultBodyColors();
   const total = BODY_ROWS.length;
 
   for (let i = 0; i < total; i++) {
     const [ww, yy] = BODY_ROWS[i]!;
     const rw = px(bw * ww);
     const ry = px(bh * yy);
-    fillPx(ctx, -rw / 2, ry, rw, rowHeight(bh, i), bodyColorForRow(i, total));
+    fillPx(ctx, -rw / 2, ry, rw, rowHeight(bh, i), bodyColorForRow(i, total, colors));
   }
 
-  fillPx(ctx, -bw * 0.44, -bh * 0.12, u, bh * 0.38, PLAYER_PASTEL.bodyShade);
-  fillPx(ctx, -bw * 0.4, bh * 0.18, u, u * 3, PLAYER_PASTEL.bodyShade);
+  fillPx(ctx, -bw * 0.44, -bh * 0.12, u, bh * 0.38, colors.bodyShade);
+  fillPx(ctx, -bw * 0.4, bh * 0.18, u, u * 3, colors.bodyShade);
 
-  fillPx(ctx, -bw * 0.18, -bh * 0.34, bw * 0.36, u * 2, PLAYER_PASTEL.bodyHi);
+  fillPx(ctx, -bw * 0.18, -bh * 0.34, bw * 0.36, u * 2, colors.bodyHi);
   fillPx(ctx, -bw * 0.1, -bh * 0.28, bw * 0.22, u, rgba(PASTEL.white, 0.45));
 
   if (Math.sin(animT * 3.5) > 0.55) {
     fillPx(ctx, bw * 0.14, -bh * 0.18, u, u, rgba(PASTEL.white, 0.55));
   }
 
-  fillPx(ctx, -bw * 0.36, -bh * 0.38, u * 2, u * 2, PLAYER_PASTEL.bodyTop);
-  fillPx(ctx, bw * 0.28, -bh * 0.38, u * 2, u * 2, PLAYER_PASTEL.bodyTop);
-  fillPx(ctx, -bw * 0.34, -bh * 0.36, u, u, PLAYER_PASTEL.bodyHi);
-  fillPx(ctx, bw * 0.3, -bh * 0.36, u, u, PLAYER_PASTEL.bodyHi);
+  fillPx(ctx, -bw * 0.36, -bh * 0.38, u * 2, u * 2, colors.bodyTop);
+  fillPx(ctx, bw * 0.28, -bh * 0.38, u * 2, u * 2, colors.bodyTop);
+  fillPx(ctx, -bw * 0.34, -bh * 0.36, u, u, colors.bodyHi);
+  fillPx(ctx, bw * 0.3, -bh * 0.36, u, u, colors.bodyHi);
 
-  fillPx(ctx, -bw * 0.32, bh * 0.3, bw * 0.64, u * 2, PLAYER_PASTEL.bodyBot);
+  fillPx(ctx, -bw * 0.32, bh * 0.3, bw * 0.64, u * 2, colors.bodyBot);
 
   drawBodyOutline(ctx, bw, bh, opts.boldOutline);
 }

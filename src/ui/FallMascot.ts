@@ -3,11 +3,14 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  defaultBodyColors,
   defeatHeadBumpScale,
   getDefeatEyeTearOrigins,
   PLAYER_DRAW_H,
   PLAYER_DRAW_W,
 } from '../game/playerPixelArt';
+import { getPlayerAppearance } from '../game/playerAppearance';
+import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -131,16 +134,29 @@ export class FallMascot {
     ctx.scale(squash, stretch);
 
     drawPlayerPixelShadow(ctx, bw, bh, 1 + Math.max(0, sob) * 0.06);
+    const colors = defaultBodyColors();
+    const accessory = getPlayerAppearance().accessory;
     drawPlayerPixelBody(ctx, bw, bh, this.animT, {
       solid: true,
       earWiggle: -Math.max(0, sob) * 0.9,
+      colors,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'underFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, 1);
+      }
+    }
     drawPlayerDefeatHeadBump(ctx, bw, bh, this.animT, this.bumpScale);
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: 1,
       animT: this.animT,
       defeatSad: true,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'overFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'overFace', this.animT, 1);
+      }
+    }
     ctx.restore();
   }
 }

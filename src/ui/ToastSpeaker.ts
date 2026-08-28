@@ -2,9 +2,12 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  defaultBodyColors,
   PLAYER_DRAW_H,
   PLAYER_DRAW_W,
 } from '../game/playerPixelArt';
+import { getPlayerAppearance } from '../game/playerAppearance';
+import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -150,10 +153,18 @@ export class ToastSpeaker {
     ctx.scale(pose.squash, pose.stretch);
 
     drawPlayerPixelShadow(ctx, bw, bh, pose.shadowScale);
+    const colors = defaultBodyColors();
+    const accessory = getPlayerAppearance().accessory;
     drawPlayerPixelBody(ctx, bw, bh, this.animT, {
       solid: true,
       earWiggle: pose.earWiggle,
+      colors,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'underFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, pose.facing);
+      }
+    }
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: pose.facing,
       look: pose.look,
@@ -163,6 +174,11 @@ export class ToastSpeaker {
       showSparkle: true,
       excited: this.active,
     });
+    for (const layer of accessoryLayers(accessory)) {
+      if (layer === 'overFace') {
+        drawPlayerAccessory(ctx, bw, bh, accessory, 'overFace', this.animT, pose.facing);
+      }
+    }
     ctx.restore();
   }
 }

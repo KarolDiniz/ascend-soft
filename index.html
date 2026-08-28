@@ -105,6 +105,24 @@
             </svg>
           </button>
 
+          <button
+            id="btn-character"
+            class="title-character-btn"
+            type="button"
+            aria-label="Vestir personagem"
+            aria-expanded="false"
+            aria-controls="title-character"
+          >
+            <svg class="character-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <rect x="4" y="2" width="8" height="2" fill="currentColor" />
+              <rect x="3" y="4" width="10" height="7" fill="currentColor" />
+              <rect x="5" y="6" width="2" height="2" fill="#f7f1ea" />
+              <rect x="9" y="6" width="2" height="2" fill="#f7f1ea" />
+              <rect x="6" y="9" width="4" height="1" fill="#f7f1ea" />
+              <rect x="5" y="11" width="6" height="2" fill="currentColor" />
+            </svg>
+          </button>
+
           <div id="title-settings" class="title-settings hidden" aria-hidden="true">
             <button
               id="title-settings-backdrop"
@@ -211,6 +229,47 @@
               </div>
               <p id="catalog-progress" class="catalog-progress">0 / 24 encontrados</p>
               <div id="catalog-grid" class="catalog-grid" role="list"></div>
+            </div>
+          </div>
+
+          <div id="title-character" class="title-character hidden" aria-hidden="true">
+            <button
+              id="title-character-backdrop"
+              class="title-character-backdrop"
+              type="button"
+              aria-label="Fechar vestir"
+              tabindex="-1"
+            ></button>
+            <div class="title-character-shell">
+              <div class="char-preview-stage" role="img" aria-label="Preview do seu blob">
+                <div class="char-preview-glow"></div>
+                <canvas id="char-preview" class="char-preview-canvas" width="128" height="140"></canvas>
+              </div>
+              <div
+                id="title-character-panel"
+                class="title-character-panel title-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="char-title"
+              >
+                <div class="title-character-head">
+                  <div>
+                    <h2 id="char-title" class="settings-title">Vestir</h2>
+                    <p class="char-subtitle">deixe seu blob do seu jeito</p>
+                  </div>
+                  <button id="btn-character-close" class="btn-settings-close" type="button" aria-label="Fechar">
+                    ×
+                  </button>
+                </div>
+
+                <div class="char-body">
+                  <p class="settings-section">Tom</p>
+                  <div id="char-color-grid" class="char-color-grid" role="list"></div>
+
+                  <p class="settings-section">Extra</p>
+                  <div id="char-acc-grid" class="char-acc-grid" role="list"></div>
+                </div>
+              </div>
             </div>
           </div>
 

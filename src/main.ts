@@ -5,6 +5,7 @@ import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
 import { LeaveGuard } from './ui/LeaveGuard';
 import { TitleCatalog } from './ui/TitleCatalog';
+import { TitleCharacter } from './ui/TitleCharacter';
 import { TitleSettings } from './ui/TitleSettings';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -13,6 +14,7 @@ const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog();
+const titleCharacter = new TitleCharacter(game, audio);
 const leaveGuard = new LeaveGuard(audio);
 game.onCatalogRefresh = () => titleCatalog.refresh();
 
@@ -27,7 +29,7 @@ const btnRetry = document.getElementById('btn-retry')!;
 const btnHome = document.getElementById('btn-home')!;
 
 async function unlockAndPlay(): Promise<void> {
-  if (titleSettings.isOpen() || titleCatalog.isOpen()) return;
+  if (titleSettings.isOpen() || titleCatalog.isOpen() || titleCharacter.isOpen()) return;
   if (!hud.isTitleVisible() || document.getElementById('title-screen')!.classList.contains('is-leaving')) {
     return;
   }
@@ -55,7 +57,7 @@ btnHome.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-  if (titleSettings.isOpen() || titleCatalog.isOpen()) return;
+  if (titleSettings.isOpen() || titleCatalog.isOpen() || titleCharacter.isOpen()) return;
   if (e.code === 'Escape' && hud.isFallVisible()) {
     e.preventDefault();
     game.goToTitle();
