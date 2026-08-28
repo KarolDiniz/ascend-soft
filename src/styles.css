@@ -633,6 +633,24 @@ body {
   }
 }
 
+.catalog-icon-shape--heart {
+  clip-path: polygon(50% 88%, 10% 40%, 10% 22%, 28% 8%, 50% 28%, 72% 8%, 90% 22%, 90% 40%);
+  box-shadow: none;
+  background: var(--c-primary);
+}
+
+.catalog-icon-shape--coin {
+  border-radius: 50%;
+  box-shadow: none;
+  background: radial-gradient(circle at 35% 30%, var(--c-accent), var(--c-primary));
+}
+
+.catalog-icon-shape--mushroom {
+  border-radius: 40% 40% 20% 20%;
+  box-shadow: none;
+  background: linear-gradient(180deg, var(--c-primary) 55%, var(--c-secondary) 55%);
+}
+
 .settings-icon {
   width: 22px;
   height: 22px;

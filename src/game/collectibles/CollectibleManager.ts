@@ -3,6 +3,7 @@ import { PIXEL, fillPx, px, snapPt } from '../../theme/pixel';
 import type { Platform } from '../Platform';
 import {
   collectibleSeed,
+  COLLECTIBLE_MIN_GAP_PLATFORMS,
   COLLECTIBLE_MIN_HEIGHT,
   COLLECTIBLES,
   rollCollectible,
@@ -25,10 +26,12 @@ interface Pickup {
 export class CollectibleManager {
   private pickups: Pickup[] = [];
   private seededPlatforms = new Set<number>();
+  private platformsSinceSpawn = 999;
 
   reset(): void {
     this.pickups.length = 0;
     this.seededPlatforms.clear();
+    this.platformsSinceSpawn = 999;
   }
 
   /** Register new platforms once — O(new) per frame, no per-frame allocations */
@@ -37,9 +40,15 @@ export class CollectibleManager {
       const p = platforms[i]!;
       if (this.seededPlatforms.has(p.seed)) continue;
       this.seededPlatforms.add(p.seed);
+      this.platformsSinceSpawn += 1;
+
       if (p.y < COLLECTIBLE_MIN_HEIGHT || !p.alive) continue;
+      if (this.platformsSinceSpawn < COLLECTIBLE_MIN_GAP_PLATFORMS) continue;
+
       const id = rollCollectible(p.seed);
       if (!id) continue;
+
+      this.platformsSinceSpawn = 0;
       const spread = (p.w * 0.5 - 10) * (collectibleSeed(p.seed, 44) * 2 - 1);
       this.pickups.push({
         platform: p,
@@ -221,6 +230,35 @@ function drawCollectibleShape(
       fillPx(ctx, x - u, y - r, u * 2, r, def.primary);
       fillPx(ctx, x - r / 2, y - u, r, u * 2, def.secondary);
       fillPx(ctx, x - u, y - u, u * 2, u * 2, def.accent);
+      break;
+    case 'heart':
+      fillPx(ctx, x - r / 2, y - u, r, u * 2, def.primary);
+      fillPx(ctx, x - u, y - r / 2, u * 2, r * 0.75, def.secondary);
+      fillPx(ctx, x - u * 2, y - u, u, u * 2, def.primary);
+      fillPx(ctx, x + u, y - u, u, u * 2, def.primary);
+      break;
+    case 'coin':
+      fillPx(ctx, x - r / 2, y - r / 2, r, r, def.primary);
+      fillPx(ctx, x - u, y - u, u * 2, u * 2, def.accent);
+      break;
+    case 'snowflake':
+      fillPx(ctx, x - u, y - r / 2, u * 2, r, def.primary);
+      fillPx(ctx, x - r / 2, y - u, r, u * 2, def.secondary);
+      if (twinkle) fillPx(ctx, x - u, y - u, u * 2, u * 2, def.accent);
+      break;
+    case 'mushroom':
+      fillPx(ctx, x - r / 2, y - u, r, u * 2, def.secondary);
+      fillPx(ctx, x - r * 0.65, y - r / 2, r * 1.3, r * 0.55, def.primary);
+      break;
+    case 'comet':
+      fillPx(ctx, x - r / 2, y - u, r, u * 2, def.primary);
+      fillPx(ctx, x + r / 4, y - u / 2, r * 0.7, u, def.accent);
+      fillPx(ctx, x + r / 2, y, r * 0.5, u, rgba(def.secondary, 0.7));
+      break;
+    case 'rainbow':
+      fillPx(ctx, x - r / 2, y - u, r, u * 2, def.primary);
+      fillPx(ctx, x - r / 2, y - u * 2, r, u, def.secondary);
+      fillPx(ctx, x - r / 2, y, r, u, def.accent);
       break;
     default:
       // sparkle + fallback

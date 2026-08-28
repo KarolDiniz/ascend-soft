@@ -12,7 +12,20 @@ export type CollectibleId =
   | 'cloud'
   | 'leaf'
   | 'shell'
-  | 'gem';
+  | 'gem'
+  | 'feather'
+  | 'snowflake'
+  | 'berry'
+  | 'coin'
+  | 'bell'
+  | 'heart'
+  | 'mushroom'
+  | 'acorn'
+  | 'comet'
+  | 'candy'
+  | 'button'
+  | 'rainbow'
+  | 'honey';
 
 export interface CollectibleDef {
   id: CollectibleId;
@@ -36,6 +49,19 @@ export const COLLECTIBLE_ORDER: readonly CollectibleId[] = [
   'leaf',
   'shell',
   'gem',
+  'feather',
+  'snowflake',
+  'berry',
+  'coin',
+  'bell',
+  'heart',
+  'mushroom',
+  'acorn',
+  'comet',
+  'candy',
+  'button',
+  'rainbow',
+  'honey',
 ] as const;
 
 export const COLLECTIBLES: Record<CollectibleId, CollectibleDef> = {
@@ -135,6 +161,110 @@ export const COLLECTIBLES: Record<CollectibleId, CollectibleDef> = {
     secondary: '#E0C8F8',
     accent: PASTEL.white,
   },
+  feather: {
+    id: 'feather',
+    name: 'Pena',
+    hint: 'levíssima no ar',
+    primary: '#E8E0F8',
+    secondary: '#F0E8FF',
+    accent: PASTEL.white,
+  },
+  snowflake: {
+    id: 'snowflake',
+    name: 'Floco',
+    hint: 'frio e delicado',
+    primary: '#D8EEFF',
+    secondary: '#E8F6FF',
+    accent: PASTEL.white,
+  },
+  berry: {
+    id: 'berry',
+    name: 'Baga',
+    hint: 'doce e brilhante',
+    primary: '#D87898',
+    secondary: '#F0A0B8',
+    accent: '#FFE0E8',
+  },
+  coin: {
+    id: 'coin',
+    name: 'Moeda',
+    hint: 'tilinta ao coletar',
+    primary: PASTEL.butter,
+    secondary: '#F8D060',
+    accent: '#FFF0C0',
+  },
+  bell: {
+    id: 'bell',
+    name: 'Sino',
+    hint: 'som suave de vitória',
+    primary: '#F0D878',
+    secondary: '#F8E8A8',
+    accent: PASTEL.white,
+  },
+  heart: {
+    id: 'heart',
+    name: 'Coração',
+    hint: 'aquece a subida',
+    primary: '#F0A0A8',
+    secondary: '#F8C0C8',
+    accent: '#FFE8EC',
+  },
+  mushroom: {
+    id: 'mushroom',
+    name: 'Cogumelo',
+    hint: 'escondido na sombra',
+    primary: '#F0C8B0',
+    secondary: '#F8E0D0',
+    accent: '#FFFFFF',
+  },
+  acorn: {
+    id: 'acorn',
+    name: 'Bolota',
+    hint: 'tesouro da floresta',
+    primary: '#C8A878',
+    secondary: '#E0C8A0',
+    accent: '#F0E0C8',
+  },
+  comet: {
+    id: 'comet',
+    name: 'Cometa',
+    hint: 'rastro de luz rápida',
+    primary: '#A8C8F0',
+    secondary: '#C8E0F8',
+    accent: PASTEL.white,
+  },
+  candy: {
+    id: 'candy',
+    name: 'Doce',
+    hint: 'açúcar em pixel',
+    primary: '#F0A8D0',
+    secondary: '#F8C8E8',
+    accent: PASTEL.white,
+  },
+  button: {
+    id: 'button',
+    name: 'Botão',
+    hint: 'costura fofa',
+    primary: '#B8D0F0',
+    secondary: '#D0E4F8',
+    accent: '#F0F8FF',
+  },
+  rainbow: {
+    id: 'rainbow',
+    name: 'Arco-íris',
+    hint: 'sorte rara nas alturas',
+    primary: '#F0B0C8',
+    secondary: '#B8E0F0',
+    accent: PASTEL.butter,
+  },
+  honey: {
+    id: 'honey',
+    name: 'Mel',
+    hint: 'dourado e pegajoso',
+    primary: '#F0C848',
+    secondary: '#F8E080',
+    accent: '#FFF8D0',
+  },
 };
 
 /** Deterministic 0..1 from platform seed */
@@ -143,9 +273,12 @@ export function collectibleSeed(seed: number, salt: number): number {
   return x - Math.floor(x);
 }
 
-/** ~18% das plataformas acima do chão inicial */
-export const COLLECTIBLE_SPAWN_CHANCE = 0.18;
-export const COLLECTIBLE_MIN_HEIGHT = 100;
+/** ~6% das plataformas elegíveis — aparecem com espaçamento, não em toda partida */
+export const COLLECTIBLE_SPAWN_CHANCE = 0.06;
+/** Só após sair da zona inicial confortável */
+export const COLLECTIBLE_MIN_HEIGHT = 160;
+/** Mínimo de plataformas entre um colecionável e outro */
+export const COLLECTIBLE_MIN_GAP_PLATFORMS = 5;
 
 export function rollCollectible(seed: number): CollectibleId | null {
   if (collectibleSeed(seed, 77) > COLLECTIBLE_SPAWN_CHANCE) return null;
