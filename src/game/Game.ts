@@ -272,7 +272,13 @@ export class Game {
   beginPlay(): void {
     this.audio.stopSoftMurmur();
     this.titleMurmurActive = false;
-    this.resetRun();
+    const fromTitle = this.state === 'title';
+    if (fromTitle) {
+      // A prévia do título já montou PhaseRunOrder + plataformas em initTitle().
+      for (const p of this.spawner.platforms) p.setPreviewSquash(0);
+    } else {
+      this.resetRun();
+    }
     this.state = 'playing';
     this.hud.showPlaying(this.best);
     const z = this.atmosphere.getPrimaryZone();
