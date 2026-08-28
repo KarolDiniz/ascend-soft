@@ -413,32 +413,57 @@ export class AudioBus {
           this.landWithSample(ctx, land, 'clay', pitch, imp, () => this.kineticSand(ctx, land, pitch, imp)),
         silk: () =>
           this.landWithSample(ctx, land, 'silk', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
-        kitten: () =>
-          this.landWithSample(ctx, land, 'kitten', pitch, imp, () => this.kittenPurrLand(ctx, land, pitch, imp)),
+        kitten: () => {
+          if (
+            this.playLandSample(ctx, land, 'kitten', pitch, imp, {
+              maxDuration: 0.75,
+              randomStart: true,
+            })
+          ) {
+            return;
+          }
+          this.kittenMeowProcedural(ctx, land, pitch);
+        },
       };
       handlers[material]();
       if (perfect) this.perfectChime(ctx, land, pitch, streak);
     });
   }
 
-  /** Gatinho mia ao ser pisado — variações procedurais */
+  /** Gatinho mia ao ser pisado — sample kitten.mp3 */
   playKittenMeow(): void {
-    this.withCtx((ctx, sfx) => {
+    this.withLandCtx((ctx, landBus) => {
       this.duckAmbient(90);
-      const t = ctx.currentTime;
-      const pitch = 0.92 + Math.random() * 0.14;
-      const v = 0.085 + Math.random() * 0.035;
-      const f0 = (440 + Math.random() * 160) * pitch;
-      const f1 = (260 + Math.random() * 100) * pitch;
-      this.tone(ctx, sfx, 'sine', f0, f1, 0.24, v, t);
-      this.tone(ctx, sfx, 'triangle', f0 * 1.15, f1 * 1.08, 0.2, v * 0.5, t + 0.018);
-      this.softNoise(ctx, sfx, 0.11, 1900, v * 0.42, t + 0.035, 'bandpass', 1.15);
-      this.softNoise(ctx, sfx, 0.09, 880, v * 0.28, t + 0.07, 'lowpass');
-      if (Math.random() > 0.35) {
-        this.tone(ctx, sfx, 'sine', f1 * 0.92, f1 * 0.86, 0.16, v * 0.32, t + 0.11);
-        this.tone(ctx, sfx, 'triangle', f1 * 1.3, f1 * 1.22, 0.1, v * 0.16, t + 0.14);
+      const land = ctx.createGain();
+      land.gain.value = this.landBusGain * this.landIntensityMul;
+      land.connect(landBus);
+      const pitch = 0.86 + Math.random() * 0.22;
+      if (
+        this.playLandSample(ctx, land, 'kitten', pitch, 0.6, {
+          maxDuration: 0.72,
+          randomStart: true,
+          pitchBoost: 0.98 + Math.random() * 0.08,
+        })
+      ) {
+        return;
       }
+      this.kittenMeowProcedural(ctx, land, pitch);
     });
+  }
+
+  private kittenMeowProcedural(ctx: AudioContext, sfx: GainNode, pitch: number): void {
+    const t = ctx.currentTime;
+    const v = 0.085 + Math.random() * 0.035;
+    const f0 = (440 + Math.random() * 160) * pitch;
+    const f1 = (260 + Math.random() * 100) * pitch;
+    this.tone(ctx, sfx, 'sine', f0, f1, 0.24, v, t);
+    this.tone(ctx, sfx, 'triangle', f0 * 1.15, f1 * 1.08, 0.2, v * 0.5, t + 0.018);
+    this.softNoise(ctx, sfx, 0.11, 1900, v * 0.42, t + 0.035, 'bandpass', 1.15);
+    this.softNoise(ctx, sfx, 0.09, 880, v * 0.28, t + 0.07, 'lowpass');
+    if (Math.random() > 0.35) {
+      this.tone(ctx, sfx, 'sine', f1 * 0.92, f1 * 0.86, 0.16, v * 0.32, t + 0.11);
+      this.tone(ctx, sfx, 'triangle', f1 * 1.3, f1 * 1.22, 0.1, v * 0.16, t + 0.14);
+    }
   }
 
   /** Ratinho assustado — gritinho ao cair */
@@ -1612,22 +1637,6 @@ export class AudioBus {
     // Cauda de pétalas flutuando
     this.softNoise(ctx, sfx, 0.24, 920, v * 0.2, t + 0.05, 'bandpass', 0.55);
     this.tone(ctx, sfx, 'sine', note * 0.88, note * 0.881, 0.11, v * 0.12, t + 0.062);
-  }
-
-  /** Pouso na almofada de gatinhos — felpudo + miau */
-  private kittenPurrLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
-    const t = ctx.currentTime;
-    const v = this.impactVol(0.1, impact);
-    const p = pitch * (0.95 + Math.random() * 0.1);
-    this.softThud(ctx, sfx, t, p * 0.9, impact, 95);
-    this.warmLandTone(ctx, sfx, 'sine', 120 * p, 72 * p, 0.16, v * 0.55, t + 0.004, 420);
-    this.softNoise(ctx, sfx, 0.2, 320, v * 0.38, t + 0.01, 'lowpass');
-    this.softNoise(ctx, sfx, 0.14, 680, v * 0.28, t + 0.025, 'bandpass', 0.8);
-    const f0 = (400 + Math.random() * 120) * p;
-    const f1 = (240 + Math.random() * 80) * p;
-    this.tone(ctx, sfx, 'sine', f0, f1, 0.2, v * 0.45, t + 0.03);
-    this.tone(ctx, sfx, 'triangle', f0 * 1.12, f1 * 1.05, 0.14, v * 0.22, t + 0.045);
-    this.softNoise(ctx, sfx, 0.08, 1600, v * 0.3, t + 0.04, 'bandpass', 1.1);
   }
 
   private grassCrunch(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

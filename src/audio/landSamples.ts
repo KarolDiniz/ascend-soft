@@ -18,7 +18,7 @@ function landFiles(...names: string[]): readonly string[] {
 /**
  * Sample de pouso por material — arquivos em public/assets/audio/land/.
  * No disco hoje: bathFoam, bubbleWrap, bubbleWrap-poof, chocolate, cloud, glycerin,
- * grass, handSoap, iceSoap, jelly, jelly-kick, keyboard, plasticBottle, slime, sponge.
+ * grass, handSoap, iceSoap, jelly, jelly-kick, keyboard, kitten, plasticBottle, slime, sponge.
  * Materiais sem MP3 dedicado usam proxy sonoro; se o fetch falhar, AudioBus usa síntese procedural.
  */
 const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
@@ -56,7 +56,7 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   ceramic: landFiles('glycerin.mp3'),
   clay: landFiles('sponge.mp3'),
   silk: landFiles('cloud.mp3'),
-  kitten: landFiles('cloud.mp3'),
+  kitten: landFiles('kitten.mp3'),
 };
 
 export class LandSampleBank {
