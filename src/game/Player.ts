@@ -186,20 +186,14 @@ export class Player {
     if (speedT > 0.03) {
       const ax = Math.abs(dx) / (Math.abs(dx) + Math.abs(dy) + 0.001);
       const ay = 1 - ax;
-      if (ax >= ay) {
-        targetSquash = 1 + speedT * (0.28 + ax * 0.72);
-        targetStretch = 1 - speedT * (0.22 + ax * 0.58);
-      } else {
-        targetSquash = 1 - speedT * (0.16 + ay * 0.42);
-        targetStretch = 1 + speedT * (0.32 + ay * 0.78);
+      // Só estica no eixo vertical — horizontal sem “inchar” redondo
+      if (ay > ax) {
+        targetSquash = 1 - speedT * (0.1 + ay * 0.22);
+        targetStretch = 1 + speedT * (0.14 + ay * 0.36);
       }
-    } else {
-      const hop = Math.min(0.1, speed / 1200);
-      targetSquash = 1 + hop;
-      targetStretch = 1 - hop * 0.5;
     }
 
-    const deformRate = 12 + speedT * 28;
+    const deformRate = 10 + speedT * 14;
     this.squash += (targetSquash - this.squash) * Math.min(1, deformRate * dt);
     this.stretch += (targetStretch - this.stretch) * Math.min(1, deformRate * dt);
     return speed;
@@ -272,9 +266,11 @@ export class Player {
   draw(
     ctx: CanvasRenderingContext2D,
     toScreen: (x: number, y: number) => { x: number; y: number },
+    opts: { titleBoost?: boolean } = {},
   ): void {
     enablePixelMode(ctx);
     const u = PIXEL.unit;
+    const titleBoost = opts.titleBoost ?? false;
 
     // Pixel trail
     for (const t of this.trail) {
@@ -296,12 +292,15 @@ export class Player {
 
     ctx.save();
     ctx.translate(s.x, s.y);
+    ctx.globalAlpha = 1;
 
     // Shadow
     drawPlayerPixelShadow(ctx, bw, bh);
 
     // Body — stepped oval (cute pixel slime)
-    drawPlayerPixelBody(ctx, bw, bh, this.animT);
+    drawPlayerPixelBody(ctx, bw, bh, this.animT, {
+      boldOutline: titleBoost,
+    });
 
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: this.facing,
@@ -311,6 +310,7 @@ export class Player {
       mouthOpen: this.mouthOpen,
       excited: this.mouthOpen,
       look: this.lookOffset,
+      titleBold: titleBoost,
       landBliss: this.landFace === 'bliss',
       landOoh: this.landFace === 'ooh',
       landPop: this.landFace === 'pop',

@@ -24,6 +24,8 @@ export interface PlayerBodyOptions {
   solid?: boolean;
   /** Orelhinhas balançando (banner falando) */
   earWiggle?: number;
+  /** Contorno mais forte (tela inicial) */
+  boldOutline?: boolean;
 }
 
 export interface PlayerFaceOptions {
@@ -49,6 +51,8 @@ export interface PlayerFaceOptions {
   landPop?: boolean;
   /** Semicerrado — grudento */
   landSticky?: boolean;
+  /** Rosto com contraste alto (tela inicial) */
+  titleBold?: boolean;
 }
 
 /** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
@@ -135,8 +139,9 @@ function drawBodyOutline(
   ctx: CanvasRenderingContext2D,
   bw: number,
   bh: number,
+  bold = false,
 ): void {
-  const ink = PLAYER_PASTEL.outline;
+  const ink = bold ? rgba(PASTEL.ink, 0.82) : PLAYER_PASTEL.outline;
   for (const [ww, yy] of BODY_ROWS) {
     const rw = px(bw * ww);
     const ry = px(bh * yy);
@@ -153,6 +158,7 @@ function drawSolidBlobBody(
   bh: number,
   animT: number,
   earWiggle = 0,
+  boldOutline = false,
 ): void {
   const fill = PLAYER_PASTEL.bodySolid;
   const total = BODY_ROWS.length;
@@ -176,7 +182,7 @@ function drawSolidBlobBody(
     fillPx(ctx, -bw * 0.06, -bh * 0.28, bw * 0.14, u, rgba(PASTEL.white, 0.4));
   }
 
-  drawBodyOutline(ctx, bw, bh);
+  drawBodyOutline(ctx, bw, bh, boldOutline);
 }
 
 /** Corpo blob pixel — slime fofo com volume e brilho */
@@ -188,7 +194,7 @@ export function drawPlayerPixelBody(
   opts: PlayerBodyOptions = {},
 ): void {
   if (opts.solid) {
-    drawSolidBlobBody(ctx, bw, bh, animT, opts.earWiggle ?? 0);
+    drawSolidBlobBody(ctx, bw, bh, animT, opts.earWiggle ?? 0, opts.boldOutline);
     return;
   }
 
@@ -218,7 +224,7 @@ export function drawPlayerPixelBody(
 
   fillPx(ctx, -bw * 0.32, bh * 0.3, bw * 0.64, u * 2, PLAYER_PASTEL.bodyBot);
 
-  drawBodyOutline(ctx, bw, bh);
+  drawBodyOutline(ctx, bw, bh, opts.boldOutline);
 }
 
 export function drawPlayerPixelShadow(
@@ -250,6 +256,9 @@ export function drawPlayerPixelFace(
   const landOoh = opts.landOoh ?? false;
   const landPop = opts.landPop ?? false;
   const landSticky = opts.landSticky ?? false;
+  const titleBold = opts.titleBold ?? false;
+  const eyeLine = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeLine;
+  const eyeFill = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeFill;
   const look = (opts.look ?? 0) + facing;
   const eyeOff = 5 * facing;
   const eyeY = -u * 5;
@@ -268,61 +277,61 @@ export function drawPlayerPixelFace(
   fillPx(ctx, u * 4, blushY + u, u, u, blush);
 
   if (defeatSad) {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 3 + look, eyeY, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 2 + look, eyeY, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY, u * 3, u * 3, eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY, u * 3, u * 3, eyeFill);
     fillPx(ctx, eyeOff - u * 3 + look, eyeY, u, u, PASTEL.white);
     fillPx(ctx, eyeOff + u * 2 + look, eyeY, u, u, PASTEL.white);
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY + eyeH - u, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + eyeH - u, eyeW, u, eyeLine);
 
-    fillPx(ctx, eyeOff - u * 3, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 2, mouthY, u, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 3, mouthY, u, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 3, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u * 2, mouthY, u, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 3, mouthY, u, u, eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, eyeLine);
     return;
   }
 
   if (crying) {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, eyeFill);
     fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u, u, PASTEL.white);
     fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u, u, PASTEL.white);
 
-    fillPx(ctx, eyeOff - u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2, mouthY, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY - u * 0.5, u * 2, u, eyeLine);
     return;
   }
 
   if (blinking) {
-    fillPx(ctx, eyeOff - u * 4, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 4, eyeY + u * 2, eyeW, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 1, eyeY + u * 2, eyeW, u, eyeLine);
   } else if (landBliss) {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u * 2, eyeW, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u * 2, eyeW, u, eyeLine);
     fillPx(ctx, eyeOff - u * 3 + look, eyeY + u, u * 2, u, rgba(PASTEL.rose, 0.35));
     fillPx(ctx, eyeOff + u * 2 + look, eyeY + u, u * 2, u, rgba(PASTEL.rose, 0.35));
   } else if (landPop) {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 2 + look, eyeY, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 3 + look, eyeY, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, eyeLine);
+    fillPx(ctx, eyeOff - u * 2 + look, eyeY, u * 2, u * 2, eyeFill);
+    fillPx(ctx, eyeOff + u * 3 + look, eyeY, u * 2, u * 2, eyeFill);
     fillPx(ctx, eyeOff - u * 2 + look, eyeY, u, u, PASTEL.white);
     fillPx(ctx, eyeOff + u * 3 + look, eyeY, u, u, PASTEL.white);
   } else if (landSticky) {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u, eyeW, u * 3, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u, eyeW, u * 3, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 2 + look, eyeY + u, u * 2, u, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 3 + look, eyeY + u, u * 2, u, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u, eyeW, u * 3, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u, eyeW, u * 3, eyeLine);
+    fillPx(ctx, eyeOff - u * 2 + look, eyeY + u, u * 2, u, eyeFill);
+    fillPx(ctx, eyeOff + u * 3 + look, eyeY + u, u * 2, u, eyeFill);
   } else {
-    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
-    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3, eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3, eyeFill);
     fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u, u, PASTEL.white);
     fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u, u, PASTEL.white);
     if (Math.sin(animT * 5) > 0.7) {
@@ -333,16 +342,16 @@ export function drawPlayerPixelFace(
 
   if (landOoh || mouthOpen) {
     const mouthH = landOoh || excited ? u * 3 : u * 2;
-    fillPx(ctx, eyeOff - u * 2, mouthY, u * 5, mouthH, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2, mouthY, u * 5, mouthH, eyeLine);
     fillPx(ctx, eyeOff - u, mouthY + u, u * 3, u, rgba(PASTEL.rose, 0.45));
     fillPx(ctx, eyeOff - u * 0.5, mouthY + u * 0.5, u * 2, u, rgba(PASTEL.white, 0.35));
   } else if (landBliss) {
-    fillPx(ctx, eyeOff - u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff - u, mouthY, u * 3, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY, u * 3, u, eyeLine);
   } else {
-    fillPx(ctx, eyeOff - u, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
-    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, eyeLine);
   }
 
   if (opts.showSparkle && Math.sin(animT * 4) > 0.94) {
