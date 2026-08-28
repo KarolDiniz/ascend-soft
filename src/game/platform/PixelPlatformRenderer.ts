@@ -227,8 +227,8 @@ export function renderPixelPlatform(
 
   drawShelfFrontFace(args);
   const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
-  if (shouldDrawSoftHangingDetails(material, behavior)) {
-    drawHangingDetails(args, behavior);
+  if (shouldDrawSoftSpill(material, behavior)) {
+    drawSoftSpillDrips(args, behavior);
   }
   drawRelaxSparkles(args);
 
@@ -392,107 +392,34 @@ function drawShelfFrontFace(a: DrawArgs): void {
   fillPx(ctx, x, sy + h, w, u, softShadow(mat, 0.14));
 }
 
-const RIGID_HANG_MATERIALS = new Set<MaterialId>([
-  'keyboard',
-  'iceSoap',
-  'glycerin',
-  'lavenderSoap',
-  'creamSoap',
-  'plasticBottle',
-]);
-
-function shouldDrawSoftHangingDetails(material: MaterialId, behavior: PlatformBehavior): boolean {
-  if (RIGID_HANG_MATERIALS.has(material)) return false;
+function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
+  if (material === 'keyboard') return false;
   return (
     behavior === 'melt' ||
-    behavior === 'foamPop' ||
-    behavior === 'squeeze' ||
-    behavior === 'crumble' ||
+    behavior === 'elastic' ||
     behavior === 'sticky' ||
-    behavior === 'elastic'
+    behavior === 'foamPop'
   );
 }
 
-function resolveHangStyle(
-  behavior: PlatformBehavior,
-  defaultStyle: 0 | 1 | 2 | 3 | 4,
-  i: number,
-  seed: number,
-): 0 | 1 | 2 | 3 | 4 {
-  switch (behavior) {
-    case 'melt':
-      return i % 2 === 0 ? 0 : 2;
-    case 'foamPop':
-      return i % 3 === 0 ? 3 : 4;
-    case 'crumble':
-      return 2;
-    case 'squeeze':
-    case 'sticky':
-      return i % 2 === 0 ? 1 : 0;
-    case 'elastic':
-      return seeded(seed, i + 320) < 0.65 ? 0 : 2;
-    default:
-      return defaultStyle;
-  }
-}
-
-/** Gotas e irregularidades embaixo — só plataformas moles, irregulares ou que derretem */
-function drawHangingDetails(a: DrawArgs, behavior: PlatformBehavior): void {
-  const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
+/** Derramamento animado na borda inferior — só materiais moles ou que derretem */
+function drawSoftSpillDrips(a: DrawArgs, behavior: PlatformBehavior): void {
+  const { mat, personality } = a;
   if (!personality) return;
 
-  const count = Math.min(
-    personality.hangCount,
-    behavior === 'melt' ? 5 : behavior === 'foamPop' ? 4 : 4,
-  );
-  const lenMul = personality.hangLength;
-  const bias = personality.edgeBias;
-
-  for (let i = 0; i < count; i++) {
-    const style = resolveHangStyle(behavior, personality.hangStyle, i, seed);
-    const t = (i + 0.5) / count + bias * 0.08 * (seeded(seed, i + 300) - 0.5);
-    const hx = cx - w * 0.42 + t * w * 0.84;
-    const sway = Math.sin(time * 2.2 + wobble + personality.wobblePhase + i * 1.4) * u * 1.8;
-    const baseY = sy + h + u;
-    const strandLen = u * (2 + Math.floor(seeded(seed, i + 310) * 5) * lenMul);
-
-    switch (style) {
-      case 0: {
-        fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
-        fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
-        if (Math.sin(time * 3 + i) > 0.2) {
-          fillPx(ctx, hx + sway, baseY + strandLen + u, u, u, rgba(mat.particle, 0.65));
-        }
-        break;
-      }
-      case 1: {
-        const pull = Math.sin(wobble * 1.5 + i) * u;
-        fillPx(ctx, hx + sway, baseY, u, strandLen + pull, mat.particle);
-        fillPx(ctx, hx + sway - u, baseY + strandLen + pull, u * 2, u, rgba(mat.particle, 0.7));
-        fillPx(ctx, hx + sway - u * 0.5, baseY + strandLen + pull + u, u, u, mat.fill);
-        break;
-      }
-      case 2: {
-        fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
-        fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
-        break;
-      }
-      case 3: {
-        const by = baseY + Math.sin(time * 1.8 + i) * u;
-        fillPx(ctx, hx + sway - u, by, u * 3, u * 3, rgba(mat.particle, 0.55));
-        fillPx(ctx, hx + sway, by + u, u, u, rgba(PASTEL.white, 0.65));
-        fillPx(ctx, hx + sway - u / 2, by + u * 3, u, u * 2, rgba(mat.particle, 0.4));
-        break;
-      }
-      case 4: {
-        for (let row = 0; row < 3; row++) {
-          const tw = u * (2 + row);
-          fillPx(ctx, hx + sway - tw / 2, baseY + row * u, tw, u, row === 0 ? PASTEL.white : mat.fill);
-        }
-        fillPx(ctx, hx + sway - u, baseY - u, u * 2, u, rgba(PASTEL.white, 0.5));
-        break;
-      }
-    }
+  const dripCount = Math.min(4, 2 + Math.floor(personality.dripMul * 2));
+  for (let i = 0; i < dripCount; i++) {
+    const along = (i + 0.5) / dripCount + personality.edgeBias * 0.04;
+    const phase = i * 0.85 + personality.wobblePhase;
+    const color =
+      behavior === 'foamPop'
+        ? i % 2 === 0
+          ? rgba(PASTEL.white, 0.9)
+          : mat.particle
+        : i % 2 === 0
+          ? mat.particle
+          : mat.fill;
+    drawIdleDrip(a, color, phase, along);
   }
 }
 
@@ -590,13 +517,15 @@ function drawPressIndent(a: DrawArgs): void {
 }
 
 /** Animated drip strand from bottom edge */
-function drawIdleDrip(a: DrawArgs, color: string, phase = 0): void {
-  const { ctx, cx, sy, w, h, u, time, melt, personality } = a;
+function drawIdleDrip(a: DrawArgs, color: string, phase = 0, along = -1): void {
+  const { ctx, cx, sy, w, h, u, time, melt, wobble, personality } = a;
   const press = a.overlay?.pressAmount ?? 0;
   const dripMul = personality?.dripMul ?? 1;
   const pulse = 0.5 + Math.sin(time * 4.5 + phase + (personality?.wobblePhase ?? 0)) * 0.5;
-  const len = u * (2 + Math.floor((melt + pulse * 0.4 + press * 0.5) * 5 * dripMul));
-  const ox = cx + w * (0.08 + phase * 0.16) + (personality?.edgeBias ?? 0) * u * 2;
+  const len = u * (1.5 + Math.floor((melt * 0.7 + pulse * 0.5 + press * 0.4) * 4 * dripMul));
+  const t = along >= 0 ? Math.max(0.06, Math.min(0.94, along)) : 0.08 + phase * 0.16;
+  const sway = Math.sin(time * 3.2 + phase + wobble) * u * 0.6;
+  const ox = cx - w * 0.42 + t * w * 0.84 + sway;
   fillPx(ctx, ox - u / 2, sy + h - u, u, len, color);
   fillPx(ctx, ox - u, sy + h - u + len, u * 2, u, color);
   fillPx(ctx, ox - u * 0.5, sy + h + len, u, u, rgba(color, 0.75));
@@ -712,20 +641,11 @@ function drawButter(a: DrawArgs): void {
   drawShimmerBand(a, 0);
   drawPressIndent(a);
   if (melt > 0.05) {
-    const pw = w * (1 + melt * 0.45);
-    fillPx(ctx, cx - pw / 2, sy + h - u, pw, u * (1 + Math.floor(melt * 3)), mat.fill);
-    for (let i = 0; i < 4 + Math.floor(melt * 6); i++) {
-      fillPx(
-        ctx,
-        cx + (seeded(seed, i) - 0.5) * pw * 0.9,
-        sy + h,
-        u * 2,
-        u * (2 + Math.floor(melt * 4)),
-        mat.fill,
-      );
-    }
+    const pw = w * (1 + melt * 0.5);
+    const poolH = u * (1 + Math.floor(melt * 2));
+    fillPx(ctx, cx - pw / 2, sy + h - u, pw, poolH, rgba(mat.fill, 0.78));
+    fillPx(ctx, cx - pw / 2 + u, sy + h, pw - u * 2, u, rgba(mat.particle, 0.42));
   }
-  drawIdleDrip(a, mat.particle, 0.8);
   drawSurfaceGrain(a, 8, mat.stroke, 0.2);
   drawEdgeFlecks(a, 6, mat.particle);
   drawDebris(a, 6, mat.particle);
@@ -836,12 +756,10 @@ function drawChocolate(a: DrawArgs): void {
   drawShimmerBand(a, 1);
   drawPressIndent(a);
   if (melt > 0.1) {
-    for (let i = 0; i < 6; i++) {
-      fillPx(ctx, x + u * 2 + i * (w / 6), sy + h - u, u * 2, u * (2 + Math.floor(melt * 3)), mat.fill);
-    }
+    const pw = w * (1 + melt * 0.35);
+    fillPx(ctx, cx - pw / 2, sy + h - u, pw, u * (1 + Math.floor(melt * 1.5)), rgba(mat.fill, 0.72));
+    fillPx(ctx, cx - pw / 2 + u, sy + h, pw - u * 2, u, rgba(mat.particle, 0.38));
   }
-  drawIdleDrip(a, mat.particle, 0.3);
-  drawIdleDrip(a, mat.particle, 1.6);
   drawSurfaceGrain(a, 8, mat.stroke, 0.22);
   drawEdgeFlecks(a, 5, mat.particle);
   drawDebris(a, 5, mat.particle);
@@ -932,13 +850,10 @@ function drawHoney(a: DrawArgs): void {
     a.overlay?.honeyBeeScatterT ?? 0,
     a.overlay?.honeyBeeScatterY ?? 0,
   );
-  drawIdleDrip(a, mat.particle, 0);
-  drawIdleDrip(a, mat.particle, 1.1);
-  drawIdleDrip(a, mat.particle, 2.3);
   if (melt > 0.05) {
-    const drip = u * (2 + Math.floor(melt * 5));
-    fillPx(ctx, cx + w * 0.15, sy + h - u, u * 2, drip, mat.fill);
-    fillPx(ctx, cx - w * 0.2, sy + h - u, u * 2, drip * 0.8, mat.particle);
+    const pw = w * (1 + melt * 0.3);
+    fillPx(ctx, cx - pw / 2, sy + h - u, pw, u * (1 + Math.floor(melt * 1.5)), rgba(mat.fill, 0.7));
+    fillPx(ctx, cx - pw / 2 + u * 0.5, sy + h, pw - u, u, rgba(mat.particle, 0.4));
   }
   drawShimmerBand(a, 1);
   drawSurfaceGrain(a, 6, PASTEL.butter, 0.35);
@@ -1149,17 +1064,6 @@ function drawGum(a: DrawArgs): void {
   fillPx(ctx, cx + u * 2, sy - strand * 0.75, u, strand * 0.75, mat.fill);
   fillPx(ctx, cx + u * 5 - pull * 0.5, sy - strand * 0.5, u, strand * 0.5, mat.stroke);
   fillPx(ctx, cx - u * 3 + pull, sy - strand - u, u * 2, u, mat.particle);
-  // Chewed flecks dripping
-  for (let i = 0; i < 4; i++) {
-    fillPx(
-      ctx,
-      cx + (seeded(seed, i + 230) - 0.5) * w * 0.6,
-      sy + h + Math.sin(time * 2 + i) * u,
-      u,
-      u,
-      mat.particle,
-    );
-  }
   drawPressIndent(a);
   drawSurfaceGrain(a, 8, PASTEL.blush, 0.3);
   drawEdgeFlecks(a, 6, mat.particle);
@@ -1345,8 +1249,8 @@ function drawSoapBubble(a: DrawArgs): void {
   fillPx(ctx, cx - r * 0.15, sy + h * 0.55, u, u, rgba(PASTEL.mint, 0.45));
   // Satellite bubbles
   for (let i = 0; i < 4; i++) {
-    const bx = cx + (seeded(seed, i) - 0.5) * w * 0.9;
-    const by = sy + h + Math.sin(time * 2 + i) * u;
+    const bx = cx + (seeded(seed, i) - 0.5) * w * 0.75;
+    const by = sy + h * 0.25 + seeded(seed, i + 40) * h * 0.45 + Math.sin(time * 2 + i) * u;
     drawBubbleRing(ctx, bx, by, u * 2, u, rgba(mat.particle, 0.6));
   }
   drawAmbientSpecks(a, 8, mat.particle);

@@ -119,9 +119,7 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
     }
     case 'chocolate_puddle': {
       fillPx(ctx, cx - w * 0.55, sy + h - u, w * 1.1, u * 2, mat.fill);
-      for (let i = 0; i < 4; i++) {
-        fillPx(ctx, cx + (seeded(seed, i + 90) - 0.5) * w * 0.7, sy + h + u, u * 2, u * (2 + i), mat.fill);
-      }
+      fillPx(ctx, cx - w * 0.48, sy + h, w * 0.96, u, rgba(mat.particle, 0.45));
       break;
     }
     case 'chocolate_bar': {
@@ -144,9 +142,8 @@ export function drawVariantAccent(a: AccentArgs, variant: PlatformVariant): void
       break;
     }
     case 'honey_drip': {
-      const dx = cx + w * 0.28;
-      fillPx(ctx, dx, sy + h, u, u * (4 + Math.floor(seeded(seed, 91) * 4)), mat.particle);
-      fillPx(ctx, dx - u, sy + h + u * 2, u * 3, u * 2, mat.fill);
+      fillPx(ctx, cx - w * 0.22, sy + h - u, w * 0.44, u * 2, mat.fill);
+      fillPx(ctx, cx - w * 0.18, sy + h, w * 0.36, u, rgba(mat.particle, 0.5));
       break;
     }
     case 'honey_chunk': {
