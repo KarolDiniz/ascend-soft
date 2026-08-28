@@ -108,11 +108,11 @@ export function renderPixelPlatform(
   const pH = personality?.heightStretch ?? 1;
   const cx = s.cx;
   const sy = s.surfaceY;
-  const w = Math.max(
+  let w = Math.max(
     u * 10,
     px(s.w * ledge.visualSpread * vScale.wMul * pW * (1 + melt * 0.3)),
   );
-  const h = Math.max(
+  let h = Math.max(
     u * 4,
     px(
       s.h *
@@ -123,6 +123,12 @@ export function renderPixelPlatform(
         Math.max(0.35, integrity),
     ),
   );
+  const roundOrb = isRoundOrbMaterial(material);
+  if (roundOrb) {
+    const d = Math.max(w, h);
+    w = d;
+    h = d;
+  }
 
   ctx.save();
   ctx.globalAlpha = s.opacity;
@@ -130,7 +136,11 @@ export function renderPixelPlatform(
 
   const matT = tonedMat(mat, personality?.toneShift ?? 0);
   const shadowA = personality ? 0.18 + Math.abs(personality.toneShift) * 0.08 : 0.14;
-  fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, softShadow(matT, shadowA));
+  if (roundOrb) {
+    fillPx(ctx, cx - w * 0.2, sy + h - u * 0.5, w * 0.4, u, softShadow(matT, shadowA * 0.65));
+  } else {
+    fillPx(ctx, cx - w * 0.42, sy + h - u, w * 0.84, u * 2, softShadow(matT, shadowA));
+  }
 
   const args = {
     ctx,
@@ -256,9 +266,9 @@ export function renderPixelPlatform(
 
   drawVariantAccent(args, variant);
   drawPersonalitySurfaceMark(args);
-  drawPersonalityTopProfile(args);
+  if (!roundOrb) drawPersonalityTopProfile(args);
 
-  drawShelfFrontFace(args);
+  if (!roundOrb) drawShelfFrontFace(args);
   const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
   if (shouldDrawSoftSpill(material, behavior)) {
     drawSoftSpillDrips(args, behavior);
@@ -429,6 +439,13 @@ function drawShelfFrontFace(a: DrawArgs): void {
   fillPx(ctx, x, sy + h, w, u, softShadow(mat, 0.14));
 }
 
+/** Bolha de sabão — orbe perfeita, sem base retangular */
+const ROUND_ORB_MATERIALS: ReadonlySet<MaterialId> = new Set(['soapBubble']);
+
+function isRoundOrbMaterial(material: MaterialId): boolean {
+  return ROUND_ORB_MATERIALS.has(material);
+}
+
 /** Penduricalhos na base — só chiclete, tecidos e grama */
 const BOTTOM_HANG_MATERIALS: ReadonlySet<MaterialId> = new Set([
   'clearSlime',
@@ -444,6 +461,7 @@ function shouldDrawPersonalityHangs(material: MaterialId): boolean {
 
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
   if (material === 'keyboard' || material === 'marimba') return false;
+  if (isRoundOrbMaterial(material)) return false;
   if (BOTTOM_HANG_MATERIALS.has(material)) return true;
   return behavior === 'melt' || behavior === 'foamPop';
 }
@@ -665,7 +683,26 @@ function drawIdleDrip(a: DrawArgs, color: string, phase = 0, along = -1): void {
   }
 }
 
-/** Ring bubble (hollow center) */
+/** Disco pixel arredondado — círculo perfeito */
+function fillPxDisc(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  u: number,
+  color: string,
+): void {
+  const r = Math.max(u, radius);
+  const rows = Math.max(1, Math.ceil((r * 2) / u));
+  for (let row = 0; row < rows; row++) {
+    const y = cy - r + row * u;
+    const dy = y + u * 0.5 - cy;
+    const halfW = Math.sqrt(Math.max(0, r * r - dy * dy));
+    if (halfW >= u * 0.28) fillPx(ctx, cx - halfW, y, halfW * 2, u, color);
+  }
+}
+
+/** Ring bubble (hollow center) — anel circular */
 function drawBubbleRing(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -674,8 +711,11 @@ function drawBubbleRing(
   u: number,
   color: string,
 ): void {
-  fillPx(ctx, x, y, r, r, color);
-  fillPx(ctx, x + u, y + u, Math.max(u, r - u * 2), Math.max(u, r - u * 2), rgba(PASTEL.white, 0.15));
+  const cx = x + r * 0.5;
+  const cy = y + r * 0.5;
+  const outer = r * 0.5;
+  fillPxDisc(ctx, cx, cy, outer, u, color);
+  fillPxDisc(ctx, cx + u * 0.15, cy - u * 0.2, Math.max(u, outer - u * 1.35), u, rgba(PASTEL.white, 0.22));
 }
 
 /** Soft highlight shimmer band that slides */
@@ -1386,29 +1426,35 @@ function drawSponge(a: DrawArgs): void {
   drawAmbientSpecks(a, 4, yellowDark);
 }
 
-/** Bolha de sabão — orbe translúcida irisada */
+/** Bolha de sabão — orbe circular translúcida */
 function drawSoapBubble(a: DrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed } = a;
-  const r = Math.min(w, h) * 0.55;
-  // Stepped circle body
-  for (let row = 0; row < h; row += u) {
-    const t = (row - h / 2) / (h / 2);
-    const ww = w * Math.max(0.25, Math.sqrt(Math.max(0, 1 - t * t)) * 0.95);
-    fillPx(ctx, cx - ww / 2, sy + row, ww, u, rgba(mat.fill, 0.55));
+  const { ctx, cx, sy, w, mat, u, time, wobble, seed } = a;
+  const press = a.overlay?.pressAmount ?? 0;
+  const radius = w * 0.5 * (1 + press * 0.06);
+  const cy = sy + radius;
+  const squashY = 1 - press * 0.14;
+  const drawR = radius * squashY;
+
+  fillPxDisc(ctx, cx, cy, drawR, u, rgba(mat.fill, 0.52));
+  fillPxDisc(ctx, cx, cy - u * 0.5, drawR * 0.72, u, rgba(mat.particle, 0.28));
+  fillPxDisc(ctx, cx - u, cy - drawR * 0.22, drawR * 0.22, u, rgba(PASTEL.white, 0.42));
+
+  const slide = Math.sin(time * 3 + wobble) * u * 1.5;
+  fillPxDisc(ctx, cx + slide * 0.35, cy - drawR * 0.38, drawR * 0.12, u, rgba(PASTEL.white, 0.72));
+  fillPxDisc(ctx, cx + drawR * 0.18, cy - drawR * 0.05, u * 1.4, u, rgba(PASTEL.lilac, 0.45));
+  fillPxDisc(ctx, cx - drawR * 0.2, cy + drawR * 0.12, u * 1.1, u, rgba(PASTEL.mint, 0.4));
+
+  for (let i = 0; i < 3; i++) {
+    const ang = seeded(seed, i + 40) * Math.PI * 2 + time * 1.6 + i;
+    const dist = drawR * (0.18 + seeded(seed, i + 44) * 0.28);
+    const bx = cx + Math.cos(ang) * dist;
+    const by = cy + Math.sin(ang) * dist * 0.85;
+    fillPxDisc(ctx, bx, by, u * (1.2 + seeded(seed, i + 48)), u, rgba(mat.particle, 0.55));
+    fillPxDisc(ctx, bx - u * 0.3, by - u * 0.35, u * 0.55, u, rgba(PASTEL.white, 0.55));
   }
-  // Rainbow shimmer rim
-  const slide = Math.sin(time * 3 + wobble) * u * 2;
-  fillPx(ctx, cx - r * 0.4 + slide, sy + u * 2, u * 3, u, rgba(PASTEL.white, 0.7));
-  fillPx(ctx, cx + r * 0.2, sy + h * 0.35, u * 2, u, rgba(PASTEL.lilac, 0.5));
-  fillPx(ctx, cx - r * 0.15, sy + h * 0.55, u, u, rgba(PASTEL.mint, 0.45));
-  // Satellite bubbles
-  for (let i = 0; i < 4; i++) {
-    const bx = cx + (seeded(seed, i) - 0.5) * w * 0.75;
-    const by = sy + h * 0.25 + seeded(seed, i + 40) * h * 0.45 + Math.sin(time * 2 + i) * u;
-    drawBubbleRing(ctx, bx, by, u * 2, u, rgba(mat.particle, 0.6));
-  }
+
+  fillPxDisc(ctx, cx, cy + drawR - u * 0.5, drawR * 0.94, u, rgba(mat.stroke, 0.12));
   drawAmbientSpecks(a, 8, mat.particle);
-  drawDebris(a, 3, mat.particle);
 }
 
 /** Espuma de banho — nuvem lilac fofa */

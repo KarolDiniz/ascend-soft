@@ -160,26 +160,84 @@ export function drawMoss(a: ExtraDrawArgs): void {
   fillPx(ctx, cx - w * 0.2, sy + h * 0.3, w * 0.4, u, rgba('#FFFFFF', 0.12 + Math.sin(time * 2) * 0.06));
 }
 
-/** Nuvem — puff etéreo */
-export function drawCloud(a: ExtraDrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, time, wobble } = a;
-  const press = a.overlay?.pressAmount ?? 0;
-  const lumps = 5;
-  for (let i = 0; i < lumps; i++) {
-    const lx = cx + (i - lumps / 2) * w * 0.22 + Math.sin(time * 1.8 + i + wobble) * u;
-    const lh = h * (0.55 + (i % 3) * 0.12) * (1 - press * 0.2);
-    fillPx(ctx, lx - w * 0.22, sy + h - lh, w * 0.44, lh, mat.fill);
+function fillPxPuff(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  baseY: number,
+  width: number,
+  height: number,
+  u: number,
+  color: string,
+): void {
+  const hw = width / 2;
+  const rows = Math.max(1, Math.ceil(height / u));
+  for (let row = 0; row < rows; row++) {
+    const t = rows <= 1 ? 0 : row / (rows - 1);
+    const y = baseY - (row + 1) * u;
+    const halfW = hw * Math.sqrt(Math.max(0, 1 - t * t * 0.9));
+    if (halfW >= u * 0.35) fillPx(ctx, cx - halfW, y, halfW * 2, u, color);
   }
-  fillPx(ctx, cx - w * 0.38, sy + h * 0.35, w * 0.76, h * 0.5, mat.fill);
-  fillPx(ctx, cx - w * 0.28, sy + h * 0.15, w * 0.56, u * 2, rgba('#FFFFFF', 0.65));
-  for (let i = 0; i < 4; i++) {
+}
+
+/** Nuvem — silhueta clássica com bolhas arredondadas sobrepostas */
+export function drawCloud(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed } = a;
+  const press = a.overlay?.pressAmount ?? 0;
+  const squash = 1 - press * 0.22;
+  const drift = Math.sin(time * 1.35 + wobble) * u * 0.55;
+  const baseY = sy + h * 0.78;
+
+  const puffs: { x: number; rw: number; rh: number }[] = [
+    { x: -0.36, rw: 0.24, rh: 0.34 },
+    { x: -0.17, rw: 0.3, rh: 0.5 },
+    { x: 0.02, rw: 0.38, rh: 0.72 },
+    { x: 0.2, rw: 0.28, rh: 0.46 },
+    { x: 0.37, rw: 0.22, rh: 0.3 },
+  ];
+
+  // Base achatada — superfície de apoio
+  fillPx(ctx, cx - w * 0.48, baseY - u, w * 0.96, h * 0.28, mat.fill);
+  fillPx(ctx, cx - w * 0.4, baseY - h * 0.18, w * 0.8, h * 0.16, mat.fill);
+
+  for (let i = 0; i < puffs.length; i++) {
+    const p = puffs[i]!;
+    const px = cx + p.x * w + drift * (0.25 + Math.abs(p.x) * 0.5);
+    const pw = w * p.rw * squash;
+    const ph = h * p.rh * squash;
+    fillPxPuff(ctx, px, baseY, pw, ph, u, mat.fill);
+  }
+
+  // Volume central — junta os puffs num corpo contínuo
+  fillPx(ctx, cx - w * 0.44, baseY - h * 0.34 * squash, w * 0.88, h * 0.28 * squash, mat.fill);
+  fillPx(ctx, cx - w * 0.3, baseY - h * 0.48 * squash, w * 0.6, h * 0.18 * squash, mat.fill);
+
+  // Brilho no topo das cúpulas
+  const highlights = [
+    { x: -0.16, y: 0.52, ww: 0.22 },
+    { x: 0.02, y: 0.68, ww: 0.28 },
+    { x: 0.2, y: 0.46, ww: 0.18 },
+  ];
+  for (let i = 0; i < highlights.length; i++) {
+    const hl = highlights[i]!;
+    const hx = cx + hl.x * w + drift * 0.4;
+    const hy = baseY - h * hl.y * squash;
+    fillPx(ctx, hx - w * hl.ww * 0.5, hy, w * hl.ww, u * 2, rgba('#FFFFFF', 0.62 - i * 0.06));
+    fillPx(ctx, hx - w * hl.ww * 0.28, hy - u, w * hl.ww * 0.56, u, rgba('#FFFFFF', 0.38));
+  }
+
+  // Sombra suave na base
+  fillPx(ctx, cx - w * 0.34, baseY + u * 0.5, w * 0.68, u, rgba(mat.stroke, 0.18));
+
+  // Brilhos cintilantes
+  for (let i = 0; i < 5; i++) {
+    if (Math.sin(time * 2.1 + i + wobble + seed * 0.01) <= 0.1) continue;
     fillPx(
       ctx,
-      cx + (seeded(a.seed, i + 40) - 0.5) * w * 0.5,
-      sy + u + i * u * 0.5,
-      u * 2,
+      cx + (seeded(seed, i + 40) - 0.5) * w * 0.62 + drift,
+      sy + u + seeded(seed, i + 44) * h * 0.35,
       u,
-      rgba('#FFFFFF', 0.35),
+      u,
+      rgba('#FFFFFF', 0.42 + seeded(seed, i + 48) * 0.25),
     );
   }
 }
