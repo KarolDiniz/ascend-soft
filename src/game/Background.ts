@@ -66,12 +66,6 @@ export class Background {
       ctx.fillStyle = `rgba(255,252,245,${flash * 0.16})`;
       ctx.fillRect(0, 0, w, h);
     }
-
-    const bandY = Math.floor(h * (0.22 + breath * 0.08));
-    ctx.fillStyle = `rgba(255, 250, 240, ${0.1 + breath * 0.06})`;
-    ctx.fillRect(0, bandY, w, 6);
-    ctx.fillStyle = `rgba(255, 250, 240, ${0.05 + breath * 0.04})`;
-    ctx.fillRect(0, bandY + 6, w, 10);
   }
 
   private drawThemedBlobs(
