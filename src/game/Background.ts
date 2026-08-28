@@ -115,25 +115,16 @@ export class Background {
     ctx.save();
     ctx.imageSmoothingEnabled = true;
 
-    // Centro ~40% mais escuro (multiply 0.6 ≈ #999999)
+    // Profundidade radial — evita faixa retangular vertical no centro
+    const cx = w * 0.5;
+    const cy = h * 0.48;
+    const r = Math.max(w, h) * 0.78;
     ctx.globalCompositeOperation = 'multiply';
-    const darken = ctx.createLinearGradient(0, 0, w, 0);
-    darken.addColorStop(0, '#ffffff');
-    darken.addColorStop(0.3, '#ececec');
-    darken.addColorStop(0.5, '#999999');
-    darken.addColorStop(0.7, '#ececec');
+    const darken = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    darken.addColorStop(0, '#999999');
+    darken.addColorStop(0.42, '#cccccc');
     darken.addColorStop(1, '#ffffff');
     ctx.fillStyle = darken;
-    ctx.fillRect(0, 0, w, h);
-
-    // Laterais levemente mais claras
-    ctx.globalCompositeOperation = 'screen';
-    const lift = ctx.createLinearGradient(0, 0, w, 0);
-    lift.addColorStop(0, 'rgba(255,255,255,0.22)');
-    lift.addColorStop(0.32, 'rgba(255,255,255,0)');
-    lift.addColorStop(0.68, 'rgba(255,255,255,0)');
-    lift.addColorStop(1, 'rgba(255,255,255,0.22)');
-    ctx.fillStyle = lift;
     ctx.fillRect(0, 0, w, h);
 
     ctx.restore();
@@ -234,11 +225,6 @@ export class Background {
     ctx.fillRect(0, h - 8, w, 8);
     ctx.fillRect(0, 0, 6, h);
     ctx.fillRect(w - 6, 0, 6, h);
-
-    if (atm && materialMood(atm.primaryId) === 'ethereal') {
-      ctx.fillStyle = 'rgba(255, 235, 200, 0.1)';
-      ctx.fillRect(Math.floor(w * 0.3), Math.floor(h * 0.3), Math.floor(w * 0.4), Math.floor(h * 0.2));
-    }
 
     this.drawGrain(ctx, w, h);
   }

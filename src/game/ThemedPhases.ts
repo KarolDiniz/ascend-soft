@@ -242,7 +242,7 @@ const DECOR: Record<MaterialId, DecorKind[]> = {
   cloud: ['creamCloud', 'softOrb', 'bigBubble', 'abstractMote'],
   paper: ['abstractMote', 'stone', 'abstractMote', 'spoon'],
   plasticBottle: ['bottle', 'bigBubble', 'abstractMote', 'bottle'],
-  velvet: ['towel', 'softOrb', 'abstractMote', 'creamCloud'],
+  velvet: ['softOrb', 'creamCloud', 'abstractMote', 'softOrb'],
   blossom: ['flowerBouquet', 'hibiscus', 'leaf', 'flowerBouquet'],
   marimba: ['marimbaBar', 'windChime', 'abstractMote', 'softOrb'],
   crystal: ['crystal', 'lightRing', 'snowflake', 'softOrb'],
