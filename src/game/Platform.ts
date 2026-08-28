@@ -16,7 +16,7 @@ import { buildPlatformPersonality, type PlatformPersonality } from './platform/p
 import { pickVariant } from './platform/PlatformVariant';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
 
-const SINK_MAX = 5.2;
+const SINK_MAX = 7.8;
 const PRESS_MIN = 0.28;
 
 /** Events emitted once for Game to juice (particles/audio/floaters). */
@@ -183,8 +183,8 @@ export class Platform {
 
       if (fresh) {
         this.pressHold = hold;
-        this.pressAmount = Math.max(this.pressAmount, 0.38 + impact * 0.42);
-        this.pressVel += (2.4 + impact * 2.8) * mat.squash;
+        this.pressAmount = Math.max(this.pressAmount, 0.5 + impact * 0.58);
+        this.pressVel += (3.4 + impact * 3.9) * mat.squash;
         this.landedOnce = true;
         this.landCount += 1;
         this.onLandBehavior(impact);
@@ -343,12 +343,12 @@ export class Platform {
     const force = (target - this.pressAmount) * k - this.pressVel * d;
     this.pressVel += force * dt;
     this.pressAmount += this.pressVel * dt;
-    if (this.pressAmount > 1.55) {
-      this.pressAmount = 1.55;
+    if (this.pressAmount > 1.9) {
+      this.pressAmount = 1.9;
       this.pressVel *= 0.35;
     }
-    if (this.pressAmount < -0.42) {
-      this.pressAmount = -0.42;
+    if (this.pressAmount < -0.55) {
+      this.pressAmount = -0.55;
       this.pressVel *= 0.4;
     }
 
@@ -380,8 +380,8 @@ export class Platform {
     const crumbleSink = this.behavior === 'crumble' ? (1 - this.integrity) * 12 : 0;
     this.sink = sinkBase + meltSink + crumbleSink;
 
-    this.deformX = 1 + meltFlat * 0.35 + (this.behavior === 'foamPop' ? visual * 0.15 : 0);
-    this.deformY = 1 - meltFlat * 0.55 - (this.behavior === 'foamPop' ? visual * 0.2 : 0);
+    this.deformX = 1 + meltFlat * 0.35 + (this.behavior === 'foamPop' ? visual * 0.22 : 0);
+    this.deformY = 1 - meltFlat * 0.55 - (this.behavior === 'foamPop' ? visual * 0.3 : 0);
 
     if (
       this.pressTarget < 0.5 &&
@@ -496,32 +496,32 @@ export class Platform {
     const stretch = Math.max(0, -this.pressAmount);
     const pressMulX =
       this.behavior === 'melt'
-        ? 0.24
+        ? 0.34
         : this.behavior === 'shatter'
-          ? 0.06
+          ? 0.085
           : this.behavior === 'sticky'
-            ? 0.2
+            ? 0.28
             : this.behavior === 'squeeze'
-              ? 0.16
+              ? 0.22
               : this.behavior === 'foamPop'
-                ? 0.2
-                : 0.16;
+                ? 0.28
+                : 0.22;
     const pressMulY =
       this.behavior === 'melt'
-        ? 0.4
+        ? 0.56
         : this.behavior === 'shatter'
-          ? 0.12
+          ? 0.17
           : this.behavior === 'sticky'
-            ? 0.3
+            ? 0.42
             : this.behavior === 'foamPop'
-              ? 0.34
+              ? 0.48
               : this.behavior === 'elastic'
-                ? 0.26
-                : 0.24;
+                ? 0.36
+                : 0.34;
     const squashX =
-      (1 + pressed * pressMulX + softWobble - stretch * 0.08) * this.deformX;
+      (1 + pressed * pressMulX + softWobble - stretch * 0.12) * this.deformX;
     const squashY =
-      (1 - pressed * pressMulY - softWobble * 0.55 + stretch * 0.18 - cheeseHop * 0.5) *
+      (1 - pressed * pressMulY - softWobble * 0.55 + stretch * 0.26 - cheeseHop * 0.5) *
       Math.max(0.18, this.deformY);
     const cy = this.y - this.sink + cheeseHop * 2.5;
 

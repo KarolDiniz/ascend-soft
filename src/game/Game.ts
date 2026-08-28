@@ -581,7 +581,7 @@ export class Game {
     const justLanded = !wasGrounded || this.player.groundedPlatform !== p;
 
     if (justLanded) {
-      const impact = Math.min(1.25, Math.abs(this.player.vy) / 420);
+      const impact = Math.min(1.25, Math.abs(this.player.vy) / 360);
       const centerDist = Math.abs(this.player.x - p.x) / (p.w / 2);
       const perfect = centerDist < 0.15;
       const mat = p.getMaterialDef();

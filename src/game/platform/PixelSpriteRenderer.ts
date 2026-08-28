@@ -103,14 +103,14 @@ export function drawPixelPlatformSprite(
 
   const pressed = Math.max(0, pressAmount);
   // Continuous (non-snapped) deform for fluid feel — only anchor snaps
-  const heightMul = 1 - pressed * 0.08 - melt * 0.42;
+  const heightMul = 1 - pressed * 0.12 - melt * 0.42;
   const spreadExtra =
     melt * 0.32 +
-    (behavior === 'foamPop' ? pressed * 0.14 : 0) +
+    (behavior === 'foamPop' ? pressed * 0.2 : 0) +
     (behavior === 'crumble' ? (1 - (overlay?.integrity ?? 1)) * 0.22 : 0) +
     (behavior === 'elastic' ? Math.sin(state.wobble) * 0.02 : 0);
 
-  const spread = state.w * visualSpreadMul * (1 + pressed * 0.04 + spreadExtra);
+  const spread = state.w * visualSpreadMul * (1 + pressed * 0.065 + spreadExtra);
   const depth = state.h * visualDepthMul * 2.45 * Math.max(0.28, heightMul);
   let drawW = spread * 1.12;
   let drawH = (depth + state.h * 0.55) * Math.max(0.28, heightMul);

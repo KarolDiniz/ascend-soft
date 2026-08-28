@@ -154,12 +154,12 @@ export function drawPlatformSprite(
   const behavior = overlay?.behavior ?? 'elastic';
 
   const pressed = Math.max(0, pressAmount);
-  const heightMul = 1 - pressed * 0.06 - melt * 0.35 - (behavior === 'crumble' ? (1 - (overlay?.integrity ?? 1)) * 0.25 : 0);
+  const heightMul = 1 - pressed * 0.09 - melt * 0.35 - (behavior === 'crumble' ? (1 - (overlay?.integrity ?? 1)) * 0.25 : 0);
   const spreadExtra =
     melt * 0.25 +
-    (behavior === 'foamPop' && pressed > 0.3 ? pressed * 0.12 : 0) +
+    (behavior === 'foamPop' && pressed > 0.3 ? pressed * 0.17 : 0) +
     (behavior === 'crumble' ? (1 - (overlay?.integrity ?? 1)) * 0.18 : 0);
-  const spread = state.w * visualSpreadMul * (1 + pressed * 0.03 + spreadExtra);
+  const spread = state.w * visualSpreadMul * (1 + pressed * 0.05 + spreadExtra);
   const depth = state.h * visualDepthMul * 2.2 * Math.max(0.35, heightMul);
   const drawW = spread * 1.08;
   const drawH = (depth + state.h * 0.5) * Math.max(0.35, heightMul);
