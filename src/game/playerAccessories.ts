@@ -19,7 +19,6 @@ export type AccessoryLayer = 'underFace' | 'overFace';
 
 export function accessoryLayers(id: AccessoryId): AccessoryLayer[] {
   if (id === 'none') return [];
-  if (id === 'headphones') return ['overFace'];
   if (id === 'bow') return ['underFace'];
   return ['underFace'];
 }
@@ -43,7 +42,6 @@ export function drawPlayerAccessory(
   }
 
   const under = layer === 'underFace';
-  const over = layer === 'overFace';
 
   switch (accessory) {
     case 'bow':
@@ -60,9 +58,6 @@ export function drawPlayerAccessory(
       break;
     case 'crown':
       if (under) drawCrown(ctx, bw, bh, animT);
-      break;
-    case 'headphones':
-      if (over) drawHeadphones(ctx, bw, bh, animT);
       break;
     case 'alienAntenna':
       if (under) drawAlienAntenna(ctx, bw, bh, animT);
@@ -192,47 +187,46 @@ function drawSunhat(
   drawSpriteHat(ctx, bw, bh, animT, STRAW_HAT_SPRITE, STRAW_HAT_COLORS, 1, 0.38, 11, 0.4);
 }
 
+/** Brotinho — sprite 21×18 extraído da referência */
+const SPROUT_SPRITE = [
+  '............MMMMMMMM.',
+  '...........MMDDDMMMDD',
+  '..........DMDDMMMDDDD',
+  '....MMMMM.DDDMMMDDM..',
+  '..MDDDDDDMDDMMDDDD...',
+  '.MMDDMMMMMDMMDDDD....',
+  '.MDMMMMMMMDMDDDD.....',
+  'MMMDDDDDDDDDDL.......',
+  'MDDDDDDDDMM..........',
+  'M....DD..DD..........',
+  '........DDD..........',
+  '........DDD..........',
+  '........DDD..........',
+  '.......MMDD..........',
+  '.......MMM...........',
+  '.......MMMM..........',
+  '.......MMDD..........',
+  '........DDD..........',
+] as const;
+
+const SPROUT_COLORS: Record<string, string> = {
+  L: '#F0FBE3',
+  M: '#A3D063',
+  D: '#80B437',
+};
+
 function drawSprout(
   ctx: CanvasRenderingContext2D,
-  _bw: number,
+  bw: number,
   bh: number,
   animT: number,
 ): void {
-  const sway = Math.sin(animT * 4) * u * 0.4;
-  const cx = sway;
-  const cy = -bh * 0.5;
-  const stem = '#78B868';
-  const stemLo = '#5A9850';
-  const stemHi = '#98D088';
-  const leaf = PASTEL.mint;
-  const leafHi = '#B8F0A8';
-  const leafLo = '#68B058';
-  const s = 1.48;
-
-  // vaso / base no topo da cabeça
-  fillPx(ctx, cx - u * 1.4, cy + u * 5.2, u * 2.8, u * 1.2, stemLo);
-  fillPx(ctx, cx - u * 1.1, cy + u * 4.6, u * 2.2, u * 1.4, stem);
-
-  // caule grosso
-  fillPx(ctx, cx - u * 0.85, cy + u * 0.5, u * 1.7, u * 5.2 * s, stemLo);
-  fillPx(ctx, cx - u * 0.55, cy, u * 1.1, u * 5.6 * s, stem);
-  fillPx(ctx, cx - u * 0.25, cy + u * 1.5, u * 0.5, u * 3.5 * s, stemHi);
-
-  // folha esquerda grande
-  fillPx(ctx, cx - u * 5.2 * s, cy - u * 0.5, u * 4.8 * s, u * 3.6 * s, leafLo);
-  fillPx(ctx, cx - u * 4.6 * s, cy - u * 1.2, u * 4.2 * s, u * 3.2 * s, leaf);
-  fillPx(ctx, cx - u * 3.8 * s, cy - u * 0.8, u * 2.4 * s, u * 1.8 * s, leafHi);
-  fillPx(ctx, cx - u * 3.2 * s, cy - u * 2, u * 1.2, u * 1.2, rgba(PASTEL.white, 0.45));
-
-  // folha direita grande
-  fillPx(ctx, cx + u * 0.2, cy - u * 2.8, u * 4.6 * s, u * 3.4 * s, leafLo);
-  fillPx(ctx, cx + u * 0.6, cy - u * 3.5, u * 4 * s, u * 3 * s, leafHi);
-  fillPx(ctx, cx + u * 1.2, cy - u * 2.6, u * 2.8 * s, u * 2 * s, leaf);
-  fillPx(ctx, cx + u * 2.2, cy - u * 3.8, u * 1.2, u * 1.2, rgba(PASTEL.white, 0.5));
-
-  // brotinho do topo
-  fillPx(ctx, cx - u * 0.6, cy - u * 4.2 * s, u * 1.8, u * 1.8, leafHi);
-  fillPx(ctx, cx - u * 0.35, cy - u * 5 * s, u * 1.2, u * 1.2, rgba(PASTEL.white, 0.6));
+  const sway = Math.sin(animT * 4) * u * 0.15;
+  ctx.save();
+  ctx.translate(sway, 0);
+  // Linha 17 = base do caule encostada no topo da cabeça
+  drawSpriteHat(ctx, bw, bh, animT, SPROUT_SPRITE, SPROUT_COLORS, 1, 0.38, 17, 0.05);
+  ctx.restore();
 }
 
 /** Coroa dourada — sprite 24×26 extraído da referência */
@@ -283,76 +277,6 @@ function drawCrown(
   animT: number,
 ): void {
   drawSpriteHat(ctx, bw, bh, animT, CROWN_SPRITE, CROWN_COLORS, 1, 0.4, 24, 0.2);
-}
-
-function drawHeadphones(
-  ctx: CanvasRenderingContext2D,
-  bw: number,
-  bh: number,
-  animT: number,
-): void {
-  const bounce = Math.sin(animT * 3.5) * u * 0.1;
-  const lx = -bw * 0.36;
-  const rx = bw * 0.28;
-  const cupY = -bh * 0.26 + bounce;
-
-  const band = '#8A7898';
-  const bandHi = PASTEL.cream;
-  const bandLo = rgba(PASTEL.inkSoft, 0.55);
-  const shell = PASTEL.lilac;
-  const shellLo = '#C0A8D0';
-  const shellHi = rgba(PASTEL.white, 0.55);
-  const pad = PASTEL.blush;
-  const padIn = '#E8B0BC';
-  const cable = rgba(PASTEL.inkSoft, 0.42);
-  const led = PASTEL.mint;
-
-  const bandTop = -bh * 0.44 + bounce;
-
-  // arco da faixa — curva sobre a cabeça
-  fillPx(ctx, -u * 2, bandTop, u * 4, u * 1.6, bandHi);
-  fillPx(ctx, -bw * 0.14, bandTop + u * 0.4, bw * 0.28, u * 1.2, band);
-  fillPx(ctx, -bw * 0.24, bandTop + u * 1.1, u * 2.5, u, bandLo);
-  fillPx(ctx, bw * 0.16, bandTop + u * 1.1, u * 2.5, u, bandLo);
-  fillPx(ctx, lx - u, bandTop + u * 2.2, u * 3.5, u * 1.1, band);
-  fillPx(ctx, rx - u * 2.5, bandTop + u * 2.2, u * 3.5, u * 1.1, band);
-  fillPx(ctx, lx + u * 0.5, bandTop + u * 2.8, u, u * 1.8, bandLo);
-  fillPx(ctx, rx + u * 0.5, bandTop + u * 2.8, u, u * 1.8, bandLo);
-
-  const drawCup = (cx: number, side: 'L' | 'R'): void => {
-    const out = side === 'L' ? -1 : 1;
-    // concha externa
-    fillPx(ctx, cx - u * 1.7, cupY - u * 2, u * 3.4, u * 4.2, shellLo);
-    fillPx(ctx, cx - u * 1.5, cupY - u * 1.8, u * 3, u * 3.8, shell);
-    fillPx(ctx, cx - u * 1.2, cupY - u * 1.5, u * 2.4, u * 3.2, shellHi);
-    // aro acolchoado
-    fillPx(ctx, cx - u * 1.35, cupY - u * 1.2, u * 2.7, u * 2.9, pad);
-    fillPx(ctx, cx - u * 1.05, cupY - u * 0.7, u * 2.1, u * 2.1, padIn);
-    // grelha / driver
-    fillPx(ctx, cx - u * 0.75, cupY - u * 0.35, u * 1.5, u * 1.5, rgba(PASTEL.inkSoft, 0.12));
-    fillPx(ctx, cx - u * 0.45, cupY - u * 0.15, u * 0.8, u * 0.8, rgba(PASTEL.inkSoft, 0.18));
-    // brilho
-    fillPx(ctx, cx - u * 1.25 * out, cupY - u * 1.55, u, u, shellHi);
-    // LED ASMR
-    fillPx(ctx, cx + u * 0.9 * out, cupY + u * 0.9, u * 0.7, u * 0.7, led);
-  };
-
-  drawCup(lx, 'L');
-  drawCup(rx, 'R');
-
-  // cabo macio pendendo
-  fillPx(ctx, lx - u * 0.5, cupY + u * 2.2, u, u * 2.2, cable);
-  fillPx(ctx, lx + u * 0.2, cupY + u * 4.2, u, u * 1.8, cable);
-  fillPx(ctx, lx + u * 0.8, cupY + u * 5.6, u * 1.2, u, cable);
-
-  // ondas sonoras sutis (ASMR)
-  if (Math.sin(animT * 5.5) > 0.25) {
-    const wave = rgba(PASTEL.powder, 0.55);
-    fillPx(ctx, lx - u * 3.2, cupY - u * 0.2, u, u, wave);
-    fillPx(ctx, lx - u * 4, cupY + u * 0.5, u, u, wave);
-    fillPx(ctx, rx + u * 2.8, cupY - u * 0.1, u, u, wave);
-    fillPx(ctx, rx + u * 3.6, cupY + u * 0.6, u, u, wave);
-  }
 }
 
 function drawAlienAntenna(
@@ -756,7 +680,6 @@ export function drawAccessoryIcon(
     id === 'bow' ||
     id === 'sprout' ||
     id === 'crown' ||
-    id === 'headphones' ||
     id === 'alienAntenna' ||
     id === 'santaHat' ||
     id === 'sunhat' ||
@@ -766,6 +689,7 @@ export function drawAccessoryIcon(
     id === 'marioCap' ||
     id === 'pirateHat';
   const boost =
+    id === 'sprout' ||
     id === 'alienAntenna' ||
     id === 'santaHat' ||
     id === 'sunhat' ||

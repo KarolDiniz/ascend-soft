@@ -12,7 +12,6 @@ export type AccessoryId =
   | 'sunhat'
   | 'sprout'
   | 'crown'
-  | 'headphones'
   | 'alienAntenna'
   | 'santaHat'
   | 'catEars'
@@ -155,7 +154,6 @@ export const ACCESSORY_OPTIONS: AccessoryOption[] = [
   { id: 'sunhat', label: 'Chapéu de palha' },
   { id: 'sprout', label: 'Brotinho' },
   { id: 'crown', label: 'Coroa' },
-  { id: 'headphones', label: 'Fones' },
   { id: 'alienAntenna', label: 'Antenas alien' },
   { id: 'santaHat', label: 'Touca Natal' },
   { id: 'catEars', label: 'Orelhas gato' },
@@ -211,7 +209,11 @@ function sanitizeAppearance(p: Partial<PlayerAppearance>): PlayerAppearance {
     ? p.bodyColor!
     : DEFAULT_APPEARANCE.bodyColor;
   const rawAccessory =
-    (p.accessory as string) === 'star' ? 'crown' : p.accessory;
+    (p.accessory as string) === 'star'
+      ? 'crown'
+      : (p.accessory as string) === 'headphones'
+        ? 'none'
+        : p.accessory;
   const accessory = ACCESSORY_OPTIONS.some((o) => o.id === rawAccessory)
     ? rawAccessory!
     : DEFAULT_APPEARANCE.accessory;
