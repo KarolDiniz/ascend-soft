@@ -50,7 +50,7 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   paper: landFiles('keyboard.mp3'),
   plasticBottle: landFiles('plasticBottle.mp3'),
   velvet: landFiles('cloud.mp3'),
-  blossom: landFiles('grass.mp3'),
+  blossom: landFiles(), // som procedural — pétalas + campainha
   marimba: landFiles(), // tom procedural — nota muda por barra
   crystal: landFiles('iceSoap.mp3'),
   ceramic: landFiles('glycerin.mp3'),

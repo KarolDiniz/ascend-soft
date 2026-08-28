@@ -398,7 +398,9 @@ export class AudioBus {
         velvet: () =>
           this.landWithSample(ctx, land, 'velvet', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
         blossom: () =>
-          this.landWithSample(ctx, land, 'blossom', pitch, imp, () => this.grassCrunch(ctx, land, pitch, imp)),
+          this.landWithSample(ctx, land, 'blossom', pitch, imp, () =>
+            this.blossomPetalLand(ctx, land, pitch, imp),
+          ),
         marimba: () =>
           this.landWithSample(ctx, land, 'marimba', pitch, imp, () =>
             this.marimbaToneAt(ctx, land, pitch, imp, marimbaBar ?? Math.floor(Math.random() * 7)),
@@ -1548,6 +1550,46 @@ export class AudioBus {
     this.warmLandTone(ctx, sfx, 'sine', 78 * pitch, 42 * pitch, 0.32, v * 1.0, t, 380);
     this.softNoise(ctx, sfx, 0.14, 180, v * 0.42, t, 'lowpass');
     this.warmLandTone(ctx, sfx, 'triangle', 110 * pitch, 68 * pitch, 0.22, v * 0.38, t + 0.03, 480);
+  }
+
+  /** Pouso nas flores — pétalas soltas e sino delicado */
+  private blossomPetalLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    const p = pitch * (0.97 + Math.random() * 0.08);
+
+    // Toque macio no canteiro
+    this.softThud(ctx, sfx, t, p * 0.92, impact, 98);
+    this.warmLandTone(ctx, sfx, 'sine', 220 * p, 180 * p, 0.1, v * 0.42, t + 0.006, 2600);
+
+    // Pétalas sussurrando ao cair
+    this.softNoise(ctx, sfx, 0.18, 2800, v * 0.52, t + 0.01, 'highpass', 0.85);
+    this.softNoise(ctx, sfx, 0.14, 1800, v * 0.38, t + 0.022, 'bandpass', 1.1);
+    this.softNoise(ctx, sfx, 0.16, 1100, v * 0.28, t + 0.018, 'bandpass', 0.75);
+
+    // Estalinhos finos de pétala
+    for (let i = 0; i < 4; i++) {
+      const st = t + 0.014 + i * 0.018;
+      this.noiseBurst(
+        ctx,
+        sfx,
+        0.016,
+        3200 + i * 320 + Math.random() * 240,
+        v * (0.36 - i * 0.04),
+        st,
+        'highpass',
+      );
+    }
+
+    // Campainha floral — notas suaves ascendentes
+    const notes = [587, 659, 740];
+    const note = notes[Math.floor(Math.random() * notes.length)]! * p;
+    this.tone(ctx, sfx, 'sine', note, note * 1.002, 0.14, v * 0.32, t + 0.028);
+    this.tone(ctx, sfx, 'triangle', note * 1.5, note * 1.502, 0.09, v * 0.14, t + 0.038);
+
+    // Cauda de pétalas flutuando
+    this.softNoise(ctx, sfx, 0.24, 920, v * 0.2, t + 0.05, 'bandpass', 0.55);
+    this.tone(ctx, sfx, 'sine', note * 0.88, note * 0.881, 0.11, v * 0.12, t + 0.062);
   }
 
   private grassCrunch(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
