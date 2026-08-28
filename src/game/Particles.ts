@@ -1,6 +1,7 @@
 import type { MaterialId, ParticleStyle } from '../audio/materials';
 import { PASTEL } from '../theme/pastelPalette';
 import { PIXEL } from '../theme/pixel';
+import { emitPlatformIdleJuice } from './platform/platformIdleJuice';
 import { isSoapBarMaterial } from './platform/soapColors';
 
 export type GameplayFx =
@@ -600,6 +601,24 @@ export class Particles {
     }
   }
 
+  /** Spawn leve para idle juice — não exportar spawn privado */
+  idleParticle(
+    x: number,
+    y: number,
+    color: string,
+    type: GameplayFx,
+    opts: {
+      vx?: number;
+      vy?: number;
+      life?: number;
+      size?: number;
+      spin?: number;
+      glyph?: string;
+    } = {},
+  ): void {
+    this.spawn(x, y, color, type, opts);
+  }
+
   /** Legacy burst API — still used by behaviors / breath */
   burst(
     x: number,
@@ -988,71 +1007,32 @@ export class Particles {
     x: number,
     surfaceY: number,
     color: string,
-    style: ParticleStyle,
+    _style: ParticleStyle,
     materialId: MaterialId,
+    accent: string,
   ): void {
     if (!this.allowContinuous) return;
-    if (materialId === 'jelly' || materialId === 'marshmallow' || isSoapBarMaterial(materialId)) return;
-    const rates: Partial<Record<MaterialId, number>> = {
-      jelly: 2.8,
-      butter: 1.8,
-      mochi: 2.2,
-      marshmallow: 2.4,
-      chocolate: 1.6,
-      sponge: 2.0,
-      citrus: 2.4,
-      honeycomb: 2.6,
-      glycerin: 2.0,
-      whipped: 2.5,
-      soapBubble: 3.0,
-      bathFoam: 2.6,
-      lavenderSoap: 2.2,
-      creamSoap: 2.0,
-      keyboard: 1.4,
-      bubbleWrap: 2.4,
-      kinetic: 2.2,
-      iceSoap: 2.8,
-      clearSlime: 2.4,
-      butterSlime: 1.8,
-      amoeba: 2.4,
-      moss: 2.0,
-      grass: 2.2,
-      cotton: 2.0,
-      cloud: 2.6,
-      paper: 1.6,
-      plasticBottle: 2.2,
-      velvet: 1.8,
-      blossom: 2.4,
-      marimba: 1.5,
-      crystal: 2.6,
-      ceramic: 1.8,
-      clay: 2.0,
-      silk: 1.9,
-      kitten: 2.2,
-    };
-    const rate = rates[materialId] ?? 1.5;
-    if (Math.random() > dt * rate * this.densityScale) return;
-
-    const kind: ParticleStyle =
-      style === 'drip'
-        ? 'drip'
-        : style === 'glitter'
-          ? 'glitter'
-          : style === 'zest'
-            ? 'zest'
-            : style === 'sand'
-              ? 'sand'
-              : style === 'bubble'
-                ? 'bubble'
-                : style === 'foamBurst'
-                  ? 'foam'
-                  : 'foam';
-
-    this.spawn(x + (Math.random() - 0.5) * 36, surfaceY + (Math.random() - 0.3) * 8, color, kind, {
-      vx: (Math.random() - 0.5) * 14 + this.windX * 0.3,
-      vy: kind === 'drip' ? -12 - Math.random() * 20 : 8 + Math.random() * 22,
-      life: 0.45 + Math.random() * 0.4,
-      size: 1.5 + Math.random() * 2.2,
+    if (
+      emitPlatformIdleJuice(
+        this,
+        dt,
+        x,
+        surfaceY,
+        color,
+        accent,
+        materialId,
+        this.densityScale,
+        this.windX,
+      )
+    ) {
+      return;
+    }
+    if (Math.random() > dt * 1.2 * this.densityScale) return;
+    this.idleParticle(x + (Math.random() - 0.5) * 28, surfaceY, color, 'foam', {
+      vx: (Math.random() - 0.5) * 12 + this.windX * 0.25,
+      vy: 8 + Math.random() * 16,
+      life: 0.4,
+      size: 1.5 + Math.random() * 2,
     });
   }
 

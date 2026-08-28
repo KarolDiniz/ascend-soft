@@ -27,6 +27,7 @@ import {
 } from './extraPlatforms';
 import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
 import { drawSpongeFlies } from './spongeFlies';
+import { drawPlatformAmbientDecor } from './platformAmbientDecor';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
 export interface PixelPlatformOverlay {
@@ -262,10 +263,11 @@ export function renderPixelPlatform(
   if (shouldDrawSoftSpill(material, behavior)) {
     drawSoftSpillDrips(args, behavior);
   }
-  if (material !== 'keyboard' && material !== 'marimba') {
+  if (shouldDrawPersonalityHangs(material)) {
     drawPersonalityHangs(args);
   }
   drawRelaxSparkles(args);
+  drawPlatformAmbientDecor(material, args);
 
   // Shared crack overlay for shatter materials
   const crack = overlay?.crackLevel ?? 0;
@@ -427,14 +429,23 @@ function drawShelfFrontFace(a: DrawArgs): void {
   fillPx(ctx, x, sy + h, w, u, softShadow(mat, 0.14));
 }
 
+/** Penduricalhos na base — só chiclete, tecidos e grama */
+const BOTTOM_HANG_MATERIALS: ReadonlySet<MaterialId> = new Set([
+  'clearSlime',
+  'velvet',
+  'silk',
+  'cotton',
+  'grass',
+]);
+
+function shouldDrawPersonalityHangs(material: MaterialId): boolean {
+  return BOTTOM_HANG_MATERIALS.has(material);
+}
+
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
   if (material === 'keyboard' || material === 'marimba') return false;
-  return (
-    behavior === 'melt' ||
-    behavior === 'elastic' ||
-    behavior === 'sticky' ||
-    behavior === 'foamPop'
-  );
+  if (BOTTOM_HANG_MATERIALS.has(material)) return true;
+  return behavior === 'melt' || behavior === 'foamPop';
 }
 
 /** Derramamento animado na borda inferior — só materiais moles ou que derretem */

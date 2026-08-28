@@ -630,7 +630,15 @@ export class Game {
       if (Math.abs(p.y - camY) > this.H * 0.85) continue;
       if (Math.abs(p.x - this.player.x) > this.worldHalfW + 40) continue;
       const mat = p.getMaterialDef();
-      this.particles.emitPlatformIdle(dt, p.x, p.surfaceY, mat.particle, mat.particleStyle, p.material);
+      this.particles.emitPlatformIdle(
+        dt,
+        p.x,
+        p.surfaceY,
+        mat.particle,
+        mat.particleStyle,
+        p.material,
+        this.atmosphere.getAccent(),
+      );
     }
 
     // Behavior juice from platforms
