@@ -179,21 +179,35 @@ export class Player {
     if (Math.abs(dx) > 0.4) this.facing = dx > 0 ? 1 : -1;
     this.lookOffset = Math.max(-2.5, Math.min(2.5, (targetX - this.x) * 0.12));
 
-    const speedT = Math.min(1, Math.pow(speed / 340, 1.1));
+    const lagX = targetX - this.x;
+    const lagY = targetY - this.y;
+    const lag = Math.hypot(lagX, lagY);
+    const speedT = Math.min(1, Math.pow(speed / 280, 1.02));
+    const tensionT = Math.min(1, lag / 72);
+    const pullT = Math.min(1, tensionT * 0.92 + speedT * 0.62);
+
     let targetSquash = 1;
     let targetStretch = 1;
 
-    if (speedT > 0.03) {
-      const ax = Math.abs(dx) / (Math.abs(dx) + Math.abs(dy) + 0.001);
-      const ay = 1 - ax;
-      // Só estica no eixo vertical — horizontal sem “inchar” redondo
-      if (ay > ax) {
-        targetSquash = 1 - speedT * (0.1 + ay * 0.22);
-        targetStretch = 1 + speedT * (0.14 + ay * 0.36);
+    if (pullT > 0.03) {
+      const dirX = Math.abs(lagX) / (Math.abs(lagX) + Math.abs(lagY) + 0.001);
+      const dirY = 1 - dirX;
+
+      if (dirX >= dirY) {
+        const amount = pullT * (0.34 + dirX * 0.58);
+        targetSquash = 1 + amount;
+        targetStretch = 1 - amount * 0.88;
+      } else {
+        const amount = pullT * (0.28 + dirY * 0.52);
+        targetSquash = 1 - amount * 0.62;
+        targetStretch = 1 + amount;
       }
+
+      targetSquash = Math.min(1.72, Math.max(0.72, targetSquash));
+      targetStretch = Math.min(1.58, Math.max(0.58, targetStretch));
     }
 
-    const deformRate = 10 + speedT * 14;
+    const deformRate = 10 + pullT * 30;
     this.squash += (targetSquash - this.squash) * Math.min(1, deformRate * dt);
     this.stretch += (targetStretch - this.stretch) * Math.min(1, deformRate * dt);
     return speed;
