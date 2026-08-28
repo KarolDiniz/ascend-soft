@@ -224,56 +224,94 @@ export function emitPlatformIdleJuice(
       });
       break;
     case 'marimba':
-    case 'kalimba':
-    case 'xylophone':
-    case 'tambourine':
-    case 'woodBlock':
       p.musicNotes(rx(), surfaceY - 6, 1, false, 0);
       break;
-    case 'mushroom':
-      p.mossBits(rx(), surfaceY, 1, false, 0);
-      break;
-    case 'popcorn':
-      p.idleParticle(rx(), surfaceY - 2, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 20,
-        vy: 8 + Math.random() * 16,
-        life: 0.35,
-        size: 1.5 + Math.random() * 2,
+    case 'kalimba':
+      p.idleParticle(rx(), surfaceY - 8, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 10,
+        vy: -8 - Math.random() * 12,
+        life: 0.55,
+        size: 2,
       });
       break;
-    case 'bamboo':
-      p.idleParticle(rx(), surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 8,
+    case 'xylophone':
+      p.musicNotes(rx(), surfaceY - 6, 1, false, 0);
+      p.idleParticle(rx(), surfaceY - 4, color, 'glitter', {
+        vx: (Math.random() - 0.5) * 14,
         vy: 6 + Math.random() * 10,
         life: 0.45,
         size: 1.5,
       });
       break;
-    case 'seashell':
-      p.idleParticle(rx(), surfaceY - 4, accent, 'glitter', {
-        vx: (Math.random() - 0.5) * 12,
+    case 'tambourine':
+      p.idleParticle(rx(), surfaceY - 4, PASTEL.butter, 'glitter', {
+        vx: (Math.random() - 0.5) * 18,
         vy: 8 + Math.random() * 14,
-        life: 0.5,
-        size: 2,
-      });
-      break;
-    case 'macaron':
-    case 'boba':
-      p.idleParticle(rx(), surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 14,
-        vy: 10 + Math.random() * 12,
         life: 0.42,
         size: 2,
       });
       break;
+    case 'woodBlock':
+      p.idleParticle(rx(), surfaceY - 2, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 8,
+        vy: 4 + Math.random() * 8,
+        life: 0.35,
+        size: 1.5,
+      });
+      break;
+    case 'mushroom':
+      p.idleParticle(rx(), surfaceY - 2, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 14 + wy,
+        vy: -4 - Math.random() * 10,
+        life: 0.5,
+        size: 1.5,
+      });
+      break;
+    case 'popcorn':
+      p.idleParticle(rx(), surfaceY - 4, PASTEL.butter, 'crumb', {
+        vx: (Math.random() - 0.5) * 22,
+        vy: 10 + Math.random() * 18,
+        life: 0.38,
+        size: 2 + Math.random(),
+      });
+      break;
+    case 'bamboo':
+      p.grassFoliage(rx(), surfaceY, 1, false, 0);
+      break;
+    case 'seashell':
+      p.idleParticle(rx(), surfaceY - 4, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 12,
+        vy: 8 + Math.random() * 14,
+        life: 0.55,
+        size: 2,
+      });
+      p.risingBubbles(rx(), surfaceY, rgba(PASTEL.sky, 0.7), 1);
+      break;
+    case 'macaron':
+      p.idleParticle(rx(), surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: 10 + Math.random() * 12,
+        life: 0.4,
+        size: 1.5 + Math.random(),
+      });
+      break;
+    case 'boba':
+      p.risingBubbles(rx(), surfaceY, color, 2);
+      p.idleParticle(rx(), surfaceY - 2, accent, 'foam', {
+        vx: (Math.random() - 0.5) * 10,
+        vy: 6 + Math.random() * 10,
+        life: 0.45,
+        size: 2,
+      });
+      break;
     case 'feather':
-      p.cottonFluff(rx(), surfaceY - 4, 1, false, 0);
+      p.cottonFluff(rx(), surfaceY - 6, 1, false, wy);
       break;
     case 'cork':
       p.idleParticle(rx(), surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 16,
-        vy: 12 + Math.random() * 14,
-        life: 0.38,
+        vx: (Math.random() - 0.5) * 20 + wy,
+        vy: 10 + Math.random() * 14,
+        life: 0.42,
         size: 2,
       });
       break;

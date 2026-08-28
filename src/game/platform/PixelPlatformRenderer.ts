@@ -21,6 +21,7 @@ import {
   drawCrystal,
   drawFeather,
   drawGrass,
+  drawKalimba,
   drawKitten,
   drawMacaron,
   drawMarimba,
@@ -33,6 +34,8 @@ import {
   drawSilk,
   drawTambourine,
   drawVelvet,
+  drawWoodBlock,
+  drawXylophone,
 } from './extraPlatforms';
 import { drawTwistedMarshmallowPlatform, MARSHMALLOW_TWIST } from './marshmallowVisual';
 import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
@@ -275,9 +278,13 @@ export function renderPixelPlatform(
       drawMushroom(args);
       break;
     case 'kalimba':
+      drawKalimba(args);
+      break;
     case 'xylophone':
+      drawXylophone(args);
+      break;
     case 'woodBlock':
-      drawMarimba(args);
+      drawWoodBlock(args);
       break;
     case 'tambourine':
       drawTambourine(args);

@@ -185,10 +185,17 @@ export class Platform {
     return resolvePlatformMaterial(this.material, this.seed);
   }
 
-  /** Índice da barra de marimba sob o jogador */
+  private static readonly INSTRUMENT_BARS: Partial<Record<MaterialId, number>> = {
+    marimba: 7,
+    kalimba: 5,
+    xylophone: 8,
+    woodBlock: 4,
+  };
+
+  /** Índice da barra / tine / bloco sob o jogador (instrumentos) */
   noteMarimbaHit(playerX: number): number {
-    if (this.material !== 'marimba') return 0;
-    const bars = 7;
+    const bars = Platform.INSTRUMENT_BARS[this.material];
+    if (!bars) return 0;
     const left = this.x - this.w / 2;
     const t = (playerX - left) / Math.max(1, this.w);
     this.marimbaBarIndex = Math.max(0, Math.min(bars - 1, Math.floor(t * bars)));

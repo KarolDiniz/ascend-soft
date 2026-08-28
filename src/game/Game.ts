@@ -25,6 +25,7 @@ import type { PlatformEvent } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
 import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
+import { PASTEL } from '../theme/pastelPalette';
 
 const BEST_KEY = 'ascend-soft-best';
 const SEEN_KEY = 'ascend-soft-seen-materials';
@@ -656,11 +657,12 @@ export class Game {
         gp.behavior,
         this.atmosphere.getAccent(),
       );
-      if (gp.material === 'marimba' && Math.abs(this.player.vx) > 35) {
+      const INSTRUMENTS = new Set<MaterialId>(['marimba', 'kalimba', 'xylophone', 'woodBlock']);
+      if (INSTRUMENTS.has(gp.material) && Math.abs(this.player.vx) > 35) {
         const prevBar = this.lastMarimbaBar;
         const bar = gp.noteMarimbaHit(this.player.x);
         if (bar !== prevBar) {
-          this.audio.playMarimbaBar(bar, 0.45 + gp.pressAmount * 0.25);
+          this.audio.playInstrumentBar(gp.material, bar, 0.45 + gp.pressAmount * 0.25);
           this.particles.musicNotes(this.player.x, gp.surfaceY, 2, false, this.player.vx);
           this.lastMarimbaBar = bar;
         }
@@ -840,8 +842,9 @@ export class Game {
       }
 
       this.player.setLandExpression(p.material);
+      const INSTRUMENTS = new Set<MaterialId>(['marimba', 'kalimba', 'xylophone', 'woodBlock']);
       let marimbaBar: number | undefined;
-      if (p.material === 'marimba') {
+      if (INSTRUMENTS.has(p.material)) {
         marimbaBar = p.noteMarimbaHit(this.player.x);
         this.lastMarimbaBar = marimbaBar;
       } else {
@@ -996,6 +999,9 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'glitter', false);
           break;
         case 'marimba':
+        case 'kalimba':
+        case 'xylophone':
+        case 'woodBlock':
           this.particles.musicNotes(
             this.player.x,
             platformTop,
@@ -1003,7 +1009,47 @@ export class Game {
             true,
             this.player.vx,
           );
-          this.addFloater(this.player.x, platformTop + 16, '♪', mat.particle);
+          this.addFloater(this.player.x, platformTop + 16, p.material === 'woodBlock' ? 'tok!' : '♪', mat.particle);
+          break;
+        case 'tambourine':
+          this.particles.musicNotes(this.player.x, platformTop, 6 + Math.floor(impact * 6), true, this.player.vx);
+          this.particles.burst(this.player.x, platformTop, PASTEL.butter, 8, 'glitter', false);
+          this.addFloater(this.player.x, platformTop + 16, 'chim~', mat.particle);
+          break;
+        case 'mushroom':
+          this.particles.mossBits(this.player.x, platformTop, 10 + Math.floor(impact * 8), true, this.player.vx);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'foam', false);
+          break;
+        case 'popcorn':
+          this.particles.foamPopStorm(this.player.x, platformTop, mat.particle);
+          this.particles.burst(this.player.x, platformTop, PASTEL.butter, 10 + Math.floor(impact * 8), 'crumb', false);
+          this.addFloater(this.player.x, platformTop + 16, 'pop!', mat.particle);
+          break;
+        case 'bamboo':
+          this.particles.grassFoliage(this.player.x, platformTop, 8 + Math.floor(impact * 6), true, this.player.vx);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 5, 'crumb', false);
+          break;
+        case 'cork':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 8 + Math.floor(impact * 6), 'crumb', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 4, 'foam', false);
+          this.addFloater(this.player.x, platformTop + 16, 'pop!', mat.particle);
+          break;
+        case 'seashell':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'glitter', false);
+          this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 8 + Math.floor(impact * 6));
+          break;
+        case 'macaron':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 12 + Math.floor(impact * 10), 'crumb', false);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'foam', false);
+          break;
+        case 'boba':
+          this.particles.gumStretch(this.player.x, platformTop, mat.particle);
+          this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 14 + Math.floor(impact * 8));
+          this.addFloater(this.player.x, platformTop + 16, 'blorp~', mat.particle);
+          break;
+        case 'feather':
+          this.particles.cottonFluff(this.player.x, platformTop, 12 + Math.floor(impact * 10), true, this.player.vx);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'glitter', false);
           break;
         case 'crystal':
           this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 18);

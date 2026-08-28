@@ -18,7 +18,8 @@ function landFiles(...names: string[]): readonly string[] {
 /**
  * Sample de pouso por material — arquivos em public/assets/audio/land/.
  * No disco hoje: bathFoam, bubbleWrap, bubbleWrap-poof, chocolate, cloud, glycerin,
- * grass, handSoap, iceSoap, jelly, jelly-kick, keyboard, kitten, plasticBottle, slime, sponge.
+ * grass, handSoap, iceSoap, jelly, jelly-kick, keyboard, kitten, mushroom, plasticBottle,
+ * popcorn, seashell, slime, sponge.
  * Materiais sem MP3 dedicado usam proxy sonoro; se o fetch falhar, AudioBus usa síntese procedural.
  */
 const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
@@ -57,18 +58,18 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   clay: landFiles('sponge.mp3'),
   silk: landFiles('cloud.mp3'),
   kitten: landFiles('kitten.mp3'),
-  mushroom: landFiles('grass.mp3', 'sponge.mp3'),
+  mushroom: landFiles('mushroom.mp3'),
   kalimba: landFiles(),
   xylophone: landFiles(),
   tambourine: landFiles(),
-  popcorn: landFiles('bubbleWrap-poof.mp3', 'sponge.mp3'),
-  bamboo: landFiles('keyboard.mp3', 'sponge.mp3'),
-  cork: landFiles('bubbleWrap-poof.mp3'),
-  seashell: landFiles('iceSoap.mp3', 'glycerin.mp3'),
-  macaron: landFiles('sponge.mp3', 'chocolate.mp3'),
-  boba: landFiles('jelly.mp3', 'slime.mp3'),
-  feather: landFiles('cloud.mp3'),
-  woodBlock: landFiles('keyboard.mp3'),
+  popcorn: landFiles('popcorn.mp3'),
+  bamboo: landFiles(),
+  cork: landFiles(),
+  seashell: landFiles('seashell.mp3'),
+  macaron: landFiles(),
+  boba: landFiles(),
+  feather: landFiles(),
+  woodBlock: landFiles(),
 };
 
 export class LandSampleBank {

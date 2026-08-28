@@ -181,14 +181,120 @@ function decorClayCrumb(a: ExtraDrawArgs): void {
   fillPx(ctx, cx + side * w * 0.42, sy + u + (time * 40) % (u * 3), u, u, mat.particle);
 }
 
+/** Cogumelo — esporos flutuando */
+function decorMushroomSpore(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, seed, mat } = a;
+  if (Math.sin(time * 2.2 + seed) < 0.15) return;
+  fillPx(
+    ctx,
+    cx + (seeded(seed, 140) - 0.5) * w * 0.5,
+    sy - u * (2 + Math.sin(time * 3.5) * 1.5),
+    u,
+    u,
+    rgba(mat.particle, 0.6),
+  );
+}
+
+/** Pipoca — kernel estourando */
+function decorPopcornKernel(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, u, time, seed } = a;
+  const pop = (Math.sin(time * 7 + seed * 0.03) + 1) * 0.5;
+  if (pop < 0.75) return;
+  const kx = cx + (seeded(seed, 150) - 0.5) * w * 0.6;
+  const ky = sy + h * 0.3;
+  fillPx(ctx, kx, ky, u, u, PASTEL.butter);
+  fillPx(ctx, kx - u, ky - u, u * 3, u * 3, rgba(PASTEL.butter, 0.35));
+}
+
+/** Bambu — folha balançando */
+function decorBambooLeaf(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, mat } = a;
+  const sway = Math.sin(time * 1.8) * u;
+  fillPx(ctx, cx + w * 0.25 + sway, sy - u * 2, u * 3, u, rgba('#7AB858', 0.7));
+  fillPx(ctx, cx + w * 0.2 + sway, sy - u, u * 2, u, mat.particle);
+}
+
+/** Concha — bolha de ar */
+function decorSeashellBubble(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, seed } = a;
+  const drift = (time * 0.4 + seed * 0.01) % 1;
+  fillPx(
+    ctx,
+    cx + (seeded(seed, 160) - 0.5) * w * 0.4,
+    sy - u * (1 + drift * 4),
+    u * 1.5,
+    u * 1.5,
+    rgba(PASTEL.sky, 0.55 - drift * 0.3),
+  );
+}
+
+/** Boba — canudo com bolha */
+function decorBobaBubble(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, u, time, mat } = a;
+  const by = sy + h * 0.25 + Math.sin(time * 3) * u;
+  fillPx(ctx, cx + w * 0.3, by, u, u, rgba(mat.particle, 0.85));
+  fillPx(ctx, cx + w * 0.28, by - u, u * 1.5, u * 1.5, rgba(PASTEL.white, 0.4));
+}
+
+/** Pena — pluma flutuando */
+function decorFeatherDrift(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, mat } = a;
+  const fx = cx + Math.sin(time * 1.2) * w * 0.25;
+  const fy = sy - u * (3 + Math.sin(time * 2.5) * 1.5);
+  fillPx(ctx, fx, fy, u * 2, u, rgba(mat.fill, 0.55));
+}
+
+/** Rolha — pó de cortiça */
+function decorCorkDust(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, seed, mat } = a;
+  if (Math.sin(time * 3 + seed) < 0.3) return;
+  fillPx(ctx, cx + w * 0.35, sy + u + (time * 30) % (u * 4), u, u, rgba(mat.particle, 0.5));
+}
+
+/** Macaron — migalha doce */
+function decorMacaronCrumb(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, seed, mat } = a;
+  fillPx(
+    ctx,
+    cx + (seeded(seed, 170) - 0.5) * w * 0.5,
+    sy + u + Math.sin(time * 4) * u * 0.3,
+    u,
+    u,
+    rgba(mat.particle, 0.65),
+  );
+}
+
+/** Kalimba — brilho metálico */
+function decorKalimbaGlint(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, u, time, seed } = a;
+  if (Math.sin(time * 4 + seed) < 0.5) return;
+  fillPx(ctx, cx + (seeded(seed, 180) - 0.5) * w * 0.4, sy + u * 2, u, u, rgba(PASTEL.butter, 0.75));
+}
+
+/** Pandeiro — anel de vibração */
+function decorTambourineRing(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, u, time } = a;
+  const pulse = (Math.sin(time * 5) + 1) * 0.5;
+  if (pulse < 0.6) return;
+  const rx = w * 0.38;
+  fillPx(ctx, cx - rx, sy + h * 0.38, rx * 2, u, rgba(PASTEL.butter, 0.25 * pulse));
+}
+
 const DECOR: Partial<Record<MaterialId, (a: ExtraDrawArgs) => void>> = {
   cloud: decorCloudPuffs,
   marimba: decorMarimbaNotes,
-  kalimba: decorMarimbaNotes,
+  kalimba: decorKalimbaGlint,
   xylophone: decorMarimbaNotes,
-  tambourine: decorMarimbaNotes,
+  tambourine: decorTambourineRing,
   woodBlock: decorMarimbaNotes,
-  mushroom: decorMossSpore,
+  mushroom: decorMushroomSpore,
+  popcorn: decorPopcornKernel,
+  bamboo: decorBambooLeaf,
+  seashell: decorSeashellBubble,
+  macaron: decorMacaronCrumb,
+  boba: decorBobaBubble,
+  feather: decorFeatherDrift,
+  cork: decorCorkDust,
   keyboard: decorKeyboardKeys,
   bubbleWrap: decorBubbleWrapPop,
   kitten: decorKittenZzz,
