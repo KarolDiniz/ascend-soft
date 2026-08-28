@@ -129,10 +129,11 @@ export class Atmosphere {
 
     this.windX = wx + this.gustX * Math.max(this.gustStrength, 0.12);
     this.windY = wy + this.gustY * Math.max(this.gustStrength, 0.12);
-    this.density = dens;
+    const ambScale = 0.88;
+    this.density = dens * ambScale;
     this.breathPeriod = breath || 11;
-    this.grainAlpha = grain;
-    this.particleBudget = budget || 180;
+    this.grainAlpha = grain * ambScale;
+    this.particleBudget = (budget || 180) * ambScale;
 
     // Soft drifting light
     this.lightDirX = -0.32 + Math.sin(this.time * 0.18 + this.height * 0.004) * 0.12;

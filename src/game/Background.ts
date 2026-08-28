@@ -81,7 +81,7 @@ export class Background {
       'rgba(255,220,200,0.2)',
     ];
     const accent = atm?.getAccent() ?? '#f3e2a8';
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 7; i++) {
       const col = colors[i % colors.length];
       const phase = this.time * (0.15 + i * 0.04) + i * 1.7;
       const bx = ((i * 0.19 + Math.sin(phase) * 0.08 + 0.1) % 1) * w;
@@ -230,7 +230,7 @@ export class Background {
   ): void {
     switch (kind) {
       case 'mottle': {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 8; i++) {
           const x = ((i * 137 + this.time * 12) % (w + 80)) - 40;
           const y = (i * 89 + Math.sin(this.time * 0.3 + i) * 40) % h;
           const r = 44 + (i % 4) * 20;
@@ -246,7 +246,7 @@ export class Background {
       }
       case 'sugarVeil': {
         ctx.fillStyle = this.withAlpha(accent, 0.14);
-        for (let i = 0; i < 65; i++) {
+        for (let i = 0; i < 50; i++) {
           const x = ((i * 47 + this.time * 22) % (w + 20)) - 10;
           const y = ((i * 73 + this.time * 11) % (h + 20)) - 10;
           ctx.fillRect(x, y, 2, 2);

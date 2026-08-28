@@ -170,8 +170,8 @@ export class Game {
       return;
     }
     const mobile = this.W < 700 || this.dpr >= 1.5;
-    this.ambient.setMobileScale(mobile ? 0.72 : 1);
-    this.particles.setMobileScale(mobile ? 0.6 : 1);
+    this.ambient.setMobileScale(mobile ? 0.68 : p.ambientScale);
+    this.particles.setMobileScale(mobile ? 0.58 : p.particleScale);
   }
 
   start(): void {
@@ -311,8 +311,8 @@ export class Game {
       this.scenery.setPerfMode(p.forceSceneryPerf);
     }
     if (!p.lightMode && this.W >= 700 && this.dpr < 1.5 && this.fpsEma >= 55) {
-      amb = 1;
-      part = 1;
+      amb = p.ambientScale;
+      part = p.particleScale;
       this.scenery.setPerfMode(false);
     }
     this.ambient.setMobileScale(amb);

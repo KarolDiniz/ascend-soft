@@ -451,7 +451,7 @@ function drawSoftSpillDrips(a: DrawArgs, behavior: PlatformBehavior): void {
 function drawRelaxSparkles(a: DrawArgs): void {
   const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
   const mul = personality?.sparkleMul ?? 1;
-  const count = scaledCount(14, mul, 8);
+  const count = scaledCount(11, mul, 6);
 
   for (let i = 0; i < count; i++) {
     const phase = time * 2.8 + i * 1.7 + wobble + (personality?.wobblePhase ?? 0);
@@ -488,7 +488,11 @@ function drawSurfaceGrain(_a: DrawArgs, _count: number, _color: string, _alpha =
 /** Twinkling floaters around the platform (idle juice) */
 function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
   const { ctx, cx, sy, w, h, u, seed, time, wobble, personality } = a;
-  const n = scaledCount(count, personality?.sparkleMul ?? 1, Math.max(5, count - 2));
+  const n = scaledCount(
+    Math.max(3, Math.round(count * 0.82)),
+    personality?.sparkleMul ?? 1,
+    Math.max(4, count - 3),
+  );
   for (let i = 0; i < n; i++) {
     const phase = time * 3.6 + i * 2.1 + wobble + (personality?.wobblePhase ?? 0);
     if (Math.sin(phase) < -0.45) continue;

@@ -28,7 +28,7 @@ interface BiomeSpriteSet {
 }
 
 const PARALLAX = [0.05, 0.1, 0.18, 0.26];
-const PROP_COUNT = 110;
+const PROP_COUNT = 90;
 /** Slow crossfade — scenery melts between phases */
 const FADE_SPEED = 0.32;
 
@@ -73,7 +73,7 @@ export class SceneryLayer {
     this.props.length = 0;
     let i = 0;
     for (const zone of zones) {
-      const perZone = Math.max(4, Math.floor(PROP_COUNT / zones.length));
+      const perZone = Math.max(3, Math.floor(PROP_COUNT / zones.length));
       for (let k = 0; k < perZone; k++) {
         const kind = zone.scenery[k % zone.scenery.length];
         const isBird = kind === 'bird';

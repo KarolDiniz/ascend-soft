@@ -42,8 +42,8 @@ interface ScreenMote {
   spin: number;
 }
 
-const WORLD_POOL = 560;
-const SCREEN_POOL = 480;
+const WORLD_POOL = 460;
+const SCREEN_POOL = 380;
 const SPRINKLE_COLORS = [...AMBIENT_PASTEL.sprinkle];
 
 export class AmbientParticles {
@@ -134,17 +134,17 @@ export class AmbientParticles {
     // Warm start: fill the view immediately
     if (!this.warmed) {
       this.warmed = true;
-      for (let i = 0; i < maxWorld * 0.85; i++) this.spawnWorld(atm, cameraY, viewW, viewH);
-      for (let i = 0; i < maxScreen * 0.9; i++) this.spawnScreen(atm, viewW, viewH, true);
+      for (let i = 0; i < maxWorld * 0.72; i++) this.spawnWorld(atm, cameraY, viewW, viewH);
+      for (let i = 0; i < maxScreen * 0.76; i++) this.spawnScreen(atm, viewW, viewH, true);
     }
 
-    this.spawnAcc += dt * (55 + atm.density * 95) * this.densityScale;
+    this.spawnAcc += dt * (46 + atm.density * 80) * this.densityScale;
     while (this.spawnAcc >= 1 && this.countWorld() < maxWorld) {
       this.spawnAcc -= 1;
       this.spawnWorld(atm, cameraY, viewW, viewH);
     }
 
-    this.screenAcc += dt * (70 + atm.density * 110) * this.densityScale;
+    this.screenAcc += dt * (58 + atm.density * 92) * this.densityScale;
     while (this.screenAcc >= 1 && this.countScreen() < maxScreen) {
       this.screenAcc -= 1;
       this.spawnScreen(atm, viewW, viewH, false);
@@ -165,12 +165,12 @@ export class AmbientParticles {
     viewH: number,
   ): void {
     // ~1% chance per second scaled → accumulate
-    this.microAcc += dt * 0.045;
+    this.microAcc += dt * 0.034;
     if (this.microAcc < 1) return;
     this.microAcc = 0;
     const id = atm.primaryId;
     const mood = materialMood(id);
-    const n = Math.floor(36 * this.densityScale);
+    const n = Math.floor(28 * this.densityScale);
     for (let i = 0; i < n; i++) {
       const p = this.allocScreen();
       if (!p) break;
@@ -233,7 +233,7 @@ export class AmbientParticles {
     dt = 1 / 60,
   ): void {
     if (emitters.length === 0) return;
-    this.sceneryAcc += dt * (55 + atm.density * 70) * this.densityScale * (1 + atm.gustStrength * 0.6);
+    this.sceneryAcc += dt * (46 + atm.density * 58) * this.densityScale * (1 + atm.gustStrength * 0.6);
     const mix = atm.getAmbientMix();
     while (this.sceneryAcc >= 1) {
       this.sceneryAcc -= 1;

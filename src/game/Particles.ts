@@ -61,7 +61,7 @@ interface DelayedWave {
   mode: 'mist' | 'residual' | 'glitter' | 'confetti';
 }
 
-const POOL = 420;
+const POOL = 350;
 const WAVE_SLOTS = 24;
 
 const KEYBOARD_GLYPHS = 'ASDFGHJKLQWERTYUIOPZXCVBNMabcdefghijklmnopqrstuvwxyz0123456789!?';
