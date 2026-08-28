@@ -182,7 +182,7 @@ export class Platform {
 
   /** Cores/material visual — gelatinas variam por seed */
   getMaterialDef() {
-    return resolvePlatformMaterial(this.material, this.seed);
+    return resolvePlatformMaterial(this.material, this.seed, this.y);
   }
 
   /** Índice da barra de marimba sob o jogador */

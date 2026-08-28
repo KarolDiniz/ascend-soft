@@ -1,5 +1,8 @@
 import { MATERIALS, type MaterialDef, type MaterialId } from '../../audio/materials';
 import { materialDetailStroke, rgba } from '../../theme/pastelPalette';
+import { materialPalette } from '../ThemedPhases';
+import { skyMidAt } from '../PhaseRunOrder';
+import { ensurePlatformContrast } from '../../theme/contrastPalette';
 import { isSoapBarMaterial, soapColorPreset } from './soapColors';
 import { butterColorPreset } from './butterVisual';
 import { resolveAmoebaMaterial } from './amoebaColors';
@@ -58,59 +61,75 @@ function marshmallowPreset(seed: number): {
 }
 
 /** Material visual da prateleira — gelatinas e marshmallows têm cor própria por instância */
-export function resolvePlatformMaterial(material: MaterialId, seed: number): MaterialDef {
+export function resolvePlatformMaterial(
+  material: MaterialId,
+  seed: number,
+  height = 0,
+): MaterialDef {
+  const skyMid = skyMidAt(height);
+  const applyContrast = (def: MaterialDef): MaterialDef => {
+    const fill = ensurePlatformContrast(def.fill, skyMid, materialPalette(material).mid);
+    if (fill === def.fill) return def;
+    return {
+      ...def,
+      fill,
+      stroke: materialDetailStroke(fill),
+      spriteWash: rgba(fill, 0.28),
+    };
+  };
+
   if (material === 'jelly') {
     const preset = jellyPreset(seed);
     const base = MATERIALS.jelly;
-    return {
+    return applyContrast({
       ...base,
       fill: preset.fill,
       stroke: materialDetailStroke(preset.fill),
       particle: preset.particle,
       glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
-    };
+    });
   }
   if (material === 'marshmallow') {
     const preset = marshmallowPreset(seed);
     const base = MATERIALS.marshmallow;
-    return {
+    return applyContrast({
       ...base,
       fill: preset.fill,
       particle: preset.stripeA,
       stroke: preset.stripeB,
       glow: rgba(preset.stripeA, 0.42),
       spriteWash: rgba(preset.fill, 0.28),
-    };
+    });
   }
   if (isSoapBarMaterial(material)) {
     const preset = soapColorPreset(seed);
     const base = MATERIALS[material];
-    return {
+    return applyContrast({
       ...base,
       fill: preset.fill,
       stroke: materialDetailStroke(preset.fill),
       particle: preset.particle,
       glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
-    };
+    });
   }
   if (material === 'butter') {
     const preset = butterColorPreset(seed);
     const base = MATERIALS.butter;
-    return {
+    return applyContrast({
       ...base,
       fill: preset.fill,
       stroke: materialDetailStroke(preset.fill),
       particle: preset.particle,
       glow: preset.glow,
       spriteWash: rgba(preset.fill, 0.28),
-    };
+    });
   }
   if (material === 'amoeba') {
-    return resolveAmoebaMaterial(seed);
+    return applyContrast(resolveAmoebaMaterial(seed));
   }
-  return MATERIALS[material];
+  return applyContrast(MATERIALS[material]);
 }
 
 export const JELLY_COLOR_COUNT = JELLY_FILLS.length;

@@ -1,5 +1,6 @@
 import { MATERIALS, type MaterialId } from '../audio/materials';
 import { MATERIAL_PASTEL, materialDetailStroke, PASTEL, rgba } from '../theme/pastelPalette';
+import { buildSkyPalette } from '../theme/contrastPalette';
 
 /**
  * Catálogo completo de materiais/fases — ordem de gameplay vem de PhaseRunOrder (embaralhada por run).
@@ -140,24 +141,10 @@ export function phaseTransitionT(height: number): number {
   return t * t * (3 - 2 * t);
 }
 
-function darken(hex: string, amt: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, ((n >> 16) & 255) - amt);
-  const g = Math.max(0, ((n >> 8) & 255) - amt);
-  const b = Math.max(0, (n & 255) - amt);
-  return `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-}
-
-/** Céu mais escuro que as plataformas — contraste suave para ler prateleiras/partículas. */
+/** Céu contrastante — nunca confundir com a cor das plataformas. */
 export function materialPalette(id: MaterialId): ZonePalette {
   const m = MATERIAL_PASTEL[id];
-  return {
-    top: darken(m.fill, 22),
-    mid: darken(m.fill, 36),
-    bottom: darken(m.fill, 48),
-    accent: m.particle,
-    blob: [rgba(m.particle, 0.22), rgba(m.fill, 0.18), rgba(m.particle, 0.12)],
-  };
+  return buildSkyPalette(m.fill, m.particle);
 }
 
 /** Frases motivacionais — uma por mundo temático. */
