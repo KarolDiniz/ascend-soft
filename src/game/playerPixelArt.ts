@@ -118,47 +118,57 @@ export function defeatHeadBumpScale(height: number): number {
   return 0.55 + core * 2.05 + tall * 0.95;
 }
 
-/** Galo rosado na cabeça — machucado de queda, só tela game over */
+/** Altura extra do canvas do mascote para caber o catombo alto */
+export function defeatHeadBumpCanvasExtra(bumpScale: number): number {
+  return Math.ceil(Math.max(0, bumpScale - 1) * 20);
+}
+
+/** Galo rosado na cabeça — cônico: grosso na base, afina até o topo */
 export function drawPlayerDefeatHeadBump(
   ctx: CanvasRenderingContext2D,
-  bw: number,
+  _bw: number,
   bh: number,
   animT = 0,
   bumpScale = 1,
 ): void {
   const scale = Math.max(0.55, bumpScale);
-  const wobble = Math.sin(animT * 4.5) * u * 0.2 * scale;
-  const bx = bw * 0.08 + wobble;
-  const by = -bh * 0.41 - u * (scale - 1) * 1.4;
+  const wobbleY = Math.sin(animT * 4.5) * u * 0.12;
+  const bx = 0;
+  const contactY = -bh * 0.36 + wobbleY;
   const bruise = rgba(PASTEL.rose, 0.96);
   const bruiseHi = rgba('#F8D0D8', 0.92);
   const bruiseLo = rgba('#C97A8A', 0.94);
   const bruiseInk = rgba('#B86A7A', 0.55);
 
-  ctx.save();
-  ctx.translate(bx, by);
-  ctx.scale(scale, scale);
-  ctx.translate(-bx, -by);
+  const rowCount = Math.max(4, Math.round(4 + scale * 10));
+  const baseHalfW = u * (2.5 + scale * 0.22);
+  const totalH = u * (2.4 + (scale - 1) * 6.8);
+  const sliceH = u * 1.05;
 
-  fillPx(ctx, bx - u * 2, by + u, u * 4, u * 2, bruiseLo);
-  fillPx(ctx, bx - u * 2.5, by - u * 0.5, u * 5, u * 3, bruise);
-  fillPx(ctx, bx - u * 2, by - u * 1.5, u * 4, u * 2, bruise);
-  fillPx(ctx, bx - u * 1.5, by - u * 2.5, u * 3, u * 2, bruiseHi);
-  fillPx(ctx, bx - u * 0.5, by - u * 2, u, u, rgba(PASTEL.white, 0.48));
-  fillPx(ctx, bx - u * 2.5, by + u, u, u, bruiseInk);
-  fillPx(ctx, bx + u * 1.5, by, u, u, bruiseInk);
-  fillPx(ctx, bx - u * 3, by + u * 0.5, u * 2, u, rgba(PASTEL.coral, 0.35));
+  for (let i = 0; i < rowCount; i++) {
+    const t = rowCount <= 1 ? 0 : i / (rowCount - 1);
+    const taper = 1 - Math.pow(t, 1.4) * 0.8;
+    const halfW = px(baseHalfW * taper);
+    const y = contactY - px(totalH * t) - sliceH;
 
-  if (scale >= 1.55) {
-    fillPx(ctx, bx - u * 3.5, by - u * 3, u * 2, u * 2, bruiseLo);
-    fillPx(ctx, bx + u * 2, by - u * 2.5, u * 2, u, rgba(PASTEL.coral, 0.4));
-  }
-  if (scale >= 2) {
-    fillPx(ctx, bx - u * 0.5, by - u * 3.5, u * 2, u * 2, bruiseHi);
-    fillPx(ctx, bx - u * 4, by - u * 1, u, u * 2, bruiseInk);
+    let col = bruise;
+    if (t < 0.2) col = bruiseLo;
+    else if (t > 0.68) col = bruiseHi;
+
+    fillPx(ctx, bx - halfW, y, halfW * 2, sliceH, col);
   }
 
-  ctx.restore();
+  // ponta arredondada
+  const tipHalf = px(baseHalfW * 0.22);
+  const tipY = contactY - px(totalH) - sliceH - u * 0.4;
+  fillPx(ctx, bx - tipHalf, tipY, tipHalf * 2, u, bruiseHi);
+  if (tipHalf >= u) {
+    fillPx(ctx, bx - u * 0.45, tipY - u * 0.55, u * 0.9, u * 0.55, bruiseHi);
+  }
+
+  fillPx(ctx, bx - u * 0.45, contactY - px(totalH * 0.42), u * 0.65, u * 0.85, rgba(PASTEL.white, 0.44));
+  fillPx(ctx, bx - baseHalfW * 0.82, contactY + u * 0.15, u, u, bruiseInk);
+  fillPx(ctx, bx + baseHalfW * 0.68, contactY + u * 0.1, u, u, bruiseInk);
 }
 
 function bodyColorForRow(index: number, total: number, colors: PlayerBodyColors): string {

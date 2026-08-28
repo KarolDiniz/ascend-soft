@@ -5,6 +5,7 @@ import {
   drawPlayerPixelShadow,
   defaultBodyColors,
   defeatHeadBumpScale,
+  defeatHeadBumpCanvasExtra,
   getDefeatEyeTearOrigins,
   PLAYER_DRAW_H,
   PLAYER_DRAW_W,
@@ -33,6 +34,7 @@ export class FallMascot {
   private active = false;
   private animT = 0;
   private bumpScale = 1;
+  private baseCanvasH = 176;
   private pose: FallMascotPose = { cx: 0, baseY: 0, sway: 0, squash: 1, stretch: 1, tilt: 0 };
 
   constructor(canvasId = 'fall-mascot', wrapId = 'fall-mascot-wrap') {
@@ -74,6 +76,10 @@ export class FallMascot {
     this.active = true;
     this.animT = 0;
     this.bumpScale = defeatHeadBumpScale(fallHeight);
+    const extraH = defeatHeadBumpCanvasExtra(this.bumpScale);
+    const newH = this.baseCanvasH + extraH;
+    this.canvas.height = newH;
+    this.canvas.style.height = `${newH}px`;
     this.wrap.classList.add('is-crying');
     if (this.raf) cancelAnimationFrame(this.raf);
     this.tick();
@@ -86,6 +92,8 @@ export class FallMascot {
       cancelAnimationFrame(this.raf);
       this.raf = 0;
     }
+    this.canvas.height = this.baseCanvasH;
+    this.canvas.style.height = `${this.baseCanvasH}px`;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
@@ -110,13 +118,12 @@ export class FallMascot {
     const cx = W / 2;
     const t = this.animT;
     const sob = Math.sin(t * 4.2);
-    const bob = sob * 3 + (sob > 0.85 ? 1.5 : 0);
-    const bumpSink = Math.max(0, this.bumpScale - 1.6) * 5;
-    const baseY = H - u * 8 + bob + bumpSink;
+    const bob = sob * 2 + (sob > 0.85 ? 1 : 0);
+    const baseY = H - u * 8 + bob;
     const squash = 1 + Math.max(0, sob) * 0.07;
     const stretch = 1 - Math.max(0, sob) * 0.045;
-    const tilt = Math.sin(t * 2.1) * 0.045 - 0.035;
-    const sway = Math.sin(t * 1.8) * 1.5;
+    const tilt = Math.sin(t * 2.1) * 0.02 - 0.02;
+    const sway = 0;
 
     this.pose = { cx, baseY, sway, squash, stretch, tilt };
 

@@ -1634,6 +1634,7 @@ body {
   display: block;
   width: 160px;
   height: 176px;
+  max-height: min(46vh, 300px);
   image-rendering: pixelated;
 }
 

@@ -1,8 +1,19 @@
 import type { AccessoryId } from './playerAppearance';
+import { PLAYER_DRAW_W } from './playerPixelArt';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { fillPx, px, PIXEL } from '../theme/pixel';
 
 const u = PIXEL.unit;
+
+/** Largura de referência do preview/editor (CharacterPreview scale 3.35). */
+const ACCESSORY_REF_BW = PLAYER_DRAW_W * 3.35;
+
+/** Escala para acessórios/cabelo no gameplay.
+ *  O corpo in-game já é menor (bw ~36 vs ~100 no editor); coords relativas a bw
+ *  bastam — reduzir de novo deixava tudo minúsculo frente ao boné Mario. */
+export function accessoryInGameScale(_bodyW: number): number {
+  return 1;
+}
 
 export type AccessoryLayer = 'underFace' | 'overFace';
 
@@ -22,8 +33,14 @@ export function drawPlayerAccessory(
   layer: AccessoryLayer,
   animT = 0,
   facing = 1,
+  itemScale = 1,
 ): void {
   if (accessory === 'none') return;
+
+  if (itemScale !== 1) {
+    ctx.save();
+    ctx.scale(itemScale, itemScale);
+  }
 
   const under = layer === 'underFace';
   const over = layer === 'overFace';
@@ -60,10 +77,14 @@ export function drawPlayerAccessory(
       if (under) drawMickeyEars(ctx, bw, bh, animT);
       break;
     case 'marioCap':
-      if (under) drawMarioCap(ctx, bw, bh, animT);
+      if (under) drawMarioCap(ctx, bw, bh, animT, facing);
       break;
     default:
       break;
+  }
+
+  if (itemScale !== 1) {
+    ctx.restore();
   }
 }
 
@@ -472,43 +493,74 @@ function drawMickeyEars(
   ear(bw * 0.28, 1.5);
 }
 
-/** Boné vermelho com M — estilo Mario */
+/** Boné Mario — sprite lateral extraído da referência (18×12 px lógicos) */
+const MARIO_CAP_SPRITE = [
+  '......RRRRRRRR....',
+  '......RRRRRRRR....',
+  '...RRRRRRRWWRRR...',
+  '...RRRRRRRWWRRR...',
+  '.RRRRRRRWWRRWWR...',
+  '.RRRRRRRWWRRWWR...',
+  'RRRRRRRRWWRRWWR...',
+  'RRRRRRRRWWRRWWR...',
+  'RRRRRRRDDDDDDDD...',
+  'RRRRRRRDDDDDDDD...',
+  '.RRRDDDDDDDDDDDDDD',
+  '.RRRDDDDDDDDDDDDDD',
+] as const;
+
+const MARIO_CAP_COLORS: Record<string, string> = {
+  R: '#D43030',
+  D: '#72090A',
+  W: '#FFFFFF',
+};
+
+function drawPixelAccessorySprite(
+  ctx: CanvasRenderingContext2D,
+  sprite: readonly string[],
+  ox: number,
+  oy: number,
+  colors: Record<string, string>,
+  facing: number,
+  pixel: number = u,
+): void {
+  const rows = sprite.length;
+  const cols = sprite[0]?.length ?? 0;
+  const mirror = facing < 0;
+
+  for (let y = 0; y < rows; y++) {
+    const row = sprite[y]!;
+    for (let x = 0; x < cols; x++) {
+      const sx = mirror ? cols - 1 - x : x;
+      const ch = row[sx];
+      if (!ch || ch === '.') continue;
+      const color = colors[ch];
+      if (!color) continue;
+      fillPx(ctx, ox + x * pixel, oy + y * pixel, pixel, pixel, color);
+    }
+  }
+}
+
+/** Boné vermelho estilo Mario — perfil lateral com aba e emblema branco */
 function drawMarioCap(
   ctx: CanvasRenderingContext2D,
   bw: number,
   bh: number,
   animT: number,
+  facing = 1,
 ): void {
-  const s = 1.38;
-  const bob = Math.sin(animT * 2.6) * u * 0.1;
-  const cy = -bh * 0.38 + bob;
-  const red = '#E04848';
-  const redLo = '#C03030';
-  const redHi = '#F06868';
-  const brimLo = '#A82828';
-  const white = PASTEL.cream;
+  const bob = Math.sin(animT * 2.6) * u * 0.08;
+  const refBw = px(ACCESSORY_REF_BW);
+  const inGame = bw < refBw * 0.9;
+  const pixel = u * (bw / refBw) * (inGame ? 1.45 : 1);
+  const cols = MARIO_CAP_SPRITE[0]!.length;
+  const rows = MARIO_CAP_SPRITE.length;
+  const anchorY = -bh * 0.36 + bob;
+  const lean = facing * pixel * 0.35;
+  const ox = lean - px((cols * pixel) / 2);
+  const oy = anchorY - rows * pixel;
 
-  // aba na frente
-  fillPx(ctx, -bw * 0.3, cy + u * 2.2 * s, bw * 0.6, u * 1.6 * s, brimLo);
-  fillPx(ctx, -bw * 0.28, cy + u * 2 * s, bw * 0.56, u * 1.3 * s, redLo);
-  fillPx(ctx, -bw * 0.22, cy + u * 2.35 * s, bw * 0.44, u * 0.6, redHi);
-
-  // copa
-  fillPx(ctx, -bw * 0.28, cy - u * 0.5 * s, bw * 0.56, u * 3.2 * s, redLo);
-  fillPx(ctx, -bw * 0.26, cy - u * 1.2 * s, bw * 0.52, u * 3.8 * s, red);
-  fillPx(ctx, -bw * 0.2, cy - u * 2.5 * s, bw * 0.4, u * 3.2 * s, red);
-  fillPx(ctx, -bw * 0.14, cy - u * 3.8 * s, bw * 0.28, u * 2.4 * s, redHi);
-
-  // círculo branco + M
-  fillPx(ctx, -u * 2.8 * s, cy - u * 1.8 * s, u * 5.6 * s, u * 4.8 * s, white);
-  fillPx(ctx, -u * 2.5 * s, cy - u * 1.5 * s, u * 5 * s, u * 4.2 * s, rgba(white, 0.95));
-  // M pixelado
-  fillPx(ctx, -u * 1.9 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
-  fillPx(ctx, -u * 0.35 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
-  fillPx(ctx, -u * 1.45 * s, cy - u * 1.5 * s, u * 0.9 * s, u * 1.2 * s, red);
-  fillPx(ctx, -u * 0.85 * s, cy - u * 0.2 * s, u * 0.9 * s, u * 1.4 * s, red);
-  fillPx(ctx, u * 0.55 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
-  fillPx(ctx, -u * 0.05 * s, cy - u * 1.5 * s, u * 0.9 * s, u * 1.2 * s, red);
+  drawPixelAccessorySprite(ctx, MARIO_CAP_SPRITE, ox, oy, MARIO_CAP_COLORS, facing, pixel);
 }
 
 /** Mini ícone para botões do editor */

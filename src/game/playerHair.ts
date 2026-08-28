@@ -52,9 +52,17 @@ export function drawPlayerHairIfAny(
   app: PlayerAppearance,
   animT: number,
   motion: HairMotion = {},
+  itemScale = 1,
 ): void {
   if (app.hairStyle === 'none') return;
+  if (itemScale !== 1) {
+    ctx.save();
+    ctx.scale(itemScale, itemScale);
+  }
   drawPlayerHair(ctx, bw, bh, app.hairStyle, 'underFace', animT, resolveHairColors(app), motion);
+  if (itemScale !== 1) {
+    ctx.restore();
+  }
 }
 
 export function drawPlayerHair(

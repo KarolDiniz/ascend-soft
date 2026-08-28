@@ -17,7 +17,7 @@ import {
   resolveBodyColors,
   type PlayerAppearance,
 } from './playerAppearance';
-import { accessoryLayers, drawPlayerAccessory } from './playerAccessories';
+import { accessoryInGameScale, accessoryLayers, drawPlayerAccessory } from './playerAccessories';
 import { drawPlayerHairIfAny } from './playerHair';
 import { createPlayerMotion, stepPlayerMotion, type PlayerMotion } from './playerMotion';
 
@@ -408,14 +408,33 @@ export class Player {
       walkPhase: m.walkPhase,
     });
 
-    drawPlayerHairIfAny(ctx, bw, bh, appearance, this.animT, {
-      walkPhase: m.walkPhase,
-      speedNorm: m.speedNorm,
-    });
+    const itemScale = titleBoost ? 1 : accessoryInGameScale(bw);
+
+    drawPlayerHairIfAny(
+      ctx,
+      bw,
+      bh,
+      appearance,
+      this.animT,
+      {
+        walkPhase: m.walkPhase,
+        speedNorm: m.speedNorm,
+      },
+      itemScale,
+    );
 
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
-        drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, this.facing);
+        drawPlayerAccessory(
+          ctx,
+          bw,
+          bh,
+          accessory,
+          'underFace',
+          this.animT,
+          this.facing,
+          itemScale,
+        );
       }
     }
 
@@ -448,7 +467,16 @@ export class Player {
 
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'overFace') {
-        drawPlayerAccessory(ctx, bw, bh, accessory, 'overFace', this.animT, this.facing);
+        drawPlayerAccessory(
+          ctx,
+          bw,
+          bh,
+          accessory,
+          'overFace',
+          this.animT,
+          this.facing,
+          itemScale,
+        );
       }
     }
 
