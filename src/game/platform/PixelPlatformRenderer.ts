@@ -3,6 +3,7 @@ import { PASTEL, materialDetailStroke, rgba } from '../../theme/pastelPalette';
 import { PIXEL, fillPx, px } from '../../theme/pixel';
 import { MATERIAL_LEDGE } from './ledgeSizes';
 import type { PlatformBehavior } from './behaviors';
+import { getBehaviorDef } from './behaviors';
 import { scaledCount, type PlatformPersonality } from './platformPersonality';
 import { drawVariantAccent, getVariantScale } from './platformVariantAccent';
 import { drawCheeseMouse } from './cheeseMouse';
@@ -225,21 +226,10 @@ export function renderPixelPlatform(
   drawPersonalityTopProfile(args);
 
   drawShelfFrontFace(args);
-  if (
-    material !== 'mochi' &&
-    material !== 'jelly' &&
-    material !== 'marshmallow' &&
-    material !== 'glycerin' &&
-    material !== 'lavenderSoap' &&
-    material !== 'creamSoap' &&
-    material !== 'amoeba' &&
-    material !== 'grass' &&
-    material !== 'cloud' &&
-    material !== 'cotton' &&
-    material !== 'moss' &&
-    material !== 'paper'
-  )
-    drawHangingDetails(args);
+  const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
+  if (shouldDrawSoftHangingDetails(material, behavior)) {
+    drawHangingDetails(args, behavior);
+  }
   drawRelaxSparkles(args);
 
   // Shared crack overlay for shatter materials
@@ -402,26 +392,72 @@ function drawShelfFrontFace(a: DrawArgs): void {
   fillPx(ctx, x, sy + h, w, u, softShadow(mat, 0.14));
 }
 
-/** Penduricalhos únicos por prateleira */
-function drawHangingDetails(a: DrawArgs): void {
+const RIGID_HANG_MATERIALS = new Set<MaterialId>([
+  'keyboard',
+  'iceSoap',
+  'glycerin',
+  'lavenderSoap',
+  'creamSoap',
+  'plasticBottle',
+]);
+
+function shouldDrawSoftHangingDetails(material: MaterialId, behavior: PlatformBehavior): boolean {
+  if (RIGID_HANG_MATERIALS.has(material)) return false;
+  return (
+    behavior === 'melt' ||
+    behavior === 'foamPop' ||
+    behavior === 'squeeze' ||
+    behavior === 'crumble' ||
+    behavior === 'sticky' ||
+    behavior === 'elastic'
+  );
+}
+
+function resolveHangStyle(
+  behavior: PlatformBehavior,
+  defaultStyle: 0 | 1 | 2 | 3 | 4,
+  i: number,
+  seed: number,
+): 0 | 1 | 2 | 3 | 4 {
+  switch (behavior) {
+    case 'melt':
+      return i % 2 === 0 ? 0 : 2;
+    case 'foamPop':
+      return i % 3 === 0 ? 3 : 4;
+    case 'crumble':
+      return 2;
+    case 'squeeze':
+    case 'sticky':
+      return i % 2 === 0 ? 1 : 0;
+    case 'elastic':
+      return seeded(seed, i + 320) < 0.65 ? 0 : 2;
+    default:
+      return defaultStyle;
+  }
+}
+
+/** Gotas e irregularidades embaixo — só plataformas moles, irregulares ou que derretem */
+function drawHangingDetails(a: DrawArgs, behavior: PlatformBehavior): void {
   const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
   if (!personality) return;
 
-  const count = personality.hangCount;
-  const style = personality.hangStyle;
+  const count = Math.min(
+    personality.hangCount,
+    behavior === 'melt' ? 5 : behavior === 'foamPop' ? 4 : 4,
+  );
   const lenMul = personality.hangLength;
   const bias = personality.edgeBias;
 
   for (let i = 0; i < count; i++) {
+    const style = resolveHangStyle(behavior, personality.hangStyle, i, seed);
     const t = (i + 0.5) / count + bias * 0.08 * (seeded(seed, i + 300) - 0.5);
     const hx = cx - w * 0.42 + t * w * 0.84;
     const sway = Math.sin(time * 2.2 + wobble + personality.wobblePhase + i * 1.4) * u * 1.8;
     const baseY = sy + h + u;
-    const strandLen = u * (3 + Math.floor(seeded(seed, i + 310) * 5) * lenMul);
+    const strandLen = u * (2 + Math.floor(seeded(seed, i + 310) * 5) * lenMul);
 
     switch (style) {
       case 0: {
-        // Gotas penduradas
         fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
         fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
         if (Math.sin(time * 3 + i) > 0.2) {
@@ -430,7 +466,6 @@ function drawHangingDetails(a: DrawArgs): void {
         break;
       }
       case 1: {
-        // Fios elásticos (chiclete / slime)
         const pull = Math.sin(wobble * 1.5 + i) * u;
         fillPx(ctx, hx + sway, baseY, u, strandLen + pull, mat.particle);
         fillPx(ctx, hx + sway - u, baseY + strandLen + pull, u * 2, u, rgba(mat.particle, 0.7));
@@ -438,13 +473,11 @@ function drawHangingDetails(a: DrawArgs): void {
         break;
       }
       case 2: {
-        // Gotas suaves (sem migalhas)
         fillPx(ctx, hx + sway - u / 2, baseY, u, strandLen, mat.particle);
         fillPx(ctx, hx + sway - u, baseY + strandLen - u, u * 2, u * 2, mat.fill);
         break;
       }
       case 3: {
-        // Bolhinhas
         const by = baseY + Math.sin(time * 1.8 + i) * u;
         fillPx(ctx, hx + sway - u, by, u * 3, u * 3, rgba(mat.particle, 0.55));
         fillPx(ctx, hx + sway, by + u, u, u, rgba(PASTEL.white, 0.65));
@@ -452,7 +485,6 @@ function drawHangingDetails(a: DrawArgs): void {
         break;
       }
       case 4: {
-        // Pontas de espuma / nuvem
         for (let row = 0; row < 3; row++) {
           const tw = u * (2 + row);
           fillPx(ctx, hx + sway - tw / 2, baseY + row * u, tw, u, row === 0 ? PASTEL.white : mat.fill);

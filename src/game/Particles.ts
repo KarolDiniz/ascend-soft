@@ -16,7 +16,9 @@ export type GameplayFx =
   | 'ring'
   | 'letter'
   | 'grassBlade'
-  | 'leaf';
+  | 'leaf'
+  | 'sandWhirl'
+  | 'bonbon';
 
 interface Particle {
   x: number;
@@ -32,6 +34,9 @@ interface Particle {
   rot: number;
   spin: number;
   glyph: string;
+  orbitCx: number;
+  orbitCy: number;
+  whirl: number;
 }
 
 interface RingFx {
@@ -63,6 +68,10 @@ const KEYBOARD_LETTER_COLORS = ['#3a4450', '#4a5568', '#5a6578', PASTEL.inkSoft,
 
 const GRASS_BLADE_COLORS = ['#6A9A62', '#7CB072', '#8EC880', '#98C898'];
 const GRASS_LEAF_COLORS = ['#7CB068', '#98C878', '#B8E088', '#C8E8A0', '#D8F0B0'];
+
+const SAND_WHIRL_COLORS = ['#D8C8A8', '#E8D8B8', '#C8B898', '#F0E0C0', '#B8A888', '#E0D0B0'];
+const BONBON_FILL_COLORS = ['#C88878', '#B87868', '#D8A090', '#A87060', '#E0B0A0'];
+const BONBON_WRAP_COLORS = ['#F8E8F0', '#FFF0D8', '#E8F0FF', '#FFE8E0', '#F0E8FF', '#FFF8E8'];
 
 /** Material → secondary juice style for land waves */
 const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
@@ -112,6 +121,8 @@ export class Particles {
   private squeezeAcc = 0;
   private keyboardLetterAcc = 0;
   private grassFoliageAcc = 0;
+  private sandWhirlAcc = 0;
+  private chocolateBonbonAcc = 0;
 
   constructor() {
     for (let i = 0; i < POOL; i++) {
@@ -129,6 +140,9 @@ export class Particles {
         rot: 0,
         spin: 0,
         glyph: '',
+        orbitCx: 0,
+        orbitCy: 0,
+        whirl: 0,
       });
     }
     for (let i = 0; i < WAVE_SLOTS; i++) {
@@ -189,6 +203,9 @@ export class Particles {
       size?: number;
       spin?: number;
       glyph?: string;
+      orbitCx?: number;
+      orbitCy?: number;
+      whirl?: number;
     } = {},
   ): void {
     const p = this.alloc();
@@ -206,6 +223,9 @@ export class Particles {
     p.rot = Math.random() * Math.PI;
     p.spin = opts.spin ?? (Math.random() - 0.5) * 6;
     p.glyph = opts.glyph ?? '';
+    p.orbitCx = opts.orbitCx ?? x;
+    p.orbitCy = opts.orbitCy ?? y;
+    p.whirl = opts.whirl ?? 0;
   }
 
   private pickKeyboardGlyph(): string {
@@ -256,6 +276,81 @@ export class Particles {
         life: burst ? 0.75 + Math.random() * 0.45 : 0.55 + Math.random() * 0.35,
         size: 7 + Math.random() * 2,
         spin: (Math.random() - 0.5) * (burst ? 8 : 4),
+      });
+    }
+  }
+
+  /** Redemoinho de areia ao pisar na areia cinética */
+  sandWhirl(
+    x: number,
+    y: number,
+    color: string,
+    impact = 1,
+    walkVx = 0,
+    burst = true,
+  ): void {
+    const count = burst
+      ? this.cap(26 + Math.floor(impact * 22))
+      : this.cap(5 + Math.floor(impact * 3));
+    const imp = 0.75 + Math.min(1.35, impact);
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.55;
+      const ring = burst ? 6 + Math.random() * 22 : 3 + Math.random() * 10;
+      const px = x + Math.cos(angle) * ring * 0.35;
+      const tangent = angle + Math.PI / 2;
+      const tanSpeed = (burst ? 48 : 28) + Math.random() * (burst ? 85 : 40) * imp;
+      const lift = (burst ? 62 : 34) + Math.random() * (burst ? 95 : 48) * imp;
+      const sandColor =
+        Math.random() < 0.35
+          ? color
+          : SAND_WHIRL_COLORS[Math.floor(Math.random() * SAND_WHIRL_COLORS.length)]!;
+
+      this.spawn(px, y - 1, sandColor, 'sandWhirl', {
+        vx: Math.cos(tangent) * tanSpeed - walkVx * 0.18,
+        vy: -lift,
+        orbitCx: x,
+        orbitCy: y,
+        whirl: (Math.random() > 0.5 ? 1 : -1) * (4.5 + Math.random() * 9) * imp,
+        life: burst ? 0.75 + Math.random() * 0.65 : 0.45 + Math.random() * 0.35,
+        size: burst ? 2 + Math.random() * 2.5 : 1.5 + Math.random() * 1.5,
+        spin: (Math.random() - 0.5) * (burst ? 14 : 8),
+      });
+    }
+
+    if (burst) {
+      this.rings.push({
+        x,
+        y,
+        life: 0.32 + impact * 0.14,
+        maxLife: 0.32 + impact * 0.14,
+        color: SAND_WHIRL_COLORS[0]!,
+        kind: 'dust',
+      });
+    }
+  }
+
+  /** Bombons que saltam ao pisar no chocolate */
+  chocolateBonbons(
+    x: number,
+    y: number,
+    count = 10,
+    burst = false,
+    walkVx = 0,
+  ): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const variant = Math.floor(Math.random() * 4);
+      const fill = BONBON_FILL_COLORS[i % BONBON_FILL_COLORS.length]!;
+      const spread = burst ? 40 : 24;
+      const lift = burst ? 48 + Math.random() * 72 : 26 + Math.random() * 42;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, fill, 'bonbon', {
+        glyph: String(variant),
+        vx: -walkVx * 0.2 + (Math.random() - 0.5) * (burst ? 78 : 50),
+        vy: lift,
+        life: burst ? 0.85 + Math.random() * 0.55 : 0.58 + Math.random() * 0.38,
+        size: burst ? 4 + Math.random() * 2.5 : 3 + Math.random() * 1.5,
+        spin: (Math.random() - 0.5) * (burst ? 12 : 7),
       });
     }
   }
@@ -472,6 +567,20 @@ export class Particles {
         this.grassFoliageAcc -= 1;
         this.spawnGrassPiece(x, surfaceY, vx, false);
         if (Math.random() < 0.55) this.spawnGrassPiece(x, surfaceY, vx, false);
+      }
+    } else if (materialId === 'kinetic') {
+      const walkRate = (speed * 0.11 + 0.5) * rateBoost;
+      this.sandWhirlAcc += dt * walkRate * this.densityScale;
+      while (this.sandWhirlAcc >= 1) {
+        this.sandWhirlAcc -= 1;
+        this.sandWhirl(x, surfaceY, color, 0.35 + press * 0.45, vx, false);
+      }
+    } else if (materialId === 'chocolate') {
+      const walkRate = (speed * 0.1 + 0.42) * rateBoost;
+      this.chocolateBonbonAcc += dt * walkRate * this.densityScale;
+      while (this.chocolateBonbonAcc >= 1) {
+        this.chocolateBonbonAcc -= 1;
+        this.chocolateBonbons(x, surfaceY, 1 + Math.floor(Math.random() * 2), false, vx);
       }
     }
 
@@ -1083,6 +1192,68 @@ export class Particles {
     }
   }
 
+  private drawBonbon(
+    ctx: CanvasRenderingContext2D,
+    s: { x: number; y: number },
+    p: Particle,
+    sz: number,
+    a: number,
+  ): void {
+    const variant = parseInt(p.glyph || '0', 10) || 0;
+    const wrap = BONBON_WRAP_COLORS[variant % BONBON_WRAP_COLORS.length]!;
+    const fill = p.color;
+    const r = Math.round(sz);
+
+    ctx.save();
+    ctx.translate(Math.round(s.x), Math.round(s.y));
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = a * 0.94;
+
+    switch (variant % 4) {
+      case 0: {
+        ctx.fillStyle = fill;
+        ctx.fillRect(-r, -r, r * 2, r * 2);
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r + 1, -1, r * 2 - 2, 2);
+        ctx.fillStyle = '#FFF8F0';
+        ctx.fillRect(-1, -1, 2, 2);
+        break;
+      }
+      case 1: {
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r - 2, -Math.round(r * 0.65), r * 2 + 4, Math.round(r * 1.3));
+        ctx.fillStyle = fill;
+        ctx.fillRect(-Math.round(r * 0.75), -Math.round(r * 0.55), Math.round(r * 1.5), Math.round(r * 1.1));
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r - 3, -2, 3, 4);
+        ctx.fillRect(r, -2, 3, 4);
+        break;
+      }
+      case 2: {
+        ctx.fillStyle = fill;
+        ctx.fillRect(-r, -r + 1, r * 2, r * 2 - 2);
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r, -r, r * 2, 2);
+        ctx.fillRect(-r, r - 1, r * 2, 2);
+        ctx.fillStyle = '#FFF0E8';
+        ctx.fillRect(-1, -r + 2, 2, 2);
+        break;
+      }
+      default: {
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r - 1, -r, r * 2 + 2, r * 2);
+        ctx.fillStyle = fill;
+        ctx.fillRect(-Math.round(r * 0.7), -Math.round(r * 0.7), Math.round(r * 1.4), Math.round(r * 1.4));
+        ctx.fillStyle = wrap;
+        ctx.fillRect(-r, -1, r * 2, 2);
+        ctx.fillRect(-1, -r, 2, r * 2);
+        break;
+      }
+    }
+
+    ctx.restore();
+  }
+
   update(dt: number): void {
     for (const w of this.waves) {
       if (!w.active) continue;
@@ -1113,9 +1284,12 @@ export class Particles {
         p.type === 'releasePuff' ||
         p.type === 'letter' ||
         p.type === 'leaf' ||
-        p.type === 'grassBlade'
+        p.type === 'grassBlade' ||
+        p.type === 'bonbon'
           ? 0.4
-          : 0.12;
+          : p.type === 'sandWhirl'
+            ? 0.18
+            : 0.12;
       p.x += (p.vx + this.windX * windMul) * dt;
       p.y += (p.vy + this.windY * windMul * 0.2) * dt;
 
@@ -1142,10 +1316,26 @@ export class Particles {
         g = 48;
       } else if (p.type === 'leaf') {
         g = 40;
+      } else if (p.type === 'bonbon') {
+        g = 145;
+      } else if (p.type === 'sandWhirl') {
+        g = 95;
       }
       p.vy -= g * dt;
       p.vx *= 1 - (p.type === 'butterSpread' ? 2.8 : 1.2) * dt;
       if (p.type === 'sand' || p.type === 'sandFall') p.vx *= 1 - 0.6 * dt;
+      if (p.type === 'sandWhirl') {
+        const dx = p.x - p.orbitCx;
+        const dy = p.y - p.orbitCy;
+        const dist = Math.max(6, Math.hypot(dx, dy));
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const swirl = p.whirl * (52 + (1 - p.life / p.maxLife) * 28);
+        p.vx += -ny * swirl * dt;
+        p.vy += nx * swirl * dt;
+        p.vy -= 38 * dt;
+        p.vx += nx * 14 * dt;
+      }
       p.rot += p.spin * dt;
     }
 
@@ -1264,7 +1454,9 @@ export class Particles {
         ctx.fillRect(-sz, -1, sz * 1.4, 2);
         ctx.fillRect(-sz * 0.2, -sz * 0.75, sz * 0.85, 2);
         ctx.restore();
-      } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
+      } else if (p.type === 'bonbon') {
+        this.drawBonbon(ctx, s, p, sz, a);
+      } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck' || p.type === 'sandWhirl') {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       } else if (p.type === 'drip') {
         const blobW = Math.max(2, Math.round(sz * 0.9));
@@ -1288,6 +1480,8 @@ export class Particles {
     this.pressAcc = 0;
     this.keyboardLetterAcc = 0;
     this.grassFoliageAcc = 0;
+    this.sandWhirlAcc = 0;
+    this.chocolateBonbonAcc = 0;
     this.airTrailAcc = 0;
     this.squeezeAcc = 0;
   }

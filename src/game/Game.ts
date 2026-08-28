@@ -695,6 +695,15 @@ export class Game {
           this.particles.drip(this.player.x, platformTop, mat.particle, 6);
           break;
         case 'chocolate':
+          this.particles.chocolateBonbons(
+            this.player.x,
+            platformTop,
+            10 + Math.floor(impact * 14),
+            true,
+            this.player.vx,
+          );
+          this.particles.meltRibbon(this.player.x, platformTop, mat.particle);
+          break;
         case 'honeycomb':
           this.particles.drip(this.player.x, platformTop, mat.particle, 8);
           this.particles.meltRibbon(this.player.x, platformTop, mat.particle);
@@ -707,8 +716,14 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'zest', false);
           break;
         case 'kinetic':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 18, 'sand', false);
-          this.particles.sandFall(this.player.x, platformTop, mat.particle, 14);
+          this.particles.sandWhirl(
+            this.player.x,
+            platformTop,
+            mat.particle,
+            impact,
+            this.player.vx,
+            true,
+          );
           break;
         case 'butterSlime':
           this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
