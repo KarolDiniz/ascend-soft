@@ -484,7 +484,7 @@ export class Game {
     const prevBottom = this.player.bottom;
     const wasGrounded = this.player.onGround;
     const jumped = this.player.update(dt, this.input);
-    if (jumped && prevPlat) {
+    if (jumped === 'ground' && prevPlat) {
       const mat = MATERIALS[prevPlat.material];
       this.particles.releasePuff(
         this.player.x,
@@ -529,6 +529,17 @@ export class Game {
         );
       }
     }
+    if (jumped === 'air') {
+      this.particles.burst(
+        this.player.x,
+        this.player.y,
+        this.player.trailColor,
+        10,
+        'spark',
+        false,
+        this.atmosphere.getAccent(),
+      );
+    }
 
     const wall = this.worldHalfW + 20;
     if (this.player.x < -wall) {
@@ -550,8 +561,10 @@ export class Game {
     if (this.player.groundedPlatform?.alive && this.player.groundedPlatform.solid) {
       this.player.stickToSurface(this.player.groundedPlatform);
     } else if (
-      this.player.groundedPlatform &&
-      (!this.player.groundedPlatform.solid || !this.player.groundedPlatform.alive)
+      prevPlat &&
+      wasGrounded &&
+      jumped !== 'ground' &&
+      (!prevPlat.solid || !prevPlat.alive)
     ) {
       this.player.grantVanishCoyote();
     }
@@ -623,7 +636,18 @@ export class Game {
 
     // Behavior juice from platforms
     for (const p of this.spawner.platforms) {
-      for (const ev of p.consumeEvents()) this.handlePlatformEvent(p, ev);
+      for (const ev of p.consumeEvents()) {
+        if (
+          ev.type === 'vanishUnderPlayer' &&
+          prevPlat === p &&
+          wasGrounded &&
+          jumped !== 'ground'
+        ) {
+          this.player.grantVanishCoyote();
+          this.audio.playSoftVanish();
+        }
+        this.handlePlatformEvent(p, ev);
+      }
     }
 
     const plats = this.spawner.platforms;
@@ -1089,10 +1113,6 @@ export class Game {
         }
         break;
       case 'vanishUnderPlayer':
-        if (this.player.groundedPlatform === p) {
-          this.player.grantVanishCoyote();
-          this.audio.playSoftVanish();
-        }
         break;
     }
   }

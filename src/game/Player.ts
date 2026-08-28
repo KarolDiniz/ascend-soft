@@ -26,6 +26,8 @@ interface TrailPoint {
   color: string;
 }
 
+export type JumpResult = false | 'ground' | 'air';
+
 export class Player {
   x = 0;
   y = 40;
@@ -40,6 +42,7 @@ export class Player {
   jumpBoost = 1;
 
   private coyote = 0;
+  private airJumpsLeft = PHYS.maxAirJumps;
   private squash = 1;
   private stretch = 1;
   private trail: TrailPoint[] = [];
@@ -96,6 +99,7 @@ export class Player {
     this.vy = 0;
     this.onGround = false;
     this.coyote = 0;
+    this.airJumpsLeft = PHYS.maxAirJumps;
     this.squash = 1;
     this.stretch = 1;
     this.trail.length = 0;
@@ -110,8 +114,8 @@ export class Player {
     this.jumpBoost = 1;
   }
 
-  update(dt: number, input: Input): boolean {
-    let jumped = false;
+  update(dt: number, input: Input): JumpResult {
+    let jumped: JumpResult = false;
     const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     if (dir !== 0) this.facing = dir;
 
@@ -129,18 +133,29 @@ export class Player {
     if (this.onGround) this.coyote = 0.11;
     else this.coyote = Math.max(0, this.coyote - dt);
 
-    if (input.consumeJump() && (this.onGround || this.coyote > 0)) {
-      const leaving = this.groundedPlatform;
-      const boost = this.jumpBoost;
-      this.vy = this.jumpVel * boost;
-      this.jumpBoost = 1;
-      this.onGround = false;
-      this.coyote = 0;
-      this.groundedPlatform = null;
-      this.stretch = 1.38 * Math.min(1.15, boost);
-      this.squash = 0.72;
-      jumped = true;
-      if (leaving) leaving.setPressed(false);
+    if (input.consumeJump()) {
+      if (this.onGround || this.coyote > 0) {
+        const leaving = this.groundedPlatform;
+        const boost = this.jumpBoost;
+        this.vy = this.jumpVel * boost;
+        this.jumpBoost = 1;
+        this.onGround = false;
+        this.coyote = 0;
+        this.groundedPlatform = null;
+        this.stretch = 1.38 * Math.min(1.15, boost);
+        this.squash = 0.72;
+        jumped = 'ground';
+        if (leaving) leaving.setPressed(false);
+      } else if (this.airJumpsLeft > 0) {
+        this.vy = this.jumpVel * PHYS.airJumpMul;
+        this.onGround = false;
+        this.coyote = 0;
+        this.groundedPlatform = null;
+        this.airJumpsLeft -= 1;
+        this.stretch = 1.24;
+        this.squash = 0.76;
+        jumped = 'air';
+      }
     }
 
     if (!input.jumpHeld && this.vy > 90) {
@@ -248,6 +263,7 @@ export class Player {
     this.y = platform.surfaceY + this.h / 2;
     this.vy = 0;
     this.onGround = true;
+    this.airJumpsLeft = PHYS.maxAirJumps;
     this.groundedPlatform = platform;
     this.squash = 1.42;
     this.stretch = 0.68;
@@ -262,6 +278,7 @@ export class Player {
     this.y = platform.surfaceY + this.h / 2;
     this.vy = 0;
     this.onGround = true;
+    this.airJumpsLeft = PHYS.maxAirJumps;
     this.groundedPlatform = platform;
   }
 

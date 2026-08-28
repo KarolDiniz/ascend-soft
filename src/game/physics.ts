@@ -7,6 +7,10 @@ export const PHYS = {
   friction: 1600,
   airFriction: 280,
   playerHalfW: 14,
+  /** Pulos extras no ar (recuperação após plataforma que derrete/quebra). */
+  maxAirJumps: 1,
+  /** Impulso do pulo aéreo — altura plena para alcançar o próximo gap após queda. */
+  airJumpMul: 1,
 } as const;
 
 /** Max safe jump height with margin (units). */
