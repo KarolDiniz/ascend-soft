@@ -306,12 +306,11 @@ export class AudioBus {
   }
 
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1): void {
-    if (!this.land) return;
-    this.withCtx((ctx, _sfx) => {
+    this.withLandCtx((ctx, landBus) => {
       this.duckAmbient(300, 0.07);
       const land = ctx.createGain();
       land.gain.value = this.landBusGain * this.landIntensityMul;
-      land.connect(this.land!);
+      land.connect(landBus);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
       if (this.lightLandAudio) {
@@ -322,73 +321,82 @@ export class AudioBus {
         return;
       }
       const handlers: Record<MaterialId, () => void> = {
-        jelly: () => {
-          if (this.playLandSample(ctx, land, 'jelly', pitch, imp)) return;
-          this.jellyPloop(ctx, land, pitch, imp);
-        },
-        butter: () => this.butterThup(ctx, land, pitch, imp),
-        mochi: () => this.cheeseLand(ctx, land, pitch, imp),
-        marshmallow: () => this.marshmallowPuff(ctx, land, pitch, imp),
-        chocolate: () => {
-          if (this.playLandSample(ctx, land, 'chocolate', pitch, imp)) return;
-          this.chocolateRipple(ctx, land, pitch, imp);
-        },
-        sponge: () => {
-          if (this.playLandSample(ctx, land, 'sponge', pitch, imp)) return;
-          this.spongeSquish(ctx, land, pitch, imp);
-        },
-        citrus: () => this.citrusZest(ctx, land, pitch, imp),
-        honeycomb: () => this.honeyDrip(ctx, land, pitch, imp),
-        glycerin: () => {
-          if (this.playLandSample(ctx, land, 'glycerin', pitch, imp)) return;
-          this.soapSquish(ctx, land, pitch, imp);
-        },
-        whipped: () => this.whippedFoam(ctx, land, pitch, imp),
-        soapBubble: () => this.soapBubblePop(ctx, land, pitch, imp),
-        bathFoam: () => {
-          if (this.playLandSample(ctx, land, 'bathFoam', pitch, imp)) return;
-          this.bathFoamFizz(ctx, land, pitch, imp);
-        },
-        lavenderSoap: () => this.lavenderSquish(ctx, land, pitch, imp),
-        creamSoap: () => this.creamSquish(ctx, land, pitch, imp),
-        keyboard: () => {
-          if (this.playLandSample(ctx, land, 'keyboard', pitch, imp)) return;
-          this.keyboardClick(ctx, land, pitch, imp);
-        },
-        bubbleWrap: () => {
-          if (this.playLandSample(ctx, land, 'bubbleWrap', pitch, imp)) return;
-          this.bubbleWrapPop(ctx, land, pitch, imp);
-        },
-        kinetic: () => this.kineticSand(ctx, land, pitch, imp),
-        iceSoap: () => {
-          if (this.playLandSample(ctx, land, 'iceSoap', pitch, imp)) return;
-          this.iceTing(ctx, land, pitch, imp);
-        },
-        clearSlime: () => {
-          if (this.playLandSample(ctx, land, 'clearSlime', pitch, imp)) return;
-          this.slimeBlorp(ctx, land, pitch, imp);
-        },
-        butterSlime: () => {
-          if (this.playLandSample(ctx, land, 'butterSlime', pitch, imp)) return;
-          this.butterSlimeFold(ctx, land, pitch, imp);
-        },
-        amoeba: () => this.jellyPloop(ctx, land, pitch, imp),
-        moss: () => this.marshmallowPuff(ctx, land, pitch, imp),
+        jelly: () => this.landWithSample(ctx, land, 'jelly', pitch, imp, () => this.jellyPloop(ctx, land, pitch, imp)),
+        butter: () => this.landWithSample(ctx, land, 'butter', pitch, imp, () => this.butterThup(ctx, land, pitch, imp)),
+        mochi: () => this.landWithSample(ctx, land, 'mochi', pitch, imp, () => this.cheeseLand(ctx, land, pitch, imp)),
+        marshmallow: () =>
+          this.landWithSample(ctx, land, 'marshmallow', pitch, imp, () =>
+            this.marshmallowPuff(ctx, land, pitch, imp),
+          ),
+        chocolate: () =>
+          this.landWithSample(ctx, land, 'chocolate', pitch, imp, () =>
+            this.chocolateRipple(ctx, land, pitch, imp),
+          ),
+        sponge: () =>
+          this.landWithSample(ctx, land, 'sponge', pitch, imp, () => this.spongeSquish(ctx, land, pitch, imp)),
+        citrus: () =>
+          this.landWithSample(ctx, land, 'citrus', pitch, imp, () => this.citrusZest(ctx, land, pitch, imp)),
+        honeycomb: () =>
+          this.landWithSample(ctx, land, 'honeycomb', pitch, imp, () => this.honeyDrip(ctx, land, pitch, imp)),
+        glycerin: () =>
+          this.landWithSample(ctx, land, 'glycerin', pitch, imp, () => this.soapSquish(ctx, land, pitch, imp)),
+        whipped: () =>
+          this.landWithSample(ctx, land, 'whipped', pitch, imp, () => this.whippedFoam(ctx, land, pitch, imp)),
+        soapBubble: () =>
+          this.landWithSample(ctx, land, 'soapBubble', pitch, imp, () =>
+            this.soapBubblePop(ctx, land, pitch, imp),
+          ),
+        bathFoam: () =>
+          this.landWithSample(ctx, land, 'bathFoam', pitch, imp, () => this.bathFoamFizz(ctx, land, pitch, imp)),
+        lavenderSoap: () =>
+          this.landWithSample(ctx, land, 'lavenderSoap', pitch, imp, () =>
+            this.lavenderSquish(ctx, land, pitch, imp),
+          ),
+        creamSoap: () =>
+          this.landWithSample(ctx, land, 'creamSoap', pitch, imp, () => this.creamSquish(ctx, land, pitch, imp)),
+        keyboard: () =>
+          this.landWithSample(ctx, land, 'keyboard', pitch, imp, () => this.keyboardClick(ctx, land, pitch, imp)),
+        bubbleWrap: () =>
+          this.landWithSample(ctx, land, 'bubbleWrap', pitch, imp, () =>
+            this.bubbleWrapPop(ctx, land, pitch, imp),
+          ),
+        kinetic: () =>
+          this.landWithSample(ctx, land, 'kinetic', pitch, imp, () => this.kineticSand(ctx, land, pitch, imp)),
+        iceSoap: () =>
+          this.landWithSample(ctx, land, 'iceSoap', pitch, imp, () => this.iceTing(ctx, land, pitch, imp)),
+        clearSlime: () =>
+          this.landWithSample(ctx, land, 'clearSlime', pitch, imp, () => this.slimeBlorp(ctx, land, pitch, imp)),
+        butterSlime: () =>
+          this.landWithSample(ctx, land, 'butterSlime', pitch, imp, () =>
+            this.butterSlimeFold(ctx, land, pitch, imp),
+          ),
+        amoeba: () =>
+          this.landWithSample(ctx, land, 'amoeba', pitch, imp, () => this.amoebaBlob(ctx, land, pitch, imp)),
+        moss: () => this.landWithSample(ctx, land, 'moss', pitch, imp, () => this.mossLand(ctx, land, pitch, imp)),
         grass: () => {
-          if (this.playLandSample(ctx, land, 'grass', pitch, imp)) return;
-          this.spongeSquish(ctx, land, pitch, imp);
+          if (
+            this.playLandSample(ctx, land, 'grass', pitch, imp, {
+              maxDuration: 0.24,
+              randomStart: true,
+              pitchBoost: 1.06 + Math.random() * 0.14,
+            })
+          ) {
+            return;
+          }
+          this.grassCrunch(ctx, land, pitch, imp);
         },
-        cotton: () => this.marshmallowPuff(ctx, land, pitch, imp),
-        cloud: () => {
-          if (this.playLandSample(ctx, land, 'cloud', pitch, imp)) return;
-          this.whippedFoam(ctx, land, pitch, imp);
-        },
-        paper: () => this.keyboardClick(ctx, land, pitch, imp),
-        plasticBottle: () => {
-          if (this.playLandSample(ctx, land, 'plasticBottle', pitch, imp)) return;
-          this.bubbleWrapPop(ctx, land, pitch, imp);
-        },
-        velvet: () => this.creamSquish(ctx, land, pitch, imp),
+        cotton: () =>
+          this.landWithSample(ctx, land, 'cotton', pitch, imp, () => this.cottonFluff(ctx, land, pitch, imp)),
+        cloud: () =>
+          this.landWithSample(ctx, land, 'cloud', pitch, imp, () => this.cloudPoof(ctx, land, pitch, imp)),
+        paper: () =>
+          this.landWithSample(ctx, land, 'paper', pitch, imp, () => this.paperCrinkle(ctx, land, pitch, imp)),
+        plasticBottle: () =>
+          this.landWithSample(ctx, land, 'plasticBottle', pitch, imp, () =>
+            this.plasticSplash(ctx, land, pitch, imp),
+          ),
+        velvet: () =>
+          this.landWithSample(ctx, land, 'velvet', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
       };
       handlers[material]();
       if (perfect) this.perfectChime(ctx, land, pitch, streak);
@@ -1307,7 +1315,9 @@ export class AudioBus {
   private bathFoamFizz(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
     const v = this.impactVol(0.1, impact);
-    this.whippedFoam(ctx, sfx, pitch * 0.95, impact);
+    this.softNoise(ctx, sfx, 0.2, 1100, v * 0.55, t, 'bandpass', 0.9);
+    this.softNoise(ctx, sfx, 0.16, 680, v * 0.38, t + 0.02, 'lowpass');
+    this.warmLandTone(ctx, sfx, 'sine', 240 * pitch, 170 * pitch, 0.22, v * 0.42, t, 1600);
     for (let i = 0; i < 4; i++) {
       this.tone(ctx, sfx, 'sine', 1200 + i * 180, 800, 0.035, v * 0.15, t + 0.05 + i * 0.025);
     }
@@ -1355,12 +1365,121 @@ export class AudioBus {
     material: MaterialId,
     pitch: number,
     impact: number,
+    extra: { maxDuration?: number; randomStart?: boolean; pitchBoost?: number } = {},
   ): boolean {
     const vol = this.impactVol(0.15, impact) * 1.4;
+    const pitchMul = extra.pitchBoost ?? 1;
     return this.landSamples.play(ctx, bus, material, {
-      pitch: pitch * (0.94 + Math.random() * 0.1),
+      pitch: pitch * (0.94 + Math.random() * 0.1) * pitchMul,
       volume: vol,
+      maxDuration: extra.maxDuration,
+      randomStart: extra.randomStart,
     });
+  }
+
+  private landWithSample(
+    ctx: AudioContext,
+    land: GainNode,
+    material: MaterialId,
+    pitch: number,
+    imp: number,
+    fallback: () => void,
+  ): void {
+    if (this.playLandSample(ctx, land, material, pitch, imp)) return;
+    fallback();
+  }
+
+  private amoebaBlob(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.13, impact);
+    this.jellyWobble(ctx, sfx, 72 * pitch, 28 * pitch, 0.5, v * 0.95, t, 4.2, 0.14);
+    this.viscousSquish(ctx, sfx, 0.28, v * 0.65, t, pitch * 0.88);
+    this.softNoise(ctx, sfx, 0.2, 220, v * 0.48, t + 0.02, 'lowpass');
+    this.warmLandTone(ctx, sfx, 'sine', 95 * pitch, 38 * pitch, 0.26, v * 0.6, t + 0.01, 520);
+  }
+
+  private mossLand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.softThud(ctx, sfx, t, pitch * 0.9, impact, 108);
+    this.noiseBurst(ctx, sfx, 0.12, 380, v * 0.7, t, 'bandpass');
+    this.noiseBurst(ctx, sfx, 0.08, 220, v * 0.45, t + 0.03, 'lowpass');
+    this.tone(ctx, sfx, 'triangle', 145 * pitch, 95 * pitch, 0.18, v * 0.4, t + 0.02);
+  }
+
+  private cottonFluff(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.softNoise(ctx, sfx, 0.22, 2200, v * 0.55, t, 'highpass');
+    this.softNoise(ctx, sfx, 0.18, 1400, v * 0.35, t + 0.025, 'bandpass', 0.6);
+    this.warmLandTone(ctx, sfx, 'sine', 380 * pitch, 300 * pitch, 0.2, v * 0.45, t, 2800);
+    this.warmLandTone(ctx, sfx, 'sine', 520 * pitch, 400 * pitch, 0.12, v * 0.2, t + 0.05, 3200);
+  }
+
+  private paperCrinkle(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    for (let i = 0; i < 5; i++) {
+      this.noiseBurst(ctx, sfx, 0.028, 3200 + i * 400, v * (0.55 - i * 0.06), t + i * 0.018, 'highpass');
+    }
+    this.tone(ctx, sfx, 'triangle', 240 * pitch, 180 * pitch, 0.06, v * 0.25, t);
+  }
+
+  private velvetThud(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.12, impact);
+    this.warmLandTone(ctx, sfx, 'sine', 78 * pitch, 42 * pitch, 0.32, v * 1.0, t, 380);
+    this.softNoise(ctx, sfx, 0.14, 180, v * 0.42, t, 'lowpass');
+    this.warmLandTone(ctx, sfx, 'triangle', 110 * pitch, 68 * pitch, 0.22, v * 0.38, t + 0.03, 480);
+  }
+
+  private grassCrunch(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.14, impact);
+    const p = pitch * (0.96 + Math.random() * 0.1);
+
+    // Pisada leve na terra
+    this.softThud(ctx, sfx, t, p, impact, 112);
+    this.warmLandTone(ctx, sfx, 'sine', 88 * p, 54 * p, 0.14, v * 0.58, t + 0.004, 440);
+
+    // Capim seco — camadas de rustle
+    this.softNoise(ctx, sfx, 0.15, 1500, v * 0.68, t + 0.008, 'bandpass', 1.35);
+    this.softNoise(ctx, sfx, 0.11, 920, v * 0.48, t + 0.016, 'bandpass', 1.05);
+    this.softNoise(ctx, sfx, 0.13, 580, v * 0.4, t + 0.012, 'lowpass');
+
+    // Estalos finos de folha
+    for (let i = 0; i < 5; i++) {
+      const st = t + 0.012 + i * 0.02;
+      this.noiseBurst(
+        ctx,
+        sfx,
+        0.02,
+        2400 + i * 280 + Math.random() * 200,
+        v * (0.44 - i * 0.05),
+        st,
+        'highpass',
+      );
+    }
+
+    // Cauda suave de folhas balançando
+    this.softNoise(ctx, sfx, 0.22, 760, v * 0.24, t + 0.048, 'bandpass', 0.7);
+    this.tone(ctx, sfx, 'triangle', 162 * p, 118 * p, 0.09, v * 0.2, t + 0.038);
+  }
+
+  private plasticSplash(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.12, impact);
+    this.noiseBurst(ctx, sfx, 0.14, 420, v * 0.8, t, 'bandpass');
+    this.tone(ctx, sfx, 'sine', 190 * pitch, 70 * pitch, 0.2, v * 0.55, t);
+    this.softNoise(ctx, sfx, 0.16, 680, v * 0.45, t + 0.02, 'lowpass');
+  }
+
+  private cloudPoof(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.softNoise(ctx, sfx, 0.18, 520, v * 0.7, t, 'bandpass', 0.5);
+    this.softNoise(ctx, sfx, 0.22, 380, v * 0.45, t + 0.02, 'lowpass');
+    this.warmLandTone(ctx, sfx, 'sine', 200 * pitch, 140 * pitch, 0.28, v * 0.5, t, 1200);
   }
 
   private iceTing(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
@@ -1477,8 +1596,21 @@ export class AudioBus {
 
   private withCtx(fn: (ctx: AudioContext, sfx: GainNode) => void): void {
     if (!this.started || !this.ctx || !this.sfx || this.muted) return;
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
-    fn(this.ctx, this.sfx);
+    this.runWhenResumed(() => fn(this.ctx!, this.sfx!));
+  }
+
+  private withLandCtx(fn: (ctx: AudioContext, land: GainNode) => void): void {
+    if (!this.started || !this.ctx || !this.land || this.muted) return;
+    this.runWhenResumed(() => fn(this.ctx!, this.land!));
+  }
+
+  private runWhenResumed(run: () => void): void {
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume().then(run);
+      return;
+    }
+    run();
   }
 
   private withAmbient(fn: (ctx: AudioContext, amb: GainNode) => void): void {

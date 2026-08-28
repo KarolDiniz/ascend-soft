@@ -3,35 +3,51 @@ import type { MaterialId } from './materials';
 export interface LandSamplePlayOpts {
   pitch?: number;
   volume?: number;
+  /** Duração máxima do clip — útil para samples longos (ex.: passos) */
+  maxDuration?: number;
+  /** Início aleatório no buffer — varia o ponto do sample */
+  randomStart?: boolean;
 }
 
-/** Samples de pouso por material — decode único, reutilizado a cada colisão */
-const LAND_SAMPLE_URLS: Partial<Record<MaterialId, readonly string[]>> = {
-  /** Vidro / cristal quebrando (Freesound Community) */
-  iceSoap: ['/assets/audio/land/iceSoap.mp3'],
-  /** Sabonete — hand soap + crack (Freesound Community / Soumages) */
-  glycerin: ['/assets/audio/land/handSoap.mp3', '/assets/audio/land/glycerin.mp3'],
-  /** Teclado — clique (Magiaz) */
-  keyboard: ['/assets/audio/land/keyboard.mp3'],
-  /** Plástico bolha — estalo + puff (Alex Jauk / Freesound Community) */
-  bubbleWrap: ['/assets/audio/land/bubbleWrap.mp3', '/assets/audio/land/cloud.mp3'],
-  /** Garrafa na água / mergulho (Freesound Community) */
-  plasticBottle: ['/assets/audio/land/plasticBottle.mp3'],
-  /** Impacto de slime (Universfield) */
-  clearSlime: ['/assets/audio/land/slime.mp3'],
-  butterSlime: ['/assets/audio/land/slime.mp3'],
-  /** Gelatina — squish + kick (Floraphonic / Freesound Community) */
-  jelly: ['/assets/audio/land/jelly.mp3', '/assets/audio/land/jelly-kick.mp3'],
-  /** Embalagem de chocolate (Freesound Community) */
-  chocolate: ['/assets/audio/land/chocolate.mp3'],
-  /** Esponja na água — squeeze (Freesound Community) */
-  sponge: ['/assets/audio/land/sponge.mp3'],
-  /** Passos na grama (Freesound Community) */
-  grass: ['/assets/audio/land/grass.mp3'],
-  /** Espuma de banho — pickup suave (Freesound Community) */
-  bathFoam: ['/assets/audio/land/bathFoam.mp3'],
-  /** Nuvem — puff de fumaça (Freesound Community) */
-  cloud: ['/assets/audio/land/cloud.mp3'],
+const LAND_AUDIO_BASE = `${import.meta.env.BASE_URL}assets/audio/land/`;
+
+function landFiles(...names: string[]): readonly string[] {
+  return names.map((name) => `${LAND_AUDIO_BASE}${name}`);
+}
+
+/**
+ * Um slot de sample por material — arquivo em public/assets/audio/land/{nome}.mp3.
+ * Materiais sem MP3 ainda usam fallback procedural em AudioBus.playLand().
+ */
+const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
+  jelly: landFiles('jelly.mp3', 'jelly-kick.mp3'),
+  butter: landFiles('butter.mp3'),
+  mochi: landFiles('mochi.mp3'),
+  marshmallow: landFiles('marshmallow.mp3'),
+  chocolate: landFiles('chocolate.mp3'),
+  sponge: landFiles('sponge.mp3'),
+  glycerin: landFiles('handSoap.mp3', 'glycerin.mp3'),
+  citrus: landFiles('citrus.mp3'),
+  clearSlime: landFiles('slime.mp3'),
+  whipped: landFiles('whipped.mp3'),
+  honeycomb: landFiles('honeycomb.mp3'),
+  soapBubble: landFiles('soapBubble.mp3'),
+  bathFoam: landFiles('bathFoam.mp3'),
+  lavenderSoap: landFiles('lavenderSoap.mp3'),
+  creamSoap: landFiles('creamSoap.mp3'),
+  keyboard: landFiles('keyboard.mp3'),
+  bubbleWrap: landFiles('bubbleWrap.mp3', 'bubbleWrap-poof.mp3'),
+  kinetic: landFiles('kinetic.mp3'),
+  iceSoap: landFiles('iceSoap.mp3'),
+  butterSlime: landFiles('butterSlime.mp3'),
+  amoeba: landFiles('amoeba.mp3'),
+  moss: landFiles('moss.mp3'),
+  grass: landFiles('grass.mp3'),
+  cotton: landFiles('cotton.mp3'),
+  cloud: landFiles('cloud.mp3'),
+  paper: landFiles('paper.mp3'),
+  plasticBottle: landFiles('plasticBottle.mp3'),
+  velvet: landFiles('velvet.mp3'),
 };
 
 export class LandSampleBank {
@@ -45,7 +61,7 @@ export class LandSampleBank {
 
   has(material: MaterialId): boolean {
     const urls = LAND_SAMPLE_URLS[material];
-    return !!urls?.some((url) => this.buffers.has(url));
+    return urls.some((url) => this.buffers.has(url));
   }
 
   play(
@@ -55,8 +71,6 @@ export class LandSampleBank {
     opts: LandSamplePlayOpts = {},
   ): boolean {
     const urls = LAND_SAMPLE_URLS[material];
-    if (!urls?.length) return false;
-
     const available = urls.filter((url) => this.buffers.has(url));
     if (!available.length) return false;
 
@@ -72,7 +86,11 @@ export class LandSampleBank {
     const g = ctx.createGain();
     const t = ctx.currentTime;
     const dur = buffer.duration / pitch;
-    const playDur = Math.min(dur, 0.62);
+    const playDur = Math.min(dur, opts.maxDuration ?? 0.62);
+    const startOffset =
+      opts.randomStart && buffer.duration > playDur + 0.04
+        ? Math.random() * (buffer.duration - playDur - 0.02)
+        : 0;
 
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
@@ -81,7 +99,7 @@ export class LandSampleBank {
 
     src.connect(g);
     g.connect(dest);
-    src.start(t);
+    src.start(t, startOffset);
     src.stop(t + playDur + 0.02);
     return true;
   }
@@ -89,7 +107,7 @@ export class LandSampleBank {
   private async loadAll(ctx: AudioContext): Promise<void> {
     const urls = new Set<string>();
     for (const list of Object.values(LAND_SAMPLE_URLS)) {
-      list?.forEach((url) => urls.add(url));
+      list.forEach((url) => urls.add(url));
     }
     await Promise.all([...urls].map((url) => this.fetchOne(ctx, url)));
   }
