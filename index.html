@@ -67,6 +67,23 @@
           </div>
 
           <button
+            id="btn-catalog"
+            class="title-catalog-btn"
+            type="button"
+            aria-label="Catálogo de colecionáveis"
+            aria-expanded="false"
+            aria-controls="title-catalog"
+          >
+            <svg class="catalog-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <rect x="2" y="2" width="5" height="5" fill="currentColor" />
+              <rect x="9" y="2" width="5" height="5" fill="currentColor" />
+              <rect x="2" y="9" width="5" height="5" fill="currentColor" />
+              <rect x="9" y="9" width="5" height="5" fill="currentColor" />
+            </svg>
+            <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
+          </button>
+
+          <button
             id="btn-settings"
             class="title-settings-btn"
             type="button"
@@ -171,6 +188,32 @@
             </div>
           </div>
 
+          <div id="title-catalog" class="title-catalog hidden" aria-hidden="true">
+            <button
+              id="title-catalog-backdrop"
+              class="title-catalog-backdrop"
+              type="button"
+              aria-label="Fechar catálogo"
+              tabindex="-1"
+            ></button>
+            <div
+              id="title-catalog-panel"
+              class="title-catalog-panel title-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="catalog-title"
+            >
+              <div class="title-catalog-head">
+                <h2 id="catalog-title" class="settings-title">Colecionáveis</h2>
+                <button id="btn-catalog-close" class="btn-settings-close" type="button" aria-label="Fechar">
+                  ×
+                </button>
+              </div>
+              <p id="catalog-progress" class="catalog-progress">0 / 12 encontrados</p>
+              <div id="catalog-grid" class="catalog-grid" role="list"></div>
+            </div>
+          </div>
+
           <div class="title-stack">
             <div class="title-hero">
               <p class="eyebrow">torre sensorial</p>
@@ -212,6 +255,10 @@
                 <div class="fall-stat">
                   <span class="fall-stat-label">respiros</span>
                   <span id="fall-stat-breaths" class="fall-stat-value">0</span>
+                </div>
+                <div class="fall-stat">
+                  <span class="fall-stat-label">tesouros</span>
+                  <span id="fall-stat-collectibles" class="fall-stat-value">0</span>
                 </div>
                 <div class="fall-stat">
                   <span class="fall-stat-label">recorde</span>

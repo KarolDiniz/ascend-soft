@@ -3,6 +3,7 @@ import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
+import { TitleCatalog } from './ui/TitleCatalog';
 import { TitleSettings } from './ui/TitleSettings';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -10,6 +11,8 @@ const audio = new AudioBus();
 const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
+const titleCatalog = new TitleCatalog();
+game.onCatalogRefresh = () => titleCatalog.refresh();
 
 void spriteAtlas.init().then(() => {
   console.info(
@@ -22,7 +25,7 @@ const btnRetry = document.getElementById('btn-retry')!;
 const btnHome = document.getElementById('btn-home')!;
 
 async function unlockAndPlay(): Promise<void> {
-  if (titleSettings.isOpen()) return;
+  if (titleSettings.isOpen() || titleCatalog.isOpen()) return;
   if (!hud.isTitleVisible() || document.getElementById('title-screen')!.classList.contains('is-leaving')) {
     return;
   }
@@ -50,7 +53,7 @@ btnHome.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-  if (titleSettings.isOpen()) return;
+  if (titleSettings.isOpen() || titleCatalog.isOpen()) return;
   if (e.code === 'Escape' && hud.isFallVisible()) {
     e.preventDefault();
     game.goToTitle();

@@ -19,6 +19,7 @@ export class Hud {
   private fallSubtitle: HTMLElement;
   private fallStatHeight: HTMLElement;
   private fallStatBreaths: HTMLElement;
+  private fallStatCollectibles: HTMLElement;
   private fallStatBest: HTMLElement;
   private fallGap: HTMLElement;
   private muteBtn: HTMLElement;
@@ -48,6 +49,7 @@ export class Hud {
     this.fallSubtitle = document.getElementById('fall-subtitle')!;
     this.fallStatHeight = document.getElementById('fall-stat-height')!;
     this.fallStatBreaths = document.getElementById('fall-stat-breaths')!;
+    this.fallStatCollectibles = document.getElementById('fall-stat-collectibles')!;
     this.fallStatBest = document.getElementById('fall-stat-best')!;
     this.fallGap = document.getElementById('fall-gap')!;
     this.muteBtn = document.getElementById('btn-mute')!;
@@ -128,6 +130,7 @@ export class Hud {
     this.fallSubtitle.textContent = copy.subtitle;
     this.fallStatHeight.textContent = String(summary.height);
     this.fallStatBreaths.textContent = String(summary.breaths);
+    this.fallStatCollectibles.textContent = String(summary.collectibles);
     this.fallStatBest.textContent = String(summary.best);
 
     const gapLabel = getFallGapLabel(summary);

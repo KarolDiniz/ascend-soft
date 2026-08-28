@@ -428,6 +428,211 @@ body {
   background: var(--butter);
 }
 
+.title-catalog-btn {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: calc(12px + var(--safe-left, 0px));
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid var(--ink);
+  background: rgba(255, 252, 248, 0.92);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.28);
+  cursor: pointer;
+  transition:
+    transform 0.08s steps(2),
+    box-shadow 0.08s steps(2),
+    background 0.12s ease;
+}
+
+.title-catalog-btn:hover {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.28);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.title-catalog-btn:active,
+.title-catalog-btn.is-open {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 rgba(90, 97, 108, 0.28);
+  background: var(--butter);
+}
+
+.catalog-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.catalog-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 2px solid var(--ink);
+  background: var(--coral);
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 12px;
+  text-align: center;
+}
+
+.catalog-badge.hidden {
+  display: none;
+}
+
+.title-catalog {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) 14px calc(16px + var(--safe-bottom));
+}
+
+.title-catalog.hidden {
+  display: none;
+}
+
+.title-catalog-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(40, 48, 58, 0.28);
+  cursor: pointer;
+}
+
+.title-catalog-panel {
+  position: relative;
+  z-index: 1;
+  width: min(94vw, 360px);
+  max-height: min(78vh, 520px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.title-catalog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.catalog-progress {
+  margin: 0 0 10px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 7px;
+  border: 2px solid rgba(90, 97, 108, 0.18);
+  background: rgba(255, 255, 255, 0.38);
+  text-align: center;
+}
+
+.catalog-card.is-owned {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(90, 97, 108, 0.28);
+}
+
+.catalog-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.catalog-icon-shape {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: var(--c-primary);
+  box-shadow:
+    2px 0 0 var(--c-secondary),
+    0 2px 0 var(--c-secondary),
+    -2px 0 0 var(--c-accent),
+    0 -2px 0 var(--c-accent);
+  opacity: 0.35;
+}
+
+.catalog-card.is-owned .catalog-icon-shape {
+  opacity: 1;
+}
+
+.catalog-icon-shape--droplet {
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-shadow: none;
+  background: linear-gradient(180deg, var(--c-primary), var(--c-secondary));
+}
+
+.catalog-icon-shape--star {
+  clip-path: polygon(50% 0%, 62% 38%, 100% 38%, 68% 58%, 80% 100%, 50% 72%, 20% 100%, 32% 58%, 0% 38%, 38% 38%);
+  box-shadow: none;
+  background: var(--c-primary);
+}
+
+.catalog-icon-shape--pearl,
+.catalog-icon-shape--cloud {
+  border-radius: 50%;
+  box-shadow: none;
+  background: radial-gradient(circle at 35% 30%, var(--c-accent), var(--c-primary));
+}
+
+.catalog-name {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.36rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.catalog-hint {
+  margin: 0;
+  font-size: 0.62rem;
+  color: var(--ink-soft);
+  line-height: 1.35;
+  max-width: 6.5rem;
+}
+
+.catalog-card:not(.is-owned) .catalog-name,
+.catalog-card:not(.is-owned) .catalog-hint {
+  color: rgba(90, 97, 108, 0.55);
+}
+
+@media (min-width: 480px) {
+  .catalog-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .settings-icon {
   width: 22px;
   height: 22px;
@@ -1079,7 +1284,7 @@ body {
 
 .fall-score-card {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   width: 100%;
   margin-bottom: 10px;

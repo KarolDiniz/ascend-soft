@@ -6,6 +6,9 @@ import { SceneryLayer } from './atmosphere/SceneryLayer';
 import { SoftPass } from './atmosphere/SoftPass';
 import { Background } from './Background';
 import { BreathSpawner } from './Breaths';
+import { CollectibleManager } from './collectibles/CollectibleManager';
+import { COLLECTIBLES } from './collectibles/definitions';
+import { addCollected, loadCollected } from './collectibles/storage';
 import { Camera } from './Camera';
 import { Input } from './Input';
 import { Particles } from './Particles';
@@ -53,6 +56,9 @@ export class Game {
   private softScenery = new SoftPass(0.38);
   private shards = new ShardField();
   private breaths = new BreathSpawner();
+  private collectibles = new CollectibleManager();
+  private collected = loadCollected();
+  private runCollectibles = 0;
   private background = new Background();
   private mixStreak = 0;
   private lastReaction = '';
@@ -189,7 +195,11 @@ export class Game {
     this.resetRun();
     this.state = 'title';
     this.hud.showTitle(this.best);
+    this.onCatalogRefresh?.();
   }
+
+  /** Callback para atualizar catálogo na tela inicial */
+  onCatalogRefresh: (() => void) | null = null;
 
   goToTitle(): void {
     this.audio.stopSoftMurmur();
@@ -228,6 +238,8 @@ export class Game {
     this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
+    this.collectibles.reset();
+    this.runCollectibles = 0;
     this.scenery.resetForRun(phaseRun.starterMaterial());
     this.atmosphere.resetForHeight(0);
     this.height = 0;
@@ -370,6 +382,7 @@ export class Game {
     if (this.state === 'title') {
       this.camera.follow(42 + Math.sin(this.time * 0.28) * 10, this.H * 0.14);
       this.camera.update(dt);
+      this.collectibles.syncPlatforms(this.spawner.platforms);
       for (const p of this.spawner.platforms) {
         const wave = this.userSettings.reduceMotion
           ? 0.2
@@ -428,6 +441,8 @@ export class Game {
     }
 
     this.spawner.update(this.player.y, this.camera.y, this.H);
+    this.collectibles.syncPlatforms(this.spawner.platforms);
+    this.collectibles.prune(this.camera.y, this.H);
     for (const p of this.spawner.platforms) p.update(dt, this.time);
 
     this.resolveCollisions(prevBottom);
@@ -508,6 +523,15 @@ export class Game {
         }
       }
     }
+
+    const foundId = this.collectibles.update(
+      dt,
+      this.player.x,
+      this.player.y,
+      this.camera.y,
+      this.H,
+    );
+    if (foundId) this.handleCollectible(foundId);
 
     this.particles.setWind(this.atmosphere.windX, this.atmosphere.windY);
     this.particles.update(dt);
@@ -836,6 +860,24 @@ export class Game {
     this.lastReaction = text;
   }
 
+  private handleCollectible(id: import('./collectibles/definitions').CollectibleId): void {
+    const def = COLLECTIBLES[id];
+    const isNew = addCollected(this.collected, id);
+    this.runCollectibles += 1;
+    this.audio.playCollect();
+    this.particles.burst(
+      this.player.x,
+      this.player.y + 8,
+      def.primary,
+      10,
+      'spark',
+      true,
+      def.accent,
+    );
+    this.addFloater(this.player.x, this.player.y + 28, isNew ? `+${def.name}!` : def.name, def.primary);
+    this.onCatalogRefresh?.();
+  }
+
   private addFloater(x: number, y: number, text: string, color: string): void {
     this.floaters.push({ x, y, text, life: 0.85, color });
   }
@@ -854,6 +896,7 @@ export class Game {
       height: this.height,
       best: this.best,
       breaths: this.breathCount,
+      collectibles: this.runCollectibles,
       startBest: this.startBest,
       runBestBroken: this.runBestBroken,
     };
@@ -903,6 +946,7 @@ export class Game {
     enablePixelMode(ctx);
 
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
+    this.collectibles.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
     for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);
     this.particles.draw(ctx, this.toScreen);
     this.shards.draw(ctx, this.toScreen);

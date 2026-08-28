@@ -2,6 +2,7 @@ export interface FallSummary {
   height: number;
   best: number;
   breaths: number;
+  collectibles: number;
   startBest: number;
   runBestBroken: boolean;
 }
@@ -44,6 +45,14 @@ export function getFallCopy(s: FallSummary): FallCopy {
       eyebrow: 'fim da subida',
       title: 'que vista!',
       subtitle: 'subiste alto — respira e sobe de novo',
+    };
+  }
+
+  if (s.collectibles >= 3) {
+    return {
+      eyebrow: 'fim da subida',
+      title: 'tesouros!',
+      subtitle: `${s.collectibles} colecionáveis nesta subida`,
     };
   }
 
