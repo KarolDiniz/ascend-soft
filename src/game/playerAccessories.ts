@@ -58,8 +58,8 @@ export function drawPlayerAccessory(
     case 'sprout':
       if (under) drawSprout(ctx, bw, bh, animT);
       break;
-    case 'star':
-      if (under) drawStarClip(ctx, bw, bh, animT);
+    case 'crown':
+      if (under) drawCrown(ctx, bw, bh, animT);
       break;
     case 'headphones':
       if (over) drawHeadphones(ctx, bw, bh, animT);
@@ -232,44 +232,54 @@ function drawSprout(
   fillPx(ctx, cx - u * 0.35, cy - u * 5 * s, u * 1.2, u * 1.2, rgba(PASTEL.white, 0.6));
 }
 
-function drawStarClip(
+/** Coroa dourada — sprite 24×26 extraído da referência */
+const CROWN_SPRITE = [
+  '...O.Y....O.Y....O.Y....',
+  '........OOSSLYOO........',
+  '.......OOOSYYOOO........',
+  '.........OOOOOO.........',
+  '.........OOOOO..........',
+  '...........OOO..........',
+  '..........OOOOOO........',
+  '..........OOYYOO........',
+  '..OOO.....OOYYOO.....OOO',
+  '..OOO....OOYYOOO....OOO..',
+  'OOOsOOO.OOYYYSSSOO.OOOsO',
+  'OOOsOOO.OOYYYYSSOO.OOOss',
+  'OOOsOOO.OOYYSSSYOO.OOOss',
+  'OOOsOOO.OOYYSYSSOO.OOOss',
+  'OsssssOOYYYYSSSSSSOOssss',
+  'OsssssOOYYYYSYYYYSOOssss',
+  'SssssssSYYLYSSYYYSSsssss',
+  'SsssssSSYYYYSSSYYSSSssss',
+  'YSsssSYYYYSSSSSSYYSSSSss',
+  'YSsssSYYYYSSSSSSSSSSSSss',
+  'YSssssYYSSDDDDSSSSSSSSss',
+  'YSSsSSSYssDDDDSSSSSSSSss',
+  '..YYYSYYSSRRDDDDSSSYSSSS..',
+  '..YYYSYYSSRRDDDDSSSSSSSS..',
+  'YYYYYYSSRRRRDDDDSSSSYSSY',
+  'YYYYYYSSRRRRDDDDSSSSYSSY',
+] as const;
+
+const CROWN_COLORS: Record<string, string> = {
+  O: '#141010',
+  Y: '#FAD028',
+  L: '#FFF0A0',
+  S: '#E89828',
+  s: '#C87830',
+  B: '#885820',
+  R: '#C83838',
+  D: '#882828',
+};
+
+function drawCrown(
   ctx: CanvasRenderingContext2D,
-  _bw: number,
+  bw: number,
   bh: number,
   animT: number,
 ): void {
-  const twinkle = Math.sin(animT * 6) > 0.35;
-  const bob = Math.sin(animT * 3.2) * u * 0.18;
-  const cx = 0;
-  const cy = -bh * 0.5 + bob;
-  const gold = PASTEL.butter;
-  const goldMid = '#F5D878';
-  const goldLo = '#E8C050';
-  const goldHi = rgba(PASTEL.white, 0.92);
-  const clip = rgba(PASTEL.inkSoft, 0.45);
-  const s = 2.15;
-
-  // presilha
-  fillPx(ctx, cx - u * 1.6, cy + u * 2.8 * s, u * 3.2, u * 1.2, clip);
-  fillPx(ctx, cx - u * 1.2, cy + u * 2.4 * s, u * 2.4, u * 0.8, rgba(PASTEL.inkSoft, 0.28));
-
-  // corpo da estrela — 5 pontas em blocos pixel
-  fillPx(ctx, cx - u * 1.4 * s, cy - u * 1.4 * s, u * 2.8 * s, u * 2.8 * s, goldMid);
-  fillPx(ctx, cx - u * 2.4 * s, cy - u * 0.4 * s, u * 4.8 * s, u * 1.4 * s, gold);
-  fillPx(ctx, cx - u * 0.8 * s, cy - u * 2.6 * s, u * 1.6 * s, u * 5.2 * s, gold);
-  fillPx(ctx, cx - u * 3 * s, cy + u * 0.8 * s, u * 1.4 * s, u * 2 * s, goldLo);
-  fillPx(ctx, cx + u * 1.6 * s, cy + u * 0.8 * s, u * 1.4 * s, u * 2 * s, goldLo);
-  fillPx(ctx, cx - u * 2.6 * s, cy + u * 2.2 * s, u * 1.2 * s, u * 1.6 * s, goldMid);
-  fillPx(ctx, cx + u * 1.4 * s, cy + u * 2.2 * s, u * 1.2 * s, u * 1.6 * s, goldMid);
-
-  // brilho central
-  fillPx(ctx, cx - u * 0.7 * s, cy - u * 0.5 * s, u * 1.4 * s, u * 1.4 * s, goldHi);
-  if (twinkle) {
-    fillPx(ctx, cx - u * 2.8 * s, cy - u * 1.8 * s, u * 1.2, u * 1.2, goldHi);
-    fillPx(ctx, cx + u * 2.2 * s, cy - u * 1.2 * s, u, u, goldHi);
-    fillPx(ctx, cx - u * 0.4 * s, cy - u * 3.2 * s, u, u, goldHi);
-    fillPx(ctx, cx + u * 1.8 * s, cy + u * 1.6 * s, u, u, rgba(PASTEL.white, 0.7));
-  }
+  drawSpriteHat(ctx, bw, bh, animT, CROWN_SPRITE, CROWN_COLORS, 1, 0.4, 2.2);
 }
 
 function drawHeadphones(
@@ -674,7 +684,7 @@ export function drawAccessoryIcon(
   const bigIcon =
     id === 'bow' ||
     id === 'sprout' ||
-    id === 'star' ||
+    id === 'crown' ||
     id === 'headphones' ||
     id === 'alienAntenna' ||
     id === 'santaHat' ||
@@ -690,7 +700,8 @@ export function drawAccessoryIcon(
     id === 'catEars' ||
     id === 'mickeyEars' ||
     id === 'marioCap' ||
-    id === 'pirateHat'
+    id === 'pirateHat' ||
+    id === 'crown'
       ? 1.12
       : bigIcon
         ? 1
