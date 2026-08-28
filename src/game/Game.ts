@@ -129,8 +129,10 @@ export class Game {
     window.addEventListener('resize', () => this.resize());
     window.addEventListener('pointerdown', () => {
       if (this.state !== 'title' || !this.hud.isTitleVisible()) return;
-      void this.audio.unlock();
-      this.audio.setVolume(this.userSettings.volume / 100);
+      void this.audio.unlock().then(() => {
+        this.audio.setVolume(this.userSettings.volume / 100);
+        this.audio.setMuted(this.userSettings.muted);
+      });
     });
   }
 

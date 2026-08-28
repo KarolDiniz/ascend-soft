@@ -61,11 +61,25 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
 
 export class LandSampleBank {
   private buffers = new Map<string, AudioBuffer>();
-  private loadPromise: Promise<void> | null = null;
+  private loading: Promise<void> | null = null;
+  private loadCtx: AudioContext | null = null;
 
   async load(ctx: AudioContext): Promise<void> {
-    if (!this.loadPromise) this.loadPromise = this.loadAll(ctx);
-    await this.loadPromise;
+    if (this.loadCtx !== ctx) {
+      this.buffers.clear();
+      this.loading = null;
+      this.loadCtx = ctx;
+    }
+    if (!this.loading) {
+      this.loading = this.loadAll(ctx).finally(() => {
+        this.loading = null;
+      });
+    }
+    await this.loading;
+    const missing = this.missingUrls();
+    if (missing.length > 0) {
+      await Promise.all(missing.map((url) => this.fetchOne(ctx, url)));
+    }
   }
 
   has(material: MaterialId): boolean {
@@ -85,48 +99,58 @@ export class LandSampleBank {
 
     const url = available[Math.floor(Math.random() * available.length)]!;
     const buffer = this.buffers.get(url)!;
-    const pitch = opts.pitch ?? 1;
-    const vol = opts.volume ?? 1;
+    const pitch = Math.max(0.25, opts.pitch ?? 1);
+    const vol = Math.max(0.0001, opts.volume ?? 1);
 
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.playbackRate.value = pitch;
+    try {
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.playbackRate.value = pitch;
 
-    const g = ctx.createGain();
-    const t = ctx.currentTime;
-    const dur = buffer.duration / pitch;
-    const playDur = Math.min(dur, opts.maxDuration ?? 0.62);
-    const startOffset =
-      opts.randomStart && buffer.duration > playDur + 0.04
-        ? Math.random() * (buffer.duration - playDur - 0.02)
-        : 0;
+      const g = ctx.createGain();
+      const t = ctx.currentTime;
+      const dur = buffer.duration / pitch;
+      const playDur = Math.min(Math.max(0.04, dur), opts.maxDuration ?? 0.62);
+      const startOffset =
+        opts.randomStart && buffer.duration > playDur + 0.04
+          ? Math.random() * (buffer.duration - playDur - 0.02)
+          : 0;
 
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
-    g.gain.exponentialRampToValueAtTime(vol * 0.72, t + playDur * 0.5);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + playDur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol * 0.72), t + playDur * 0.5);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + playDur);
 
-    src.connect(g);
-    g.connect(dest);
-    src.start(t, startOffset);
-    src.stop(t + playDur + 0.02);
-    return true;
+      src.connect(g);
+      g.connect(dest);
+      src.start(t, startOffset);
+      src.stop(t + playDur + 0.02);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  private async loadAll(ctx: AudioContext): Promise<void> {
+  private missingUrls(): string[] {
     const urls = new Set<string>();
     for (const list of Object.values(LAND_SAMPLE_URLS)) {
       list.forEach((url) => urls.add(url));
     }
-    await Promise.all([...urls].map((url) => this.fetchOne(ctx, url)));
+    return [...urls].filter((url) => !this.buffers.has(url));
+  }
+
+  private async loadAll(ctx: AudioContext): Promise<void> {
+    const missing = this.missingUrls();
+    await Promise.all(missing.map((url) => this.fetchOne(ctx, url)));
   }
 
   private async fetchOne(ctx: AudioContext, url: string): Promise<void> {
+    if (this.buffers.has(url)) return;
     try {
       const res = await fetch(url);
       if (!res.ok) return;
       const ab = await res.arrayBuffer();
-      const buf = await ctx.decodeAudioData(ab.slice(0));
+      const buf = await ctx.decodeAudioData(ab);
       this.buffers.set(url, buf);
     } catch {
       // Mantém fallback procedural em playLand

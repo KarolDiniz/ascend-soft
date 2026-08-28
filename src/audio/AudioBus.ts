@@ -60,8 +60,14 @@ export class AudioBus {
 
   async unlock(): Promise<void> {
     if (this.started) {
-      if (this.ctx?.state === 'suspended') await this.ctx.resume();
-      void this.landSamples.load(this.ctx!);
+      if (this.ctx?.state !== 'running') {
+        try {
+          await this.ctx!.resume();
+        } catch {
+          /* tenta tocar mesmo assim */
+        }
+      }
+      await this.landSamples.load(this.ctx!);
       return;
     }
     const Ctx =
@@ -80,9 +86,15 @@ export class AudioBus {
     this.master.connect(this.ctx.destination);
     this.applyGains();
     // Resume before starting sources — required on Chrome/Safari
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    if (this.ctx.state !== 'running') {
+      try {
+        await this.ctx.resume();
+      } catch {
+        /* tenta tocar mesmo assim */
+      }
+    }
     this.started = true;
-    void this.landSamples.load(this.ctx);
+    await this.landSamples.load(this.ctx);
     this.startAmbient();
   }
 
@@ -307,6 +319,7 @@ export class AudioBus {
 
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1, marimbaBar?: number): void {
     this.withLandCtx((ctx, landBus) => {
+      void this.landSamples.load(ctx);
       this.duckAmbient(300, 0.07);
       const land = ctx.createGain();
       land.gain.value = this.landBusGain * this.landIntensityMul;
@@ -314,9 +327,7 @@ export class AudioBus {
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
       if (this.lightLandAudio) {
-        const t = ctx.currentTime;
-        this.softThud(ctx, land, t, pitch, imp);
-        this.noiseBurst(ctx, land, 0.07, 480 + Math.random() * 220, this.impactVol(0.07, imp), t, 'bandpass');
+        this.landFallbackThud(ctx, land, pitch, imp);
         if (perfect) this.perfectChime(ctx, land, pitch, streak);
         return;
       }
@@ -373,18 +384,12 @@ export class AudioBus {
         amoeba: () =>
           this.landWithSample(ctx, land, 'amoeba', pitch, imp, () => this.amoebaBlob(ctx, land, pitch, imp)),
         moss: () => this.landWithSample(ctx, land, 'moss', pitch, imp, () => this.mossLand(ctx, land, pitch, imp)),
-        grass: () => {
-          if (
-            this.playLandSample(ctx, land, 'grass', pitch, imp, {
-              maxDuration: 0.24,
-              randomStart: true,
-              pitchBoost: 1.06 + Math.random() * 0.14,
-            })
-          ) {
-            return;
-          }
-          this.grassCrunch(ctx, land, pitch, imp);
-        },
+        grass: () =>
+          this.landWithSample(ctx, land, 'grass', pitch, imp, () => this.grassCrunch(ctx, land, pitch, imp), {
+            maxDuration: 0.24,
+            randomStart: true,
+            pitchBoost: 1.06 + Math.random() * 0.14,
+          }),
         cotton: () =>
           this.landWithSample(ctx, land, 'cotton', pitch, imp, () => this.cottonFluff(ctx, land, pitch, imp)),
         cloud: () =>
@@ -413,19 +418,17 @@ export class AudioBus {
           this.landWithSample(ctx, land, 'clay', pitch, imp, () => this.kineticSand(ctx, land, pitch, imp)),
         silk: () =>
           this.landWithSample(ctx, land, 'silk', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
-        kitten: () => {
-          if (
-            this.playLandSample(ctx, land, 'kitten', pitch, imp, {
-              maxDuration: 0.75,
-              randomStart: true,
-            })
-          ) {
-            return;
-          }
-          this.kittenMeowProcedural(ctx, land, pitch);
-        },
+        kitten: () =>
+          this.landWithSample(ctx, land, 'kitten', pitch, imp, () => this.kittenMeowProcedural(ctx, land, pitch), {
+            maxDuration: 0.75,
+            randomStart: true,
+          }),
       };
-      handlers[material]();
+      try {
+        handlers[material]();
+      } catch {
+        this.landFallbackThud(ctx, land, pitch, imp);
+      }
       if (perfect) this.perfectChime(ctx, land, pitch, streak);
     });
   }
@@ -433,21 +436,25 @@ export class AudioBus {
   /** Gatinho mia ao ser pisado — sample kitten.mp3 */
   playKittenMeow(): void {
     this.withLandCtx((ctx, landBus) => {
+      void this.landSamples.load(ctx);
       this.duckAmbient(90);
       const land = ctx.createGain();
       land.gain.value = this.landBusGain * this.landIntensityMul;
       land.connect(landBus);
       const pitch = 0.86 + Math.random() * 0.22;
-      if (
-        this.playLandSample(ctx, land, 'kitten', pitch, 0.6, {
+      this.landWithSample(
+        ctx,
+        land,
+        'kitten',
+        pitch,
+        0.6,
+        () => this.kittenMeowProcedural(ctx, land, pitch),
+        {
           maxDuration: 0.72,
           randomStart: true,
           pitchBoost: 0.98 + Math.random() * 0.08,
-        })
-      ) {
-        return;
-      }
-      this.kittenMeowProcedural(ctx, land, pitch);
+        },
+      );
     });
   }
 
@@ -1518,12 +1525,16 @@ export class AudioBus {
   ): boolean {
     const vol = this.impactVol(0.15, impact) * 1.4;
     const pitchMul = extra.pitchBoost ?? 1;
-    return this.landSamples.play(ctx, bus, material, {
-      pitch: pitch * (0.94 + Math.random() * 0.1) * pitchMul,
-      volume: vol,
-      maxDuration: extra.maxDuration,
-      randomStart: extra.randomStart,
-    });
+    try {
+      return this.landSamples.play(ctx, bus, material, {
+        pitch: pitch * (0.94 + Math.random() * 0.1) * pitchMul,
+        volume: vol,
+        maxDuration: extra.maxDuration,
+        randomStart: extra.randomStart,
+      });
+    } catch {
+      return false;
+    }
   }
 
   private landWithSample(
@@ -1533,9 +1544,40 @@ export class AudioBus {
     pitch: number,
     imp: number,
     fallback: () => void,
+    extra: { maxDuration?: number; randomStart?: boolean; pitchBoost?: number } = {},
   ): void {
-    if (this.playLandSample(ctx, land, material, pitch, imp)) return;
-    fallback();
+    let played = false;
+    try {
+      played = this.playLandSample(ctx, land, material, pitch, imp, extra);
+    } catch {
+      played = false;
+    }
+    if (played) return;
+    try {
+      fallback();
+    } catch {
+      this.landFallbackThud(ctx, land, pitch, imp);
+    }
+  }
+
+  /** Pouso mínimo garantido — nunca falha silenciosamente */
+  private landFallbackThud(
+    ctx: AudioContext,
+    land: GainNode,
+    pitch: number,
+    impact: number,
+  ): void {
+    const t = ctx.currentTime;
+    this.softThud(ctx, land, t, pitch, impact);
+    this.noiseBurst(
+      ctx,
+      land,
+      0.07,
+      480 + Math.random() * 220,
+      this.impactVol(0.07, impact),
+      t,
+      'bandpass',
+    );
   }
 
   private amoebaBlob(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
@@ -1827,8 +1869,12 @@ export class AudioBus {
 
   private runWhenResumed(run: () => void): void {
     if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') {
-      void this.ctx.resume().then(run);
+    const ctx = this.ctx;
+    if (ctx.state !== 'running') {
+      void ctx
+        .resume()
+        .catch(() => undefined)
+        .then(run);
       return;
     }
     run();
