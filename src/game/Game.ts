@@ -570,7 +570,7 @@ export class Game {
 
     // Walk-off / fall-off: release press on previous platform
     if (prevPlat && this.player.groundedPlatform !== prevPlat) {
-      prevPlat.setPressed(false);
+      prevPlat.notePlayerOff(false);
       if (wasGrounded && !jumped) {
         const mat = MATERIALS[prevPlat.material];
         this.particles.releasePuff(
@@ -716,7 +716,7 @@ export class Game {
     if (this.player.vy > 0) {
       // Rising — leave any pressed platform
       if (this.player.groundedPlatform) {
-        this.player.groundedPlatform.setPressed(false);
+        this.player.groundedPlatform.notePlayerOff(true);
       }
       this.player.onGround = false;
       this.player.groundedPlatform = null;
@@ -761,7 +761,7 @@ export class Game {
       const perfect = centerDist < 0.15;
       const mat = p.getMaterialDef();
 
-      p.setPressed(true, impact * (perfect ? 1.2 : 1));
+      p.notePlayerOn(impact * (perfect ? 1.2 : 1));
       this.player.landOn(p);
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
@@ -1037,7 +1037,6 @@ export class Game {
         }
       }
     } else {
-      p.setPressed(true);
       this.player.stickToSurface(p);
     }
   }
@@ -1168,7 +1167,7 @@ export class Game {
   private triggerFall(): void {
     if (this.state !== 'playing') return;
     if (this.player.groundedPlatform) {
-      this.player.groundedPlatform.setPressed(false);
+      this.player.groundedPlatform.notePlayerOff(false);
     }
     this.state = 'falling';
     this.fallTimer = 0;

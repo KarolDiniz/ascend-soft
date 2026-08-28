@@ -59,6 +59,8 @@ export class Platform {
   landedOnce = false;
   readonly seed: number;
 
+  occupiedByPlayer = false;
+
   pressTarget = 0;
   pressAmount = 0;
   pressVel = 0;
@@ -162,7 +164,7 @@ export class Platform {
     return this.top - this.sink;
   }
   get isPressed(): boolean {
-    return this.pressTarget > 0.5;
+    return this.occupiedByPlayer;
   }
   get isMortal(): boolean {
     return this.behaviorDef.mortal;
@@ -205,59 +207,74 @@ export class Platform {
     return true;
   }
 
-  setPressed(pressed: boolean, impact = 0.6): void {
+  /** Impulso visual — abaixa e volta com mola, sem ficar espremida parada */
+  private applyBounceImpulse(impact: number): void {
     if (!this.solid || !this.alive) return;
     const mat = MATERIALS[this.material];
-    if (pressed) {
-      const soft = 0.65 + (0.35 * Math.min(1.6, mat.squash)) / 1.55;
-      const hold = Math.min(0.72, Math.max(PRESS_MIN, 0.26 + impact * 0.38) * soft);
-      const fresh = this.pressTarget < 0.5;
+    const imp = Math.max(0.32, Math.min(1.45, impact));
+    this.pressAmount = Math.max(this.pressAmount, 0.58 + imp * 0.58);
+    this.pressVel += (5.8 + imp * 5.2) * Math.max(0.82, mat.squash);
+  }
 
-      if (fresh) {
-        this.pressHold = hold;
-        this.pressAmount = Math.max(this.pressAmount, 0.5 + impact * 0.58);
-        this.pressVel += (3.4 + impact * 3.9) * mat.squash;
-        this.landedOnce = true;
-        this.landCount += 1;
-        this.onLandBehavior(impact);
-        if (this.material === 'mochi' && hasCheeseMouse(this.seed) && this.cheeseMouseFleeT === 0) {
-          this.cheeseMouseFleeT = 0.001;
-          this.cheeseMouseFleeVy = -6.5;
-          this.cheeseMouseFleeY = 0;
-          this.cheeseMouseSqueakPlayed = false;
-        }
-        if (this.material === 'sponge' && hasSpongeFlies(this.seed) && this.spongeFlyScatterT === 0) {
-          this.spongeFlyScatterT = 0.001;
-          this.spongeFlyScatterVy = -7;
-          this.spongeFlyScatterY = 0;
-          this.emit({ type: 'spongeFlyBuzz' });
-        }
-        if (this.material === 'honeycomb' && this.honeyBeeScatterT === 0) {
-          this.honeyBeeScatterT = 0.001;
-          this.honeyBeeScatterVy = -8;
-          this.honeyBeeScatterY = 0;
-          this.emit({ type: 'honeyBeeBuzz' });
-        }
-        if (this.fading) {
-          this.fadeArmed = true;
-          this.fadeLife = Math.min(this.fadeLife, 1.8);
-        }
-      } else {
-        this.pressHold = Math.max(this.pressHold, hold * 0.85);
+  /** Jogador pousou — comportamento + abaixada elástica */
+  notePlayerOn(impact = 0.6): void {
+    if (!this.solid || !this.alive) return;
+    const fresh = !this.occupiedByPlayer;
+
+    if (fresh) {
+      this.landedOnce = true;
+      this.landCount += 1;
+      this.onLandBehavior(impact);
+      if (this.material === 'mochi' && hasCheeseMouse(this.seed) && this.cheeseMouseFleeT === 0) {
+        this.cheeseMouseFleeT = 0.001;
+        this.cheeseMouseFleeVy = -6.5;
+        this.cheeseMouseFleeY = 0;
+        this.cheeseMouseSqueakPlayed = false;
       }
-      this.pressTarget = 1;
-      this.releaseTimer = 0;
+      if (this.material === 'sponge' && hasSpongeFlies(this.seed) && this.spongeFlyScatterT === 0) {
+        this.spongeFlyScatterT = 0.001;
+        this.spongeFlyScatterVy = -7;
+        this.spongeFlyScatterY = 0;
+        this.emit({ type: 'spongeFlyBuzz' });
+      }
+      if (this.material === 'honeycomb' && this.honeyBeeScatterT === 0) {
+        this.honeyBeeScatterT = 0.001;
+        this.honeyBeeScatterVy = -8;
+        this.honeyBeeScatterY = 0;
+        this.emit({ type: 'honeyBeeBuzz' });
+      }
+      if (this.fading) {
+        this.fadeArmed = true;
+        this.fadeLife = Math.min(this.fadeLife, 1.8);
+      }
       if (this.phase === 'idle') this.phase = 'pressed';
-    } else if (this.pressTarget > 0.5) {
-      this.pressTarget = 0;
-      this.pressVel -= (7.2 + this.pressHold * 3.5) * mat.squash;
-      this.releaseTimer = 0.34;
-      if (this.phase === 'pressed' && this.integrity >= 1) this.phase = 'idle';
+    }
+
+    this.occupiedByPlayer = true;
+    this.applyBounceImpulse(impact);
+  }
+
+  /** Jogador saiu — solta ocupação e dá um solavanco de retorno */
+  notePlayerOff(jump = false): void {
+    const wasOccupied = this.occupiedByPlayer;
+    this.occupiedByPlayer = false;
+    this.pressTarget = 0;
+    if (wasOccupied && this.phase === 'pressed' && this.integrity >= 1) {
+      this.phase = 'idle';
+    }
+    if (wasOccupied) {
+      this.applyBounceImpulse(jump ? 0.46 : 0.3);
     }
   }
 
+  /** @deprecated Use notePlayerOn / notePlayerOff */
+  setPressed(pressed: boolean, impact = 0.6): void {
+    if (pressed) this.notePlayerOn(impact);
+    else this.notePlayerOff(false);
+  }
+
   land(intensity: number): void {
-    this.setPressed(true, intensity);
+    this.notePlayerOn(intensity);
   }
 
   private onLandBehavior(impact: number): void {
@@ -365,33 +382,37 @@ export class Platform {
     if (this.kittenMeowFlash > 0) this.kittenMeowFlash = Math.max(0, this.kittenMeowFlash - dt * 3.8);
     if (this.kittenMeowCooldown > 0) this.kittenMeowCooldown = Math.max(0, this.kittenMeowCooldown - dt);
 
-    // Press spring — softer, bouncier for fluid satisfying squash
+    // Mola elástica — alvo 0 em repouso; chantilly acumula leve pressão enquanto pisado
     const mat = MATERIALS[this.material];
-    const target = this.pressTarget * this.pressHold;
+    const foamSustain =
+      this.occupiedByPlayer && this.behavior === 'foamPop'
+        ? Math.min(0.68, PRESS_MIN + 0.24 + this.pressTime * 0.36)
+        : 0;
+    const target = foamSustain;
     const soft =
       this.behavior === 'elastic' ||
       this.behavior === 'foamPop' ||
       this.behavior === 'melt' ||
       this.behavior === 'sticky';
-    const k = this.pressTarget > 0.5 ? (soft ? 118 : 145) : soft ? 132 : 165;
-    const d = this.pressTarget > 0.5 ? (soft ? 9.5 : 12) : soft ? 8.2 : 10;
+    const k = soft ? 156 : 178;
+    const d = soft ? 7.2 : 8.4;
     const force = (target - this.pressAmount) * k - this.pressVel * d;
     this.pressVel += force * dt;
     this.pressAmount += this.pressVel * dt;
-    if (this.pressAmount > 1.9) {
-      this.pressAmount = 1.9;
-      this.pressVel *= 0.35;
+    if (this.pressAmount > 1.85) {
+      this.pressAmount = 1.85;
+      this.pressVel *= 0.32;
     }
-    if (this.pressAmount < -0.55) {
-      this.pressAmount = -0.55;
-      this.pressVel *= 0.4;
+    if (this.pressAmount < -0.48) {
+      this.pressAmount = -0.48;
+      this.pressVel *= 0.38;
     }
 
-    // Behavior while pressed
-    if (this.pressTarget > 0.5 && this.solid) {
+    // Comportamento mortal enquanto o jogador está em cima
+    if (this.occupiedByPlayer && this.solid) {
       this.pressTime += dt;
       this.updateBehaviorWhilePressed(dt);
-    } else if (this.pressTarget < 0.5) {
+    } else if (!this.occupiedByPlayer) {
       // partial reset press time for foam if released early — keep progress for melt? melt pauses when not pressed
     }
 
@@ -419,9 +440,9 @@ export class Platform {
     this.deformY = 1 - meltFlat * 0.55 - (this.behavior === 'foamPop' ? visual * 0.3 : 0);
 
     if (
-      this.pressTarget < 0.5 &&
+      !this.occupiedByPlayer &&
       Math.abs(this.pressAmount) < 0.04 &&
-      Math.abs(this.pressVel) < 0.3 &&
+      Math.abs(this.pressVel) < 0.28 &&
       meltFlat < 0.05
     ) {
       this.pressAmount = 0;
@@ -523,7 +544,7 @@ export class Platform {
 
     // Queijo: leve pulinho idle
     let cheeseHop = 0;
-    if (this.material === 'mochi' && this.pressTarget < 0.5) {
+    if (this.material === 'mochi' && !this.occupiedByPlayer) {
       cheeseHop = Math.sin(this.wobble * 0.95) * 0.07;
     }
 

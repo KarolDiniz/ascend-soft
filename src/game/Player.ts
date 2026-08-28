@@ -155,7 +155,7 @@ export class Player {
         this.stretch = 1.38 * Math.min(1.15, boost);
         this.squash = 0.72;
         jumped = 'ground';
-        if (leaving) leaving.setPressed(false);
+        if (leaving) leaving.notePlayerOff(true);
       } else if (this.airJumpsLeft > 0) {
         this.vy = this.jumpVel * PHYS.airJumpMul;
         this.onGround = false;
