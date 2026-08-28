@@ -73,6 +73,9 @@ export function drawPlayerAccessory(
     case 'catEars':
       if (under) drawCatEars(ctx, bw, bh, animT);
       break;
+    case 'bunnyEars':
+      if (under) drawBunnyEars(ctx, bw, bh, animT);
+      break;
     case 'mickeyEars':
       if (under) drawMickeyEars(ctx, bw, bh, animT);
       break;
@@ -186,7 +189,7 @@ function drawSunhat(
   bh: number,
   animT: number,
 ): void {
-  drawSpriteHat(ctx, bw, bh, animT, STRAW_HAT_SPRITE, STRAW_HAT_COLORS, 1, 0.38, 2.4);
+  drawSpriteHat(ctx, bw, bh, animT, STRAW_HAT_SPRITE, STRAW_HAT_COLORS, 1, 0.38, 11, 0.4);
 }
 
 function drawSprout(
@@ -279,7 +282,7 @@ function drawCrown(
   bh: number,
   animT: number,
 ): void {
-  drawSpriteHat(ctx, bw, bh, animT, CROWN_SPRITE, CROWN_COLORS, 1, 0.4, 2.2);
+  drawSpriteHat(ctx, bw, bh, animT, CROWN_SPRITE, CROWN_COLORS, 1, 0.4, 24, 0.2);
 }
 
 function drawHeadphones(
@@ -587,6 +590,56 @@ const PIRATE_HAT_COLORS: Record<string, string> = {
   r: '#BB2D2C',
 };
 
+/** Orelhas de coelho — sprite 28×39 extraído da referência */
+const BUNNY_EARS_SPRITE = [
+  'WWW......................WWW',
+  'WWWWW..................WWWWW',
+  'WWWWWp................pWWWWW',
+  'WWWWWp................pWWWWW',
+  'WWWWWWW..............WWWWWWW',
+  'WWWWWWW..............WWWWWWW',
+  'WWWWWWWW............WWWWWWWW',
+  'WWWpWWWW............WWWWpWWW',
+  'WWWppWWW............WWWppWWW',
+  'WWWppWWWWW........WWWWWppWWW',
+  'WWWpppWWWW........WWWWpppWWW',
+  'WWWppppWWWW......WWWWppppWWW',
+  'WWWpppppWWW......WWWpppppWWW',
+  'WWWppppppWW......WWppppppWWW',
+  'WWWppppppWW......WWppppppWWW',
+  'WWWppppppWWW....WWWppppppWWW',
+  'WWWppppppWWW....WWWppppppWWW',
+  '.WWpppppppWW....WWpppppppWW.',
+  '.WWpppppppWW....WWpppppppWW.',
+  '.WWpppppPpWW....WWpPpppppWW.',
+  '.WWWppppPpWW....WWpPppppWWW.',
+  '.WWWpppRPpWW....WWpPPpppWWW.',
+  '..WWppPRPpWW....WWpPPRppWW..',
+  '..WWppPPPpWW....WWpPPPppWW..',
+  '...WWpPPPpWW....WWpPPPpWW...',
+  '...WWppPPPWW....WWPPPppWW...',
+  '...WWWpppPWW....WWPpppWWW...',
+  '.....WWPpPWW....WWPpPWW.....',
+  '.....WpPPpWW....WWpPPpW.....',
+  '......WWPpWWWWWWWWpPWW......',
+  '......WWWWWWWWWWWWWWWW......',
+  '.....WWWWWWWWWWWWWWWWWW.....',
+  '.....WWWWWppppppppWWWWW.....',
+  '.....WWWppp......pppWWW.....',
+  '...WWWpp............ppWWW...',
+  '...WWWpp............ppWWW...',
+  '..WWWpp..............ppWWW..',
+  '..WWpp................ppWW..',
+  '..WWW..................WWW..',
+] as const;
+
+const BUNNY_EARS_COLORS: Record<string, string> = {
+  W: '#FDF8FA',
+  p: '#FAD4DD',
+  P: '#F9A9BE',
+  R: '#E87898',
+};
+
 function spriteHatPixel(bw: number): number {
   const refBw = px(ACCESSORY_REF_BW);
   const inGame = bw < refBw * 0.9;
@@ -602,15 +655,17 @@ function drawSpriteHat(
   colors: Record<string, string>,
   facing: number,
   anchorYFactor = 0.38,
-  yOffsetMul = 1.2,
+  anchorRow?: number,
+  yOffsetMul = 0,
 ): void {
   const bob = Math.sin(animT * 2.6) * u * 0.08;
   const pixel = spriteHatPixel(bw);
   const cols = sprite[0]!.length;
   const rows = sprite.length;
+  const headRow = anchorRow ?? rows - 1;
   const anchorY = -bh * anchorYFactor + bob;
   const ox = -px((cols * pixel) / 2);
-  const oy = anchorY - rows * pixel + pixel * yOffsetMul;
+  const oy = anchorY - headRow * pixel + pixel * yOffsetMul;
 
   drawPixelAccessorySprite(ctx, sprite, ox, oy, colors, facing, pixel);
 }
@@ -661,6 +716,21 @@ function drawMarioCap(
   drawPixelAccessorySprite(ctx, MARIO_CAP_SPRITE, ox, oy, MARIO_CAP_COLORS, facing, pixel);
 }
 
+/** Tiara com orelhas altas — interior rosa em gradiente */
+function drawBunnyEars(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const sway = Math.sin(animT * 4.8) * u * 0.05;
+  ctx.save();
+  ctx.translate(sway, 0);
+  // Linha 31 = faixa branca que encosta na cabeça
+  drawSpriteHat(ctx, bw, bh, animT, BUNNY_EARS_SPRITE, BUNNY_EARS_COLORS, 1, 0.38, 31, 0.12);
+  ctx.restore();
+}
+
 /** Chapéu pirata — bicorne com caveira, borda dourada e bandana */
 function drawPirateHat(
   ctx: CanvasRenderingContext2D,
@@ -669,7 +739,8 @@ function drawPirateHat(
   animT: number,
   facing = 1,
 ): void {
-  drawSpriteHat(ctx, bw, bh, animT, PIRATE_HAT_SPRITE, PIRATE_HAT_COLORS, facing, 0.42, 3.4);
+  // Linha 11 = base da faixa vermelha; bandana pendente fica abaixo da cabeça
+  drawSpriteHat(ctx, bw, bh, animT, PIRATE_HAT_SPRITE, PIRATE_HAT_COLORS, facing, 0.38, 11, 0.2);
 }
 
 /** Mini ícone para botões do editor */
@@ -690,6 +761,7 @@ export function drawAccessoryIcon(
     id === 'santaHat' ||
     id === 'sunhat' ||
     id === 'catEars' ||
+    id === 'bunnyEars' ||
     id === 'mickeyEars' ||
     id === 'marioCap' ||
     id === 'pirateHat';
@@ -698,6 +770,7 @@ export function drawAccessoryIcon(
     id === 'santaHat' ||
     id === 'sunhat' ||
     id === 'catEars' ||
+    id === 'bunnyEars' ||
     id === 'mickeyEars' ||
     id === 'marioCap' ||
     id === 'pirateHat' ||

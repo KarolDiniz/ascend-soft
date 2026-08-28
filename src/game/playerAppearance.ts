@@ -18,7 +18,8 @@ export type AccessoryId =
   | 'catEars'
   | 'mickeyEars'
   | 'marioCap'
-  | 'pirateHat';
+  | 'pirateHat'
+  | 'bunnyEars';
 
 export type HairStyleId = 'none' | 'pigtails' | 'mohawk' | 'mullet';
 
@@ -158,6 +159,7 @@ export const ACCESSORY_OPTIONS: AccessoryOption[] = [
   { id: 'alienAntenna', label: 'Antenas alien' },
   { id: 'santaHat', label: 'Touca Natal' },
   { id: 'catEars', label: 'Orelhas gato' },
+  { id: 'bunnyEars', label: 'Orelhas de coelho' },
   { id: 'mickeyEars', label: 'Orelhas Mickey' },
   { id: 'marioCap', label: 'Boné Mario' },
   { id: 'pirateHat', label: 'Chapéu pirata' },
