@@ -61,30 +61,6 @@ export function getCryingEyeTearOrigins(facing = 1, look = 0): { x: number; y: n
   return getDefeatEyeTearOrigins(facing, look);
 }
 
-/** Nuvem de chuva pixelada — só derrota */
-export function drawPlayerDefeatCloud(
-  ctx: CanvasRenderingContext2D,
-  bw: number,
-  bh: number,
-  animT = 0,
-): void {
-  const bob = Math.sin(animT * 3.2) * u * 0.6;
-  const cy = -bh * 0.54 + bob;
-  const cloud = rgba('#c5d4de', 0.96);
-  const cloudHi = rgba('#e8f0f4', 0.9);
-  const cloudLo = rgba('#8fa8b8', 0.88);
-
-  fillPx(ctx, -bw * 0.2, cy, bw * 0.4, u * 3, cloud);
-  fillPx(ctx, -bw * 0.14, cy - u * 2, bw * 0.28, u * 2, cloud);
-  fillPx(ctx, -bw * 0.26, cy - u, u * 3, u * 2, cloud);
-  fillPx(ctx, bw * 0.18, cy - u, u * 3, u * 2, cloud);
-  fillPx(ctx, -bw * 0.08, cy - u * 3, u * 4, u * 2, cloudHi);
-  fillPx(ctx, -bw * 0.22, cy + u * 2, u * 2, u, cloudLo);
-  fillPx(ctx, bw * 0.14, cy + u * 2, u * 2, u, cloudLo);
-  fillPx(ctx, u, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.55));
-  fillPx(ctx, -u * 2, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.45));
-}
-
 /** Escala do galo na derrota — quanto mais alto caiu, maior o catombo (0.6–2.45) */
 export function defeatHeadBumpScale(height: number): number {
   const h = Math.max(0, height);

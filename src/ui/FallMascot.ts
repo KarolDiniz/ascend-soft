@@ -1,5 +1,4 @@
 import {
-  drawPlayerDefeatCloud,
   drawPlayerDefeatHeadBump,
   drawPlayerPixelBody,
   drawPlayerPixelFace,
@@ -136,7 +135,6 @@ export class FallMascot {
       earWiggle: -Math.max(0, sob) * 0.9,
     });
     drawPlayerDefeatHeadBump(ctx, bw, bh, this.animT, this.bumpScale);
-    drawPlayerDefeatCloud(ctx, bw, bh, this.animT);
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: 1,
       animT: this.animT,
