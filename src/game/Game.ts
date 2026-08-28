@@ -428,6 +428,15 @@ export class Game {
         mat.particle,
         this.atmosphere.getAccent(),
       );
+      if (prevPlat.material === 'keyboard') {
+        this.particles.keyboardLetters(
+          this.player.x,
+          prevPlat.surfaceY,
+          7 + Math.min(5, Math.floor(Math.abs(this.player.vx) * 0.04)),
+          true,
+          this.player.vx,
+        );
+      }
     }
 
     const wall = this.worldHalfW + 20;
@@ -664,7 +673,13 @@ export class Game {
           this.particles.waterSquirt(this.player.x, platformTop, p.w, impact);
           break;
         case 'keyboard':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);
+          this.particles.keyboardLetters(
+            this.player.x,
+            platformTop,
+            8 + Math.floor(impact * 8),
+            true,
+            this.player.vx,
+          );
           break;
         case 'butter':
           this.particles.butterSpread(this.player.x, platformTop, mat.particle, impact, p.w);

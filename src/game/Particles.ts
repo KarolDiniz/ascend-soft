@@ -1,5 +1,6 @@
 import type { MaterialId, ParticleStyle } from '../audio/materials';
 import { PASTEL } from '../theme/pastelPalette';
+import { PIXEL } from '../theme/pixel';
 import { isSoapBarMaterial } from './platform/soapColors';
 
 export type GameplayFx =
@@ -12,7 +13,8 @@ export type GameplayFx =
   | 'meltRibbon'
   | 'butterSpread'
   | 'crackSpark'
-  | 'ring';
+  | 'ring'
+  | 'letter';
 
 interface Particle {
   x: number;
@@ -27,6 +29,7 @@ interface Particle {
   active: boolean;
   rot: number;
   spin: number;
+  glyph: string;
 }
 
 interface RingFx {
@@ -52,6 +55,9 @@ interface DelayedWave {
 
 const POOL = 420;
 const WAVE_SLOTS = 24;
+
+const KEYBOARD_GLYPHS = 'ASDFGHJKLQWERTYUIOPZXCVBNMabcdefghijklmnopqrstuvwxyz0123456789!?';
+const KEYBOARD_LETTER_COLORS = ['#3a4450', '#4a5568', '#5a6578', PASTEL.inkSoft, '#6a7588'];
 
 /** Material → secondary juice style for land waves */
 const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
@@ -99,6 +105,7 @@ export class Particles {
   private pressAcc = 0;
   private airTrailAcc = 0;
   private squeezeAcc = 0;
+  private keyboardLetterAcc = 0;
 
   constructor() {
     for (let i = 0; i < POOL; i++) {
@@ -115,6 +122,7 @@ export class Particles {
         active: false,
         rot: 0,
         spin: 0,
+        glyph: '',
       });
     }
     for (let i = 0; i < WAVE_SLOTS; i++) {
@@ -174,6 +182,7 @@ export class Particles {
       life?: number;
       size?: number;
       spin?: number;
+      glyph?: string;
     } = {},
   ): void {
     const p = this.alloc();
@@ -190,6 +199,36 @@ export class Particles {
     p.type = type;
     p.rot = Math.random() * Math.PI;
     p.spin = opts.spin ?? (Math.random() - 0.5) * 6;
+    p.glyph = opts.glyph ?? '';
+  }
+
+  private pickKeyboardGlyph(): string {
+    return KEYBOARD_GLYPHS[Math.floor(Math.random() * KEYBOARD_GLYPHS.length)]!;
+  }
+
+  /** Letras que saltam do teclado ao andar ou pular */
+  keyboardLetters(
+    x: number,
+    y: number,
+    count = 6,
+    burst = false,
+    walkVx = 0,
+  ): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const glyph = this.pickKeyboardGlyph();
+      const color = KEYBOARD_LETTER_COLORS[i % KEYBOARD_LETTER_COLORS.length]!;
+      const spread = burst ? 34 : 22;
+      const lift = burst ? 55 + Math.random() * 65 : 28 + Math.random() * 42;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, 'letter', {
+        glyph,
+        vx: -walkVx * 0.25 + (Math.random() - 0.5) * (burst ? 70 : 48),
+        vy: lift,
+        life: burst ? 0.75 + Math.random() * 0.45 : 0.55 + Math.random() * 0.35,
+        size: 7 + Math.random() * 2,
+        spin: (Math.random() - 0.5) * (burst ? 8 : 4),
+      });
+    }
   }
 
   /** Layered land burst — Wave A immediate + delayed B/C */
@@ -369,19 +408,36 @@ export class Particles {
     if (!this.allowContinuous) return;
     if (isSoapBarMaterial(materialId)) return;
 
+    const press = Math.max(0, pressAmount) * squash;
+    const rateBoost = 1 + press * 0.8;
     const speed = Math.abs(vx);
-    this.footAcc += dt * (speed * 0.08 + 1.2) * this.densityScale;
-    while (this.footAcc >= 1) {
-      this.footAcc -= 1;
-      this.spawn(x + (Math.random() - 0.5) * 16, surfaceY + 1, color, 'footSpeck', {
-        vx: -vx * 0.15 + (Math.random() - 0.5) * 28 + this.windX * 0.4,
-        vy: 8 + Math.random() * 28,
-        life: 0.35 + Math.random() * 0.4,
-        size: 1.5 + Math.random() * 2.2,
-      });
+    if (materialId !== 'keyboard') {
+      this.footAcc += dt * (speed * 0.08 + 1.2) * this.densityScale;
+      while (this.footAcc >= 1) {
+        this.footAcc -= 1;
+        this.spawn(x + (Math.random() - 0.5) * 16, surfaceY + 1, color, 'footSpeck', {
+          vx: -vx * 0.15 + (Math.random() - 0.5) * 28 + this.windX * 0.4,
+          vy: 8 + Math.random() * 28,
+          life: 0.35 + Math.random() * 0.4,
+          size: 1.5 + Math.random() * 2.2,
+        });
+      }
+    } else {
+      const walkRate = (speed * 0.14 + 0.65) * rateBoost;
+      this.keyboardLetterAcc += dt * walkRate * this.densityScale;
+      while (this.keyboardLetterAcc >= 1) {
+        this.keyboardLetterAcc -= 1;
+        this.spawn(x + (Math.random() - 0.5) * 20, surfaceY - 2, KEYBOARD_LETTER_COLORS[0]!, 'letter', {
+          glyph: this.pickKeyboardGlyph(),
+          vx: -vx * 0.2 + (Math.random() - 0.5) * 40,
+          vy: 24 + Math.random() * 38,
+          life: 0.5 + Math.random() * 0.35,
+          size: 6 + Math.random() * 2,
+          spin: (Math.random() - 0.5) * 5,
+        });
+      }
     }
 
-    const press = Math.max(0, pressAmount) * squash;
     this.pressAcc += dt * (4.5 + press * 14) * this.densityScale;
     while (this.pressAcc >= 1) {
       this.pressAcc -= 1;
@@ -457,7 +513,6 @@ export class Particles {
     }
 
     // Material accents while standing — denser
-    const rateBoost = 1 + press * 0.8;
     if (materialId === 'citrus' && Math.random() < dt * 6 * rateBoost) {
       this.spawn(x, surfaceY, color, 'zest', {
         vx: (Math.random() - 0.5) * 45,
@@ -527,12 +582,14 @@ export class Particles {
         life: 0.45,
         size: 2 + Math.random() * 3,
       });
-    } else if (materialId === 'keyboard' && Math.random() < dt * 3.5 * rateBoost) {
-      this.spawn(x + (Math.random() - 0.5) * 30, surfaceY, color, 'crumb', {
-        vx: (Math.random() - 0.5) * 20,
-        vy: 6 + Math.random() * 14,
-        life: 0.3,
-        size: 1.5 + Math.random(),
+    } else if (materialId === 'keyboard' && speed < 6 && Math.random() < dt * 2.2 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 24, surfaceY - 2, KEYBOARD_LETTER_COLORS[1]!, 'letter', {
+        glyph: this.pickKeyboardGlyph(),
+        vx: (Math.random() - 0.5) * 22,
+        vy: 18 + Math.random() * 28,
+        life: 0.45 + Math.random() * 0.25,
+        size: 6,
+        spin: (Math.random() - 0.5) * 3,
       });
     } else if (materialId === 'bubbleWrap' && Math.random() < dt * 5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, accent, 'bubble', {
@@ -1016,7 +1073,8 @@ export class Particles {
         p.type === 'foamBurst' ||
         p.type === 'pressAura' ||
         p.type === 'footSpeck' ||
-        p.type === 'releasePuff'
+        p.type === 'releasePuff' ||
+        p.type === 'letter'
           ? 0.4
           : 0.12;
       p.x += (p.vx + this.windX * windMul) * dt;
@@ -1039,6 +1097,8 @@ export class Particles {
         g = 60;
       } else if (p.type === 'footSpeck') {
         g = 220;
+      } else if (p.type === 'letter') {
+        g = 32;
       }
       p.vy -= g * dt;
       p.vx *= 1 - (p.type === 'butterSpread' ? 2.8 : 1.2) * dt;
@@ -1135,6 +1195,16 @@ export class Particles {
         if (p.type === 'butterSpread') {
           ctx.fillRect(Math.round(s.x) - sz * 1.4, Math.round(s.y) + 1, Math.round(sz * 2.8), 2);
         }
+      } else if (p.type === 'letter' && p.glyph) {
+        ctx.save();
+        ctx.translate(Math.round(s.x), Math.round(s.y));
+        ctx.rotate(p.rot);
+        ctx.font = PIXEL.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.glyph, 0, 0);
+        ctx.restore();
       } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       } else if (p.type === 'drip') {
@@ -1157,6 +1227,7 @@ export class Particles {
     this.activeCount = 0;
     this.footAcc = 0;
     this.pressAcc = 0;
+    this.keyboardLetterAcc = 0;
     this.airTrailAcc = 0;
     this.squeezeAcc = 0;
   }
