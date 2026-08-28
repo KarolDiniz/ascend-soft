@@ -33,12 +33,13 @@ export function drawPlayerAccessory(
   animT = 0,
   facing = 1,
   itemScale = 1,
+  headHopX = 0,
   headHopY = 0,
 ): void {
   if (accessory === 'none') return;
 
   ctx.save();
-  if (headHopY !== 0) ctx.translate(0, headHopY);
+  if (headHopX !== 0 || headHopY !== 0) ctx.translate(headHopX, headHopY);
   if (itemScale !== 1) ctx.scale(itemScale, itemScale);
 
   const under = layer === 'underFace';

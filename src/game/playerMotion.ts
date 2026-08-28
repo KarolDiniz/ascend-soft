@@ -1,4 +1,6 @@
 /** Estado de animação derivado da física — squash, olhar, passos. */
+import { px } from '../theme/pixel';
+
 export interface PlayerMotion {
   walkPhase: number;
   /** Deslocamento vertical do passo (unidades lógicas, ~px antes do snap) */
@@ -7,9 +9,9 @@ export interface PlayerMotion {
   speedNorm: number;
   /** Inclinação lateral — empurrar o corpo na direção do movimento */
   lean: number;
-  /** Orelhinhas / cabelo reagem ao passo */
+  /** Orelhinhas reagem ao passo */
   earWiggle: number;
-  /** Pulinho dos itens na cabeça — negativo = sobe em relação ao corpo */
+  /** Offset Y do acessório vs cabeça — negativo = flutuando acima (desprendido) */
   accessoryHop: number;
   accessoryHopVel: number;
   rising: boolean;
@@ -74,23 +76,65 @@ export function stepPlayerMotion(
     : Math.sign(vx || 1) * Math.min(4.5, speedNorm * 2.8 + Math.min(2.2, Math.abs(vy) / 180));
   m.lean += (leanTarget - m.lean) * Math.min(1, 14 * dt);
 
-  // Itens na cabeça: impulso para cima no pulo, gravidade puxa de volta ao corpo
-  const hopGravity = 58;
-  m.accessoryHopVel += hopGravity * dt;
-  m.accessoryHop += m.accessoryHopVel * dt;
+  stepAccessoryHop(m, dt, onGround, vy);
+}
+
+/** Gravidade sobre o acessório flutuando — arco parabólico de volta à cabeça */
+function stepAccessoryHop(m: PlayerMotion, dt: number, onGround: boolean, vy: number): void {
+  const grav = 165;
+  const maxFloat = -24;
+
+  // Queda rápida: cabeça desce primeiro, chapéu fica para trás (inércia)
+  if (!onGround && vy < -50) {
+    const fall = -vy;
+    const lag = Math.min(16, (fall - 50) * 0.05);
+    if (m.accessoryHop > -lag) {
+      m.accessoryHop = -lag;
+    }
+    if (m.accessoryHopVel > -lag * 0.35) {
+      m.accessoryHopVel = -lag * 0.35;
+    }
+  }
+
+  const detached = m.accessoryHop < 0 || m.accessoryHopVel < 0;
+
+  if (detached) {
+    m.accessoryHopVel += grav * dt;
+    m.accessoryHop += m.accessoryHopVel * dt;
+    m.accessoryHop = Math.max(maxFloat, m.accessoryHop);
+  }
 
   if (m.accessoryHop >= 0) {
     m.accessoryHop = 0;
-    if (m.accessoryHopVel > 3) {
-      m.accessoryHopVel *= -0.22;
+    if (onGround) {
+      if (m.accessoryHopVel > 4) {
+        m.accessoryHopVel *= -0.2;
+      } else {
+        m.accessoryHopVel = 0;
+      }
     } else {
-      m.accessoryHopVel = 0;
+      m.accessoryHopVel = Math.max(0, m.accessoryHopVel);
     }
   }
 }
 
-/** Impulso ao saltar — só se o item estiver encostado na cabeça */
-export function impulseAccessoryHop(m: PlayerMotion, upStrength: number): void {
-  if (m.accessoryHop < 0) return;
-  m.accessoryHopVel = -upStrength;
+/** Desprende o acessório — inércia: cabeça sobe, chapéu decola para cima */
+export function impulseAccessoryHop(m: PlayerMotion, playerVy: number): void {
+  if (m.accessoryHop < -0.8) return;
+  const pop = 16 + playerVy * 0.045;
+  m.accessoryHop = -4;
+  m.accessoryHopVel = -pop;
+}
+
+/** Offset de desenho (px) — escala com altura do corpo in-game */
+export function accessoryHeadOffset(
+  m: PlayerMotion,
+  facing: number,
+  bodyH = 30,
+): { x: number; y: number } {
+  const scale = bodyH / 30;
+  const hop = m.accessoryHop * scale;
+  const sep = Math.abs(hop);
+  const lag = sep > 2 ? sep * 0.12 * facing : 0;
+  return { x: px(lag), y: px(hop) };
 }

@@ -18,7 +18,7 @@ import {
   type PlayerAppearance,
 } from './playerAppearance';
 import { accessoryInGameScale, accessoryLayers, drawPlayerAccessory } from './playerAccessories';
-import { createPlayerMotion, impulseAccessoryHop, stepPlayerMotion, type PlayerMotion } from './playerMotion';
+import { createPlayerMotion, impulseAccessoryHop, accessoryHeadOffset, stepPlayerMotion, type PlayerMotion } from './playerMotion';
 
 interface TrailPoint {
   x: number;
@@ -154,7 +154,7 @@ export class Player {
         this.stretch = 1.38 * Math.min(1.15, boost);
         this.squash = 0.72;
         jumped = 'ground';
-        impulseAccessoryHop(this.motion, 34 + (boost - 1) * 10);
+        impulseAccessoryHop(this.motion, this.vy);
         if (leaving) leaving.notePlayerOff(true);
       } else if (this.airJumpsLeft > 0) {
         this.vy = this.jumpVel * PHYS.airJumpMul;
@@ -409,7 +409,7 @@ export class Player {
     });
 
     const itemScale = titleBoost ? 1 : accessoryInGameScale(bw);
-    const headHopY = px(this.motion.accessoryHop);
+    const headOff = accessoryHeadOffset(this.motion, this.facing, bh);
 
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
@@ -422,7 +422,8 @@ export class Player {
           this.animT,
           this.facing,
           itemScale,
-          headHopY,
+          headOff.x,
+          headOff.y,
         );
       }
     }
@@ -465,7 +466,8 @@ export class Player {
           this.animT,
           this.facing,
           itemScale,
-          headHopY,
+          headOff.x,
+          headOff.y,
         );
       }
     }
