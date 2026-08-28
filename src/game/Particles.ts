@@ -19,7 +19,8 @@ export type GameplayFx =
   | 'leaf'
   | 'sandWhirl'
   | 'bonbon'
-  | 'musicNote';
+  | 'musicNote'
+  | 'airJumpStar';
 
 interface Particle {
   x: number;
@@ -623,6 +624,54 @@ export class Particles {
         vy: Math.sin(angle) * speed + 8,
         life: 0.5 + Math.random() * 0.7,
         size: 2.5 + Math.random() * 3.5,
+      });
+    }
+  }
+
+  /** Pulo duplo — anel suave, estrelas e baforada para baixo */
+  airJumpBurst(x: number, y: number, color: string, accent: string, facing = 1): void {
+    const fy = y - 6;
+    this.rings.push({ x, y: fy, life: 0.42, maxLife: 0.42, color: accent, kind: 'shock' });
+    this.rings.push({ x, y: fy + 4, life: 0.52, maxLife: 0.52, color, kind: 'dust' });
+
+    const starColors = [accent, PASTEL.butter, PASTEL.white, color];
+    const n = this.cap(16);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.35;
+      const sp = 38 + Math.random() * 62;
+      this.spawn(x + (Math.random() - 0.5) * 10, fy, starColors[i % starColors.length]!, 'airJumpStar', {
+        vx: Math.cos(a) * sp + facing * 18,
+        vy: Math.sin(a) * sp * 0.55 - 48 - Math.random() * 28,
+        life: 0.42 + Math.random() * 0.38,
+        size: 2 + Math.random() * 2.5,
+        spin: (Math.random() - 0.5) * 8,
+      });
+    }
+
+    for (let i = 0; i < this.cap(8); i++) {
+      this.spawn(x + (Math.random() - 0.5) * 22, y + 2, color, 'releasePuff', {
+        vx: (Math.random() - 0.5) * 36 + facing * 8,
+        vy: 36 + Math.random() * 52,
+        life: 0.28 + Math.random() * 0.22,
+        size: 2 + Math.random() * 2.5,
+      });
+    }
+
+    for (let i = 0; i < this.cap(8); i++) {
+      this.spawn(x, fy - 4, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 70 + facing * 24,
+        vy: -24 - Math.random() * 55,
+        life: 0.38 + Math.random() * 0.28,
+        size: 1.5 + Math.random() * 2,
+      });
+    }
+
+    for (let i = 0; i < this.cap(4); i++) {
+      this.spawn(x + (Math.random() - 0.5) * 14, fy, PASTEL.white, 'shockSoft', {
+        vx: facing * (55 + Math.random() * 40),
+        vy: -20 - Math.random() * 30,
+        life: 0.22 + Math.random() * 0.18,
+        size: 2 + Math.random() * 2,
       });
     }
   }
@@ -1672,6 +1721,18 @@ export class Particles {
         ctx.textBaseline = 'middle';
         ctx.fillStyle = p.color;
         ctx.fillText(p.glyph, 0, 0);
+        ctx.restore();
+      } else if (p.type === 'airJumpStar') {
+        ctx.save();
+        ctx.translate(Math.round(s.x), Math.round(s.y));
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        const s2 = Math.max(2, Math.round(sz));
+        ctx.fillRect(-s2, -1, s2 * 2, 2);
+        ctx.fillRect(-1, -s2, 2, s2 * 2);
+        if (s2 >= 3) {
+          ctx.fillRect(-1, -1, 2, 2);
+        }
         ctx.restore();
       } else if (p.type === 'grassBlade') {
         ctx.save();

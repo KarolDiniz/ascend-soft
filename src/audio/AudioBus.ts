@@ -703,6 +703,18 @@ export class AudioBus {
     });
   }
 
+  /** Pulo duplo — chime ascendente com brilho ASMR */
+  playAirJump(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(90);
+      this.noiseBurst(ctx, sfx, 0.1, 2200, 0.055, t, 'highpass');
+      this.tone(ctx, sfx, 'sine', 392, 784, 0.22, 0.09, t);
+      this.tone(ctx, sfx, 'triangle', 588, 1176, 0.18, 0.06, t + 0.035);
+      this.tone(ctx, sfx, 'sine', 988, 1318, 0.12, 0.04, t + 0.07);
+    });
+  }
+
   /** Soft whoosh / chime when entering a new themed phase */
   playBiomeEnter(zoneId: MaterialId): void {
     this.withCtx((ctx, sfx) => {

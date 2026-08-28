@@ -9,6 +9,7 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  drawPlayerAirJumpAura,
   defaultBodyColors,
 } from './playerPixelArt';
 import {
@@ -53,6 +54,8 @@ export class Player {
   private landFace: 'none' | 'bliss' | 'ooh' | 'pop' | 'sticky' = 'none';
   private landFaceT = 0;
   private airJumpFlashT = 0;
+  /** Duração total do flash visual do pulo duplo */
+  readonly airJumpFlashMax = 0.48;
   private landImpactT = 0;
   private readonly motion: PlayerMotion = createPlayerMotion();
   /** Boca aberta — murmúrio na tela inicial */
@@ -159,9 +162,9 @@ export class Player {
         this.coyote = 0;
         this.groundedPlatform = null;
         this.airJumpsLeft -= 1;
-        this.stretch = 1.24;
-        this.squash = 0.76;
-        this.airJumpFlashT = 0.38;
+        this.stretch = 1.5;
+        this.squash = 0.62;
+        this.airJumpFlashT = this.airJumpFlashMax;
         jumped = 'air';
       }
     }
@@ -365,10 +368,12 @@ export class Player {
     const raw = toScreen(this.x, this.y);
     const s = snapPt(raw.x, raw.y);
     const m = this.motion;
+    const airFlash = this.airJumpFlashT / this.airJumpFlashMax;
     const walkSquish = m.moving ? 1 + Math.sin(m.walkPhase * Math.PI * 2) * m.speedNorm * 0.05 : 1;
     const walkStretch = m.moving ? 1 - Math.sin(m.walkPhase * Math.PI * 2) * m.speedNorm * 0.035 : 1;
-    const sq = Math.round(this.squash * walkSquish * 8) / 8;
-    const st = Math.round(this.stretch * walkStretch * 8) / 8;
+    const airPulse = airFlash > 0 ? 1 + airFlash * 0.08 : 1;
+    const sq = Math.round(this.squash * walkSquish * airPulse * 8) / 8;
+    const st = Math.round(this.stretch * walkStretch * (airFlash > 0 ? 1 + airFlash * 0.06 : 1) * 8) / 8;
     const bw = px(this.w * sq);
     const bh = px(this.h * st);
     const bobY = px(-m.walkBob);
@@ -386,6 +391,10 @@ export class Player {
     }
 
     drawPlayerPixelShadow(ctx, bw, bh, 1, m.speedNorm);
+
+    if (airFlash > 0) {
+      drawPlayerAirJumpAura(ctx, bw, bh, this.airJumpFlashT, this.airJumpFlashMax);
+    }
 
     // Body — stepped oval (cute pixel slime)
     const colors = defaultBodyColors();

@@ -530,15 +530,14 @@ export class Game {
       }
     }
     if (jumped === 'air') {
-      this.particles.burst(
+      this.particles.airJumpBurst(
         this.player.x,
-        this.player.y,
+        this.player.y - 4,
         this.player.trailColor,
-        10,
-        'spark',
-        false,
         this.atmosphere.getAccent(),
+        this.player.facing,
       );
+      this.audio.playAirJump();
     }
 
     const wall = this.worldHalfW + 20;

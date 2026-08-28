@@ -290,6 +290,72 @@ export function drawPlayerPixelShadow(
   fillPx(ctx, -bw * (spread - 0.14), bh * 0.42, bw * (spread - 0.14) * 2, u, rgba(PLAYER_PASTEL.shadow, 0.65));
 }
 
+/** Aura pixel do pulo duplo — anel que expande no corpo */
+export function drawPlayerAirJumpAura(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  flashT: number,
+  maxFlash: number,
+): void {
+  const t = Math.max(0, Math.min(1, flashT / maxFlash));
+  if (t <= 0.02) return;
+  const expand = 1 + (1 - t) * 0.72;
+  const ringY = bh * 0.06;
+  const pts = 14;
+  for (let i = 0; i < pts; i++) {
+    const a = (i / pts) * Math.PI * 2 - Math.PI / 2;
+    const rx = bw * 0.52 * expand;
+    const ry = u * (2.8 + (1 - t) * 2.2) * expand;
+    const px = Math.cos(a) * rx;
+    const py = Math.sin(a) * ry + ringY;
+    fillPx(ctx, px, py, u, u, rgba(PASTEL.butter, 0.55 * t));
+    if (i % 3 === 0) {
+      fillPx(ctx, px, py, u, u, rgba(PASTEL.white, 0.42 * t));
+    }
+  }
+  const sparkOff = bw * 0.38 * expand;
+  fillPx(ctx, -sparkOff, -bh * 0.08, u, u, rgba(PASTEL.butter, 0.75 * t));
+  fillPx(ctx, sparkOff, -bh * 0.08, u, u, rgba(PASTEL.butter, 0.75 * t));
+  fillPx(ctx, 0, -bh * 0.28 * expand, u, u, rgba(PASTEL.white, 0.65 * t));
+  fillPx(ctx, 0, bh * 0.22 * expand, u, u, rgba(PASTEL.sky, 0.45 * t));
+}
+
+/** Olhos estrela — exclusivo do pulo duplo */
+function drawPlayerAirJumpEyes(
+  ctx: CanvasRenderingContext2D,
+  eyeOff: number,
+  look: number,
+  eyeY: number,
+  eyeW: number,
+  eyeLine: string,
+  eyeFill: string,
+  animT: number,
+): void {
+  const lx = eyeOff - u * 4 + look;
+  const rx = eyeOff + u * 1 + look;
+  const y = eyeY - u * 0.5;
+  const h = u * 5.5;
+  fillPx(ctx, lx, y, eyeW, h, PASTEL.white);
+  fillPx(ctx, rx, y, eyeW, h, PASTEL.white);
+  fillPx(ctx, lx, y, eyeW, u, eyeLine);
+  fillPx(ctx, rx, y, eyeW, u, eyeLine);
+
+  const drawStarPupil = (cx: number, cy: number): void => {
+    fillPx(ctx, cx - u, cy - u * 0.5, u * 2, u, eyeFill);
+    fillPx(ctx, cx - u * 0.5, cy - u, u, u * 2, eyeFill);
+    fillPx(ctx, cx - u * 0.5, cy - u * 0.5, u, u, PASTEL.butter);
+    if (Math.sin(animT * 18) > 0.15) {
+      fillPx(ctx, cx + u * 0.5, cy - u * 0.8, u, u, PASTEL.white);
+    }
+  };
+
+  drawStarPupil(lx + u * 2, y + u * 2.2);
+  drawStarPupil(rx + u * 2, y + u * 2.2);
+  fillPx(ctx, lx - u * 0.5, y - u * 1.2, u * 2, u, eyeLine);
+  fillPx(ctx, rx + u * 2.5, y - u * 1.2, u * 2, u, eyeLine);
+}
+
 /** Olhos fechados — arco pixel por contexto de movimento */
 function drawPlayerShutEyes(
   ctx: CanvasRenderingContext2D,
@@ -354,8 +420,7 @@ export function drawPlayerPixelFace(
   const motionSprint = opts.motionSprint ?? false;
   const motionAirJump = opts.motionAirJump ?? false;
   const motionLanding = opts.motionLanding ?? false;
-  const eyesShutAir =
-    motionLanding || motionFalling || motionRising || motionAirJump;
+  const eyesShutAir = motionLanding || motionFalling || motionRising;
   const eyeLine = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeLine;
   const eyeFill = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeFill;
   const look = (opts.look ?? 0) + facing;
@@ -470,7 +535,9 @@ export function drawPlayerPixelFace(
     drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'land');
   } else if (motionFalling) {
     drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'fall');
-  } else if (motionRising || motionAirJump) {
+  } else if (motionAirJump) {
+    drawPlayerAirJumpEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, eyeFill, animT);
+  } else if (motionRising) {
     drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'jump');
   } else if (landBliss) {
     fillPx(ctx, eyeOff - u * 4 + look, eyeY + u * 2, eyeW, u, eyeLine);
@@ -525,7 +592,11 @@ export function drawPlayerPixelFace(
   } else if (motionFalling) {
     fillPx(ctx, eyeOff - u * 1.5, mouthY + u * 0.5, u * 2, u, eyeLine);
     fillPx(ctx, eyeOff + u * 2, mouthY + u * 0.5, u * 2, u, eyeLine);
-  } else if (motionRising || motionAirJump) {
+  } else if (motionAirJump) {
+    fillPx(ctx, eyeOff - u * 1.5, mouthY, u * 2, u * 2, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY, u, u * 2, eyeLine);
+    fillPx(ctx, eyeOff - u * 0.5, mouthY - u * 0.5, u * 2, u, rgba(PASTEL.rose, 0.38));
+  } else if (motionRising) {
     fillPx(ctx, eyeOff - u * 1.5, mouthY + u * 0.5, u * 2, u, eyeLine);
     fillPx(ctx, eyeOff + u * 2.5, mouthY + u * 0.5, u * 2, u, eyeLine);
     fillPx(ctx, eyeOff - u * 0.5, mouthY, u * 2, u, eyeLine);
