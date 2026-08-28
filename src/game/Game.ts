@@ -437,6 +437,15 @@ export class Game {
           this.player.vx,
         );
       }
+      if (prevPlat.material === 'grass') {
+        this.particles.grassFoliage(
+          this.player.x,
+          prevPlat.surfaceY,
+          10 + Math.min(6, Math.floor(Math.abs(this.player.vx) * 0.05)),
+          true,
+          this.player.vx,
+        );
+      }
     }
 
     const wall = this.worldHalfW + 20;
@@ -713,8 +722,13 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
           break;
         case 'grass':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'crumb', false);
-          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'zest', false);
+          this.particles.grassFoliage(
+            this.player.x,
+            platformTop,
+            12 + Math.floor(impact * 10),
+            true,
+            this.player.vx,
+          );
           break;
         case 'cloud':
           this.particles.foamPopStorm(this.player.x, platformTop, mat.particle);

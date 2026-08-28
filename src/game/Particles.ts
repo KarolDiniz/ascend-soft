@@ -14,7 +14,9 @@ export type GameplayFx =
   | 'butterSpread'
   | 'crackSpark'
   | 'ring'
-  | 'letter';
+  | 'letter'
+  | 'grassBlade'
+  | 'leaf';
 
 interface Particle {
   x: number;
@@ -58,6 +60,9 @@ const WAVE_SLOTS = 24;
 
 const KEYBOARD_GLYPHS = 'ASDFGHJKLQWERTYUIOPZXCVBNMabcdefghijklmnopqrstuvwxyz0123456789!?';
 const KEYBOARD_LETTER_COLORS = ['#3a4450', '#4a5568', '#5a6578', PASTEL.inkSoft, '#6a7588'];
+
+const GRASS_BLADE_COLORS = ['#6A9A62', '#7CB072', '#8EC880', '#98C898'];
+const GRASS_LEAF_COLORS = ['#7CB068', '#98C878', '#B8E088', '#C8E8A0', '#D8F0B0'];
 
 /** Material → secondary juice style for land waves */
 const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
@@ -106,6 +111,7 @@ export class Particles {
   private airTrailAcc = 0;
   private squeezeAcc = 0;
   private keyboardLetterAcc = 0;
+  private grassFoliageAcc = 0;
 
   constructor() {
     for (let i = 0; i < POOL; i++) {
@@ -204,6 +210,29 @@ export class Particles {
 
   private pickKeyboardGlyph(): string {
     return KEYBOARD_GLYPHS[Math.floor(Math.random() * KEYBOARD_GLYPHS.length)]!;
+  }
+
+  /** Grama e folhas ao andar ou pousar na plataforma de grama */
+  grassFoliage(x: number, y: number, count = 8, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      this.spawnGrassPiece(x, y, walkVx, burst);
+    }
+  }
+
+  private spawnGrassPiece(x: number, y: number, walkVx: number, burst: boolean): void {
+    const isLeaf = Math.random() < (burst ? 0.38 : 0.28);
+    const spread = burst ? 38 : 24;
+    const color = isLeaf
+      ? GRASS_LEAF_COLORS[Math.floor(Math.random() * GRASS_LEAF_COLORS.length)]!
+      : GRASS_BLADE_COLORS[Math.floor(Math.random() * GRASS_BLADE_COLORS.length)]!;
+    this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, isLeaf ? 'leaf' : 'grassBlade', {
+      vx: -walkVx * 0.22 + (Math.random() - 0.5) * (burst ? 75 : 52),
+      vy: (burst ? 40 : 22) + Math.random() * (burst ? 55 : 38),
+      life: burst ? 0.7 + Math.random() * 0.45 : 0.48 + Math.random() * 0.38,
+      size: isLeaf ? 3 + Math.random() * 2.5 : 4 + Math.random() * 3,
+      spin: (Math.random() - 0.5) * (burst ? 10 : 6),
+    });
   }
 
   /** Letras que saltam do teclado ao andar ou pular */
@@ -411,7 +440,7 @@ export class Particles {
     const press = Math.max(0, pressAmount) * squash;
     const rateBoost = 1 + press * 0.8;
     const speed = Math.abs(vx);
-    if (materialId !== 'keyboard') {
+    if (materialId !== 'keyboard' && materialId !== 'grass') {
       this.footAcc += dt * (speed * 0.08 + 1.2) * this.densityScale;
       while (this.footAcc >= 1) {
         this.footAcc -= 1;
@@ -422,7 +451,7 @@ export class Particles {
           size: 1.5 + Math.random() * 2.2,
         });
       }
-    } else {
+    } else if (materialId === 'keyboard') {
       const walkRate = (speed * 0.14 + 0.65) * rateBoost;
       this.keyboardLetterAcc += dt * walkRate * this.densityScale;
       while (this.keyboardLetterAcc >= 1) {
@@ -435,6 +464,14 @@ export class Particles {
           size: 6 + Math.random() * 2,
           spin: (Math.random() - 0.5) * 5,
         });
+      }
+    } else if (materialId === 'grass') {
+      const walkRate = (speed * 0.18 + 0.9) * rateBoost;
+      this.grassFoliageAcc += dt * walkRate * this.densityScale;
+      while (this.grassFoliageAcc >= 1) {
+        this.grassFoliageAcc -= 1;
+        this.spawnGrassPiece(x, surfaceY, vx, false);
+        if (Math.random() < 0.55) this.spawnGrassPiece(x, surfaceY, vx, false);
       }
     }
 
@@ -492,7 +529,7 @@ export class Particles {
       }
     } else if (behavior === 'shatter') {
       if (Math.random() < dt * 14) this.crackSpark(x, surfaceY, accent);
-    } else if (behavior === 'elastic' && materialId !== 'jelly') {
+    } else if (behavior === 'elastic' && materialId !== 'jelly' && materialId !== 'grass') {
       if (Math.random() < dt * 9) {
         this.spawn(x + (Math.random() - 0.5) * 26, surfaceY, color, _style, {
           vx: (Math.random() - 0.5) * 24,
@@ -1074,7 +1111,9 @@ export class Particles {
         p.type === 'pressAura' ||
         p.type === 'footSpeck' ||
         p.type === 'releasePuff' ||
-        p.type === 'letter'
+        p.type === 'letter' ||
+        p.type === 'leaf' ||
+        p.type === 'grassBlade'
           ? 0.4
           : 0.12;
       p.x += (p.vx + this.windX * windMul) * dt;
@@ -1099,6 +1138,10 @@ export class Particles {
         g = 220;
       } else if (p.type === 'letter') {
         g = 32;
+      } else if (p.type === 'grassBlade') {
+        g = 48;
+      } else if (p.type === 'leaf') {
+        g = 40;
       }
       p.vy -= g * dt;
       p.vx *= 1 - (p.type === 'butterSpread' ? 2.8 : 1.2) * dt;
@@ -1205,6 +1248,22 @@ export class Particles {
         ctx.fillStyle = p.color;
         ctx.fillText(p.glyph, 0, 0);
         ctx.restore();
+      } else if (p.type === 'grassBlade') {
+        ctx.save();
+        ctx.translate(Math.round(s.x), Math.round(s.y));
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-1, -sz, 2, sz * 2);
+        ctx.fillRect(-2, -sz - 1, 4, 2);
+        ctx.restore();
+      } else if (p.type === 'leaf') {
+        ctx.save();
+        ctx.translate(Math.round(s.x), Math.round(s.y));
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-sz, -1, sz * 1.4, 2);
+        ctx.fillRect(-sz * 0.2, -sz * 0.75, sz * 0.85, 2);
+        ctx.restore();
       } else if (p.type === 'sand' || p.type === 'sandFall' || p.type === 'footSpeck') {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       } else if (p.type === 'drip') {
@@ -1228,6 +1287,7 @@ export class Particles {
     this.footAcc = 0;
     this.pressAcc = 0;
     this.keyboardLetterAcc = 0;
+    this.grassFoliageAcc = 0;
     this.airTrailAcc = 0;
     this.squeezeAcc = 0;
   }
