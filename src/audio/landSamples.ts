@@ -57,6 +57,18 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   clay: landFiles('sponge.mp3'),
   silk: landFiles('cloud.mp3'),
   kitten: landFiles('kitten.mp3'),
+  mushroom: landFiles('grass.mp3', 'sponge.mp3'),
+  kalimba: landFiles(),
+  xylophone: landFiles(),
+  tambourine: landFiles(),
+  popcorn: landFiles('bubbleWrap-poof.mp3', 'sponge.mp3'),
+  bamboo: landFiles('keyboard.mp3', 'sponge.mp3'),
+  cork: landFiles('bubbleWrap-poof.mp3'),
+  seashell: landFiles('iceSoap.mp3', 'glycerin.mp3'),
+  macaron: landFiles('sponge.mp3', 'chocolate.mp3'),
+  boba: landFiles('jelly.mp3', 'slime.mp3'),
+  feather: landFiles('cloud.mp3'),
+  woodBlock: landFiles('keyboard.mp3'),
 };
 
 export class LandSampleBank {

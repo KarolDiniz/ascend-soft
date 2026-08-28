@@ -97,6 +97,18 @@ export const MATERIAL_LEDGE: Record<
   /** seda — placa suave */
   silk: { minW: 48, maxW: 58, visualDepth: 0.7, visualSpread: 1.02 },
   kitten: { minW: 52, maxW: 66, visualDepth: 0.86, visualSpread: 1.1 },
+  mushroom: { minW: 48, maxW: 58, visualDepth: 1.28, visualSpread: 1.06 },
+  kalimba: { minW: 50, maxW: 62, visualDepth: 0.66, visualSpread: 1.06 },
+  xylophone: { minW: 56, maxW: 70, visualDepth: 0.62, visualSpread: 1.1 },
+  tambourine: { minW: 44, maxW: 54, visualDepth: 0.58, visualSpread: 1.02 },
+  popcorn: { minW: 50, maxW: 62, visualDepth: 1.08, visualSpread: 1.12 },
+  bamboo: { minW: 46, maxW: 56, visualDepth: 1.15, visualSpread: 0.98 },
+  cork: { minW: 40, maxW: 48, visualDepth: 1.05, visualSpread: 0.96 },
+  seashell: { minW: 44, maxW: 54, visualDepth: 0.92, visualSpread: 1.04 },
+  macaron: { minW: 42, maxW: 52, visualDepth: 0.88, visualSpread: 1.02 },
+  boba: { minW: 44, maxW: 54, visualDepth: 1.2, visualSpread: 1.0 },
+  feather: { minW: 52, maxW: 66, visualDepth: 1.32, visualSpread: 1.14 },
+  woodBlock: { minW: 48, maxW: 58, visualDepth: 0.9, visualSpread: 1.04 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {

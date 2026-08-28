@@ -87,7 +87,31 @@ export type PlatformVariant =
   | 'silk_fold'
   | 'silk_pad'
   | 'kitten_cushion'
-  | 'kitten_nest';
+  | 'kitten_nest'
+  | 'mushroom_cap'
+  | 'mushroom_cluster'
+  | 'kalimba_box'
+  | 'kalimba_wide'
+  | 'xylophone_row'
+  | 'xylophone_pad'
+  | 'tambourine_disc'
+  | 'tambourine_ring'
+  | 'popcorn_bowl'
+  | 'popcorn_mound'
+  | 'bamboo_segment'
+  | 'bamboo_bundle'
+  | 'cork_plug'
+  | 'cork_disk'
+  | 'seashell_spiral'
+  | 'seashell_clam'
+  | 'macaron_pair'
+  | 'macaron_stack'
+  | 'boba_cup'
+  | 'boba_puddle'
+  | 'feather_puff'
+  | 'feather_drift'
+  | 'woodBlock_log'
+  | 'woodBlock_stump';
 
 export interface VariantDef {
   id: PlatformVariant;

@@ -184,6 +184,11 @@ function decorClayCrumb(a: ExtraDrawArgs): void {
 const DECOR: Partial<Record<MaterialId, (a: ExtraDrawArgs) => void>> = {
   cloud: decorCloudPuffs,
   marimba: decorMarimbaNotes,
+  kalimba: decorMarimbaNotes,
+  xylophone: decorMarimbaNotes,
+  tambourine: decorMarimbaNotes,
+  woodBlock: decorMarimbaNotes,
+  mushroom: decorMossSpore,
   keyboard: decorKeyboardKeys,
   bubbleWrap: decorBubbleWrapPop,
   kitten: decorKittenZzz,

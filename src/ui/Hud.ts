@@ -34,6 +34,8 @@ export class Hud {
   private toastLiveTimer = 0;
   private leaveTimer = 0;
   private readonly toastDuration = PHASE_TOAST_MS;
+  private readonly titleLeaveMs = 550;
+  private readonly titleLeaveMsReduced = 220;
 
   constructor(audio?: AudioBus) {
     this.root = document.getElementById('hud')!;
@@ -74,20 +76,42 @@ export class Hud {
     this.setTitleBest(best);
   }
 
-  leaveTitle(onDone: () => void): void {
+  leaveTitle(onStart: () => void): void {
     if (this.titleScreen.classList.contains('hidden')) {
-      onDone();
+      onStart();
       return;
     }
     if (this.titleScreen.classList.contains('is-leaving')) return;
+
+    onStart();
     this.titleScreen.classList.add('is-leaving');
     window.clearTimeout(this.leaveTimer);
+    const leaveMs = document.documentElement.classList.contains('reduce-motion')
+      ? this.titleLeaveMsReduced
+      : this.titleLeaveMs;
     this.leaveTimer = window.setTimeout(() => {
       this.titleScreen.classList.add('hidden');
       this.titleScreen.classList.remove('is-leaving');
-      document.getElementById('app')?.classList.remove('is-title');
-      onDone();
-    }, 280);
+    }, leaveMs);
+  }
+
+  /** HUD entra suavemente enquanto a tela inicial some. */
+  preparePlaying(best: number): void {
+    window.clearTimeout(this.leaveTimer);
+    this.fallMascot.stop();
+    this.fallTears.stop();
+    document.getElementById('app')?.classList.remove('is-title');
+    this.fallScreen.classList.add('hidden');
+    this.root.classList.remove('hidden');
+    this.root.classList.remove('is-entering');
+    void this.root.offsetWidth;
+    this.root.classList.add('is-entering');
+    this.bestEl.textContent = String(best);
+    this.heightEl.textContent = '0';
+    this.breathsEl.textContent = '0';
+    this.streakEl.textContent = '';
+    this.streakEl.classList.add('hidden');
+    window.setTimeout(() => this.root.classList.remove('is-entering'), 650);
   }
 
   isTitleVisible(): boolean {

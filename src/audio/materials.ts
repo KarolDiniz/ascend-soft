@@ -35,7 +35,19 @@ export type MaterialId =
   | 'ceramic'
   | 'clay'
   | 'silk'
-  | 'kitten';
+  | 'kitten'
+  | 'mushroom'
+  | 'kalimba'
+  | 'xylophone'
+  | 'tambourine'
+  | 'popcorn'
+  | 'bamboo'
+  | 'cork'
+  | 'seashell'
+  | 'macaron'
+  | 'boba'
+  | 'feather'
+  | 'woodBlock';
 
 export type ParticleStyle =
   | 'drip'
@@ -126,6 +138,18 @@ export const MATERIALS: Record<MaterialId, MaterialDef> = {
   clay: mat('clay', 'argila', 'sand', 1.05, 1.32, 2520),
   silk: mat('silk', 'seda', 'foam', 1.22, 1.44, 2600),
   kitten: mat('kitten', 'gatinhos', 'glitter', 1.28, 1.42, 2680),
+  mushroom: mat('mushroom', 'cogumelo', 'foam', 1.32, 1.38, 2760),
+  kalimba: mat('kalimba', 'kalimba', 'spark', 0.68, 1.4, 2840),
+  xylophone: mat('xylophone', 'xilofone', 'spark', 0.65, 1.42, 2920),
+  tambourine: mat('tambourine', 'pandeiro', 'spark', 0.78, 1.4, 3000),
+  popcorn: mat('popcorn', 'pipoca', 'crumb', 0.88, 1.36, 3080),
+  bamboo: mat('bamboo', 'bambu', 'crumb', 1.02, 1.34, 3160),
+  cork: mat('cork', 'rolha', 'crumb', 0.82, 1.37, 3240),
+  seashell: mat('seashell', 'concha', 'spark', 0.72, 1.41, 3320),
+  macaron: mat('macaron', 'macaron', 'crumb', 1.12, 1.35, 3400),
+  boba: mat('boba', 'boba', 'juice', 1.28, 1.39, 3480),
+  feather: mat('feather', 'pena', 'foam', 1.48, 1.43, 3560),
+  woodBlock: mat('woodBlock', 'bloco de madeira', 'spark', 0.62, 1.41, 3640),
 };
 
 export const MATERIAL_ORDER: MaterialId[] = [
@@ -164,6 +188,18 @@ export const MATERIAL_ORDER: MaterialId[] = [
   'clay',
   'silk',
   'kitten',
+  'mushroom',
+  'kalimba',
+  'xylophone',
+  'tambourine',
+  'popcorn',
+  'bamboo',
+  'cork',
+  'seashell',
+  'macaron',
+  'boba',
+  'feather',
+  'woodBlock',
 ];
 
 export function unlockedMaterials(height: number): MaterialId[] {

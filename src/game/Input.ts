@@ -110,4 +110,10 @@ export class Input {
     }
     return false;
   }
+
+  /** Descarta pulo pendente (ex.: Space/Enter usados para iniciar a partida). */
+  clearJump(): void {
+    this.jumpPressed = false;
+    this.jumpBuffer = 0;
+  }
 }

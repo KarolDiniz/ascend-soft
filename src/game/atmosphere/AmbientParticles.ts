@@ -295,6 +295,11 @@ export class AmbientParticles {
     if (kind === 'origami') return 'sugarDust';
     if (kind === 'slimeStretch') return 'bubbleFloat';
     if (kind === 'steamWisp') return 'steam';
+    if (kind === 'mushroomCap') return 'pollen';
+    if (kind === 'seashell') return 'sparkleIdle';
+    if (kind === 'bambooStalk') return 'pollen';
+    if (kind === 'popcornKernel') return 'sprinkle';
+    if (kind === 'featherWisp') return 'petal';
     return null;
   }
 

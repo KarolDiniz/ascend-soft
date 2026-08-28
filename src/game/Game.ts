@@ -29,7 +29,15 @@ import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 const BEST_KEY = 'ascend-soft-best';
 const SEEN_KEY = 'ascend-soft-seen-materials';
 
-export type GameState = 'title' | 'playing' | 'falling';
+export type GameState = 'title' | 'intro' | 'playing' | 'falling';
+
+function easeOutCubic(t: number): number {
+  return 1 - (1 - t) ** 3;
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
 
 interface Floater {
   x: number;
@@ -109,6 +117,13 @@ export class Game {
   private titleBabbleStep = 0;
   private titleMurmurActive = false;
   private titleOverlayOpen = false;
+  /** Evita queda/game over nos primeiros instantes após iniciar a partida. */
+  private spawnGrace = 0;
+  private introT = 0;
+  private introDuration = 0.55;
+  private introFromX = 0;
+  private introFromY = 0;
+  private introCamY = 0;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -269,18 +284,49 @@ export class Game {
     this.initTitle();
   }
 
+  /** Transição suave da tela inicial para a partida. */
+  beginIntro(): void {
+    if (this.state !== 'title') return;
+    this.audio.stopSoftMurmur();
+    this.titleMurmurActive = false;
+    this.titleBabbles.length = 0;
+    this.player.mouthOpen = false;
+    for (const p of this.spawner.platforms) p.setPreviewSquash(0);
+
+    this.introFromX = this.player.x;
+    this.introFromY = this.player.y;
+    this.introCamY = this.camera.y;
+    this.introT = 0;
+    this.introDuration = this.userSettings.reduceMotion ? 0.22 : 0.55;
+    this.input.clearJump();
+    this.spawnGrace = this.introDuration + 0.35;
+    this.state = 'intro';
+    const pal = this.atmosphere.getPalette();
+    this.hud.setAmbientColors(pal.top, pal.mid);
+    this.hud.preparePlaying(this.best);
+  }
+
   beginPlay(): void {
     this.audio.stopSoftMurmur();
     this.titleMurmurActive = false;
-    const fromTitle = this.state === 'title';
-    if (fromTitle) {
-      // A prévia do título já montou PhaseRunOrder + plataformas em initTitle().
-      for (const p of this.spawner.platforms) p.setPreviewSquash(0);
-    } else {
-      this.resetRun();
-    }
+    this.resetRun();
+    this.snapPlayerToStartPlatform();
+    this.input.clearJump();
+    this.spawnGrace = 0.45;
+    this.camera.snapTo(this.player.y, this.H * 0.18);
     this.state = 'playing';
     this.hud.showPlaying(this.best);
+    this.startPlayingAmbience();
+  }
+
+  private finishIntro(): void {
+    this.snapPlayerToStartPlatform();
+    this.camera.snapTo(this.player.y, this.H * 0.18);
+    this.state = 'playing';
+    this.startPlayingAmbience();
+  }
+
+  private startPlayingAmbience(): void {
     const z = this.atmosphere.getPrimaryZone();
     const pal = this.atmosphere.getPalette();
     this.tryShowPhaseToast(z.id, z.label, z.quote, pal.accent);
@@ -394,7 +440,7 @@ export class Game {
     this.fpsEma = this.fpsEma * 0.9 + (1 / Math.max(0.001, dt)) * 0.1;
     this.updateAdaptivePerf();
 
-    const atmoHeight = this.state === 'title' ? 40 : this.height;
+    const atmoHeight = this.state === 'title' ? 40 : this.state === 'intro' ? 0 : this.height;
     this.atmosphere.update(dt, atmoHeight);
     this.background.update(dt, this.atmosphere);
     this.scenery.update(dt, this.atmosphere);
@@ -463,6 +509,11 @@ export class Game {
         p.setPreviewSquash(0.2 + wave * 0.16 + soft);
         p.update(dt, this.time);
       }
+      return;
+    }
+
+    if (this.state === 'intro') {
+      this.updateIntro(dt);
       return;
     }
 
@@ -714,8 +765,10 @@ export class Game {
     this.camera.follow(this.player.y, this.H * 0.18);
     this.camera.update(dt);
 
+    if (this.spawnGrace > 0) this.spawnGrace -= dt;
+
     const killLine = this.camera.y - this.H * 0.55;
-    if (this.player.y < killLine) this.triggerFall();
+    if (this.spawnGrace <= 0 && this.player.y < killLine) this.triggerFall();
   }
 
   private resolveCollisions(prevBottom: number): void {
@@ -1170,8 +1223,57 @@ export class Game {
     this.floaters.push({ x, y, text, life: 0.85, color });
   }
 
+  private updateIntro(dt: number): void {
+    this.introT += dt;
+    const raw = Math.min(1, this.introT / this.introDuration);
+    const t = easeOutCubic(raw);
+
+    const start = this.findStartPlatform();
+    const targetX = start?.x ?? 0;
+    const targetY = start ? start.surfaceY + this.player.h / 2 : 15;
+    const targetLook = this.H * 0.18;
+    const targetCamY = targetY - targetLook;
+
+    this.player.x = lerp(this.introFromX, targetX, t);
+    this.player.y = lerp(this.introFromY, targetY, t);
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.onGround = raw >= 1;
+    if (start && raw >= 1) this.player.groundedPlatform = start;
+
+    this.camera.setPosition(lerp(this.introCamY, targetCamY, t) + targetLook, targetLook);
+
+    this.collectibles.syncPlatforms(this.spawner.platforms);
+    for (const p of this.spawner.platforms) p.update(dt, this.time);
+
+    if (raw >= 1) this.finishIntro();
+  }
+
+  private getIntroBlend(): number {
+    if (this.state !== 'intro') return 1;
+    return easeOutCubic(Math.min(1, this.introT / this.introDuration));
+  }
+
+  private findStartPlatform() {
+    return (
+      this.spawner.platforms.find((p) => p.alive && p.solid && p.y === 0 && Math.abs(p.x) < 1) ??
+      this.spawner.platforms.find((p) => p.alive && p.solid && p.y === 0) ??
+      this.spawner.platforms.find((p) => p.alive && p.solid)
+    );
+  }
+
+  private snapPlayerToStartPlatform(): void {
+    const start = this.findStartPlatform();
+    if (!start) return;
+    this.player.x = start.x;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.stickToSurface(start);
+  }
+
   private triggerFall(): void {
     if (this.state !== 'playing') return;
+    if (this.spawnGrace > 0) return;
     if (this.player.groundedPlatform) {
       this.player.groundedPlatform.notePlayerOff(false);
     }
@@ -1347,15 +1449,22 @@ export class Game {
     };
 
     const p = this.perfProfile();
-    if (p.useSoftPass && this.state !== 'title') {
+    const introBlend = this.getIntroBlend();
+    const onTitle = this.state === 'title';
+    const inIntro = this.state === 'intro';
+    const playVisuals = !onTitle;
+
+    if (p.useSoftPass && playVisuals && (!inIntro || introBlend > 0.35)) {
       this.softScenery.paint(ctx, this.W, this.H, paintScenery);
     } else {
       paintScenery(ctx);
     }
 
-    const onTitle = this.state === 'title';
-    if (!onTitle) {
+    if (playVisuals && (!inIntro || introBlend > 0.2)) {
+      ctx.save();
+      if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.2) / 0.55);
       this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
+      ctx.restore();
       enablePixelMode(ctx);
     }
 
@@ -1369,10 +1478,15 @@ export class Game {
     this.shards.draw(ctx, this.toScreen);
     this.ambient.drawNear(ctx, this.toScreen);
 
-    if (!onTitle) this.player.draw(ctx, this.toScreen);
+    if (playVisuals) {
+      this.player.draw(ctx, this.toScreen, { titleBoost: inIntro && introBlend < 0.45 });
+    }
 
-    if (!onTitle) {
+    if (playVisuals && (!inIntro || introBlend > 0.25)) {
+      ctx.save();
+      if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.25) / 0.6);
       this.background.drawBiomeOverlays(ctx, this.W, this.H, this.atmosphere);
+      ctx.restore();
     }
 
     for (const f of this.floaters) {
@@ -1389,8 +1503,11 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
-    if (!this.userSettings.reduceMotion && !onTitle) {
+    if (!this.userSettings.reduceMotion && playVisuals && (!inIntro || introBlend > 0.5)) {
+      ctx.save();
+      if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.5) / 0.45);
       this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);
+      ctx.restore();
     }
 
     if (onTitle) {

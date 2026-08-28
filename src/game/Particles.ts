@@ -117,6 +117,18 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   clay: 'sand',
   silk: 'foam',
   kitten: 'glitter',
+  mushroom: 'foam',
+  kalimba: 'spark',
+  xylophone: 'spark',
+  tambourine: 'spark',
+  popcorn: 'crumb',
+  bamboo: 'crumb',
+  cork: 'crumb',
+  seashell: 'spark',
+  macaron: 'crumb',
+  boba: 'juice',
+  feather: 'foam',
+  woodBlock: 'spark',
 };
 
 export class Particles {

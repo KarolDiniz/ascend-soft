@@ -35,7 +35,7 @@ async function unlockAndPlay(): Promise<void> {
   }
   await audio.unlock();
   audio.setVolume(titleSettings.getVolume() / 100);
-  hud.leaveTitle(() => game.beginPlay());
+  hud.leaveTitle(() => game.beginIntro());
 }
 
 async function unlockAndRetry(): Promise<void> {

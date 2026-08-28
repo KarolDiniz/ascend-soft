@@ -120,6 +120,21 @@ export function drawDecor(
     case 'steamWisp':
       drawSteamWisp(ctx, s, phase);
       break;
+    case 'mushroomCap':
+      drawMushroomCap(ctx, s, phase);
+      break;
+    case 'seashell':
+      drawSeashellDecor(ctx, s, phase);
+      break;
+    case 'bambooStalk':
+      drawBambooStalk(ctx, s, phase);
+      break;
+    case 'popcornKernel':
+      drawPopcornKernel(ctx, s, phase);
+      break;
+    case 'featherWisp':
+      drawFeatherWisp(ctx, s, phase);
+      break;
     default:
       drawAbstractMote(ctx, s, phase);
   }
@@ -707,6 +722,75 @@ function drawSteamWisp(ctx: CanvasRenderingContext2D, s: number, phase: number):
       if (t === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
+    ctx.stroke();
+  }
+}
+
+function drawMushroomCap(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  const bob = Math.sin(phase * 0.7) * s * 0.05;
+  ctx.fillStyle = '#E88868';
+  ctx.beginPath();
+  ctx.ellipse(0, bob - s * 0.15, s * 0.75, s * 0.45, 0, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#F8F0E8';
+  ctx.fillRect(-s * 0.12, bob, s * 0.24, s * 0.55);
+  ctx.globalAlpha *= 0.5;
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.arc(-s * 0.25 + i * s * 0.18, bob - s * 0.2, s * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawSeashellDecor(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.5, s * 0.3);
+  ctx.quadraticCurveTo(0, -s * 0.6 + Math.sin(phase) * s * 0.05, s * 0.5, s * 0.3);
+  ctx.quadraticCurveTo(0, s * 0.15, -s * 0.5, s * 0.3);
+  ctx.fill();
+  ctx.globalAlpha *= 0.4;
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.35 + i * s * 0.18, s * 0.2);
+    ctx.quadraticCurveTo(0, -s * 0.1 + i * s * 0.08, s * 0.35 - i * s * 0.18, s * 0.2);
+    ctx.stroke();
+  }
+}
+
+function drawBambooStalk(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  const sway = Math.sin(phase * 0.5) * s * 0.06;
+  ctx.fillStyle = '#88B868';
+  ctx.fillRect(-s * 0.1 + sway, -s * 0.5, s * 0.2, s);
+  ctx.globalAlpha *= 0.45;
+  ctx.fillRect(-s * 0.14 + sway, -s * 0.15, s * 0.28, s * 0.06);
+  ctx.fillRect(-s * 0.14 + sway, s * 0.15, s * 0.28, s * 0.06);
+}
+
+function drawPopcornKernel(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  const pop = Math.sin(phase * 2.5);
+  ctx.beginPath();
+  ctx.arc(0, 0, s * (0.45 + pop * 0.04), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha *= 0.55;
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(-s * 0.15, -s * 0.15, s * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawFeatherWisp(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  const drift = Math.sin(phase * 0.6) * s * 0.12;
+  ctx.globalAlpha *= 0.5;
+  ctx.lineWidth = s * 0.08;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, s * 0.35);
+  ctx.quadraticCurveTo(drift, 0, drift * 0.5, -s * 0.45);
+  ctx.stroke();
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(drift * 0.2, -s * 0.1 - i * s * 0.12);
+    ctx.lineTo(drift * 0.5 + s * 0.25, -s * 0.05 - i * s * 0.1);
     ctx.stroke();
   }
 }

@@ -40,6 +40,18 @@ export const PHASE_ORDER: MaterialId[] = [
   'clay',
   'silk',
   'kitten',
+  'mushroom',
+  'kalimba',
+  'xylophone',
+  'tambourine',
+  'popcorn',
+  'bamboo',
+  'cork',
+  'seashell',
+  'macaron',
+  'boba',
+  'feather',
+  'woodBlock',
 ];
 
 /** Altitude span per themed phase (player.y). */
@@ -104,7 +116,12 @@ export type DecorKind =
   | 'slimeStretch'
   | 'lavenderSprig'
   | 'cottonPuff'
-  | 'steamWisp';
+  | 'steamWisp'
+  | 'mushroomCap'
+  | 'seashell'
+  | 'bambooStalk'
+  | 'popcornKernel'
+  | 'featherWisp';
 
 export type OverlayKind =
   | 'mottle'
@@ -235,6 +252,18 @@ export const PHASE_QUOTES: Record<MaterialId, string> = {
   clay: 'Modele o instante. Tudo pode ser refeito.',
   silk: 'Deslize com graça. Leveza também sustenta.',
   kitten: 'Miau com calma. Carinho também é caminho.',
+  mushroom: 'Cresça na sombra. Maciez também brota devagar.',
+  kalimba: 'Cada toque vibra suave. Melodia também acalma.',
+  xylophone: 'Notas coloridas no ar. Brincar também é descanso.',
+  tambourine: 'Chacoalhe leve. Ritmo também pode ser brisa.',
+  popcorn: 'Estoure devagar. Pequenas alegrias também contam.',
+  bamboo: 'Oco por dentro, firme por fora. Resiliência também é calma.',
+  cork: 'Solte com um pop gentil. Alívio também é caminho.',
+  seashell: 'Ouça o mar distante. O silêncio também tem som.',
+  macaron: 'Camadas de doçura. Cuidado também pode ser leve.',
+  boba: 'Mastigue devagar. Prazer também pede pausa.',
+  feather: 'Flutue sem peso. Leveza também sustenta.',
+  woodBlock: 'Um toque oco, quente. Simplicidade também ressoa.',
 };
 
 export function phaseQuote(id: MaterialId): string {
@@ -288,6 +317,18 @@ const DECOR: Record<MaterialId, DecorKind[]> = {
   clay: ['pottery', 'stone', 'leaf', 'pottery'],
   silk: ['ribbon', 'softOrb', 'flowerBouquet', 'lightRing'],
   kitten: ['yarnBall', 'pawPrint', 'softOrb', 'yarnBall'],
+  mushroom: ['mushroomCap', 'leaf', 'mushroomCap', 'lavenderSprig'],
+  kalimba: ['windChime', 'marimbaBar', 'softOrb', 'lightRing'],
+  xylophone: ['marimbaBar', 'windChime', 'marimbaBar', 'softOrb'],
+  tambourine: ['lightRing', 'softOrb', 'windChime', 'lightRing'],
+  popcorn: ['popcornKernel', 'creamCloud', 'popcornKernel', 'abstractMote'],
+  bamboo: ['bambooStalk', 'leaf', 'bambooStalk', 'stone'],
+  cork: ['stone', 'abstractMote', 'honeyDrip', 'stone'],
+  seashell: ['seashell', 'bigBubble', 'softOrb', 'seashell'],
+  macaron: ['donut', 'creamCloud', 'whippedSpiral', 'donut'],
+  boba: ['slimeStretch', 'softOrb', 'bigBubble', 'slimeStretch'],
+  feather: ['featherWisp', 'softOrb', 'featherWisp', 'cottonPuff'],
+  woodBlock: ['marimbaBar', 'stone', 'marimbaBar', 'abstractMote'],
 };
 
 const OVERLAY: Record<MaterialId, OverlayKind> = {
@@ -326,6 +367,18 @@ const OVERLAY: Record<MaterialId, OverlayKind> = {
   clay: 'speckleField',
   silk: 'goldBloom',
   kitten: 'sugarVeil',
+  mushroom: 'speckleField',
+  kalimba: 'staffLines',
+  xylophone: 'staffLines',
+  tambourine: 'goldBloom',
+  popcorn: 'mottle',
+  bamboo: 'speckleField',
+  cork: 'mottle',
+  seashell: 'caustics',
+  macaron: 'sugarVeil',
+  boba: 'caustics',
+  feather: 'sugarVeil',
+  woodBlock: 'mottle',
 };
 
 const HORIZON: Record<MaterialId, HorizonKind> = {
@@ -364,6 +417,18 @@ const HORIZON: Record<MaterialId, HorizonKind> = {
   clay: 'sandDunes',
   silk: 'cloudLayers',
   kitten: 'cloudLayers',
+  mushroom: 'leafHills',
+  kalimba: 'marimbaSkyline',
+  xylophone: 'marimbaSkyline',
+  tambourine: 'cloudLayers',
+  popcorn: 'meltHills',
+  bamboo: 'leafHills',
+  cork: 'sandDunes',
+  seashell: 'bubbleHorizon',
+  macaron: 'cloudLayers',
+  boba: 'jellyBlocks',
+  feather: 'cloudLayers',
+  woodBlock: 'marimbaSkyline',
 };
 
 const BLOBS: Record<MaterialId, BlobKind[]> = {
@@ -402,6 +467,18 @@ const BLOBS: Record<MaterialId, BlobKind[]> = {
   clay: ['flake', 'slice', 'orb'],
   silk: ['petal', 'scoop', 'flake'],
   kitten: ['orb', 'petal', 'flake'],
+  mushroom: ['scoop', 'petal', 'orb'],
+  kalimba: ['orb', 'slice', 'flake'],
+  xylophone: ['slice', 'orb', 'flake'],
+  tambourine: ['orb', 'flake', 'slice'],
+  popcorn: ['flake', 'scoop', 'orb'],
+  bamboo: ['slice', 'petal', 'flake'],
+  cork: ['scoop', 'flake', 'orb'],
+  seashell: ['orb', 'crystal', 'flake'],
+  macaron: ['scoop', 'petal', 'flake'],
+  boba: ['orb', 'bubble', 'scoop'],
+  feather: ['petal', 'flake', 'orb'],
+  woodBlock: ['slice', 'flake', 'orb'],
 };
 
 /** Per-phase wind / particle mood — dense ASMR particle field. */
@@ -441,6 +518,18 @@ const WIND: Record<MaterialId, { windX: number; windY: number; density: number; 
   clay: { windX: 20, windY: -2, density: 1.65, breathPeriod: 11, grainAlpha: 0.04, particleBudget: 730 },
   silk: { windX: 6, windY: 11, density: 1.58, breathPeriod: 13, grainAlpha: 0.024, particleBudget: 720 },
   kitten: { windX: 8, windY: 9, density: 1.54, breathPeriod: 12, grainAlpha: 0.028, particleBudget: 710 },
+  mushroom: { windX: 7, windY: 10, density: 1.6, breathPeriod: 13, grainAlpha: 0.032, particleBudget: 730 },
+  kalimba: { windX: 12, windY: 6, density: 1.46, breathPeriod: 10, grainAlpha: 0.034, particleBudget: 690 },
+  xylophone: { windX: 16, windY: 5, density: 1.48, breathPeriod: 9, grainAlpha: 0.035, particleBudget: 700 },
+  tambourine: { windX: 14, windY: 8, density: 1.52, breathPeriod: 10, grainAlpha: 0.033, particleBudget: 710 },
+  popcorn: { windX: 18, windY: 4, density: 1.58, breathPeriod: 9, grainAlpha: 0.036, particleBudget: 720 },
+  bamboo: { windX: 10, windY: 12, density: 1.55, breathPeriod: 12, grainAlpha: 0.034, particleBudget: 720 },
+  cork: { windX: 12, windY: 6, density: 1.5, breathPeriod: 11, grainAlpha: 0.033, particleBudget: 680 },
+  seashell: { windX: 8, windY: 14, density: 1.62, breathPeriod: 13, grainAlpha: 0.028, particleBudget: 740 },
+  macaron: { windX: 11, windY: 7, density: 1.56, breathPeriod: 11, grainAlpha: 0.03, particleBudget: 720 },
+  boba: { windX: 9, windY: 11, density: 1.64, breathPeriod: 12, grainAlpha: 0.031, particleBudget: 750 },
+  feather: { windX: 6, windY: 16, density: 1.7, breathPeriod: 14, grainAlpha: 0.022, particleBudget: 760 },
+  woodBlock: { windX: 15, windY: 4, density: 1.44, breathPeriod: 9, grainAlpha: 0.037, particleBudget: 670 },
 };
 
 function ambientFor(id: MaterialId): AmbientPreset[] {
@@ -450,13 +539,14 @@ function ambientFor(id: MaterialId): AmbientPreset[] {
 
   const foodLike: MaterialId[] = [
     'butter', 'jelly', 'mochi', 'marshmallow', 'chocolate', 'citrus', 'honeycomb', 'whipped',
+    'popcorn', 'macaron', 'boba',
   ];
   const soapLike: MaterialId[] = [
     'glycerin', 'soapBubble', 'bathFoam', 'lavenderSoap', 'creamSoap', 'iceSoap',
   ];
   const frostLike: MaterialId[] = ['iceSoap'];
   const ethereal: MaterialId[] = ['butterSlime', 'cloud', 'cotton'];
-  const natureLike: MaterialId[] = ['amoeba', 'moss', 'grass', 'blossom'];
+  const natureLike: MaterialId[] = ['amoeba', 'moss', 'grass', 'blossom', 'mushroom', 'bamboo'];
 
   if (ethereal.includes(id)) {
     return [
@@ -596,6 +686,38 @@ function ambientFor(id: MaterialId): AmbientPreset[] {
       { type: 'emberSoft', weight: 0.18, color: PASTEL.blush },
     ];
   }
+  if (id === 'kalimba' || id === 'xylophone' || id === 'tambourine' || id === 'woodBlock') {
+    return [
+      { type: 'sparkleIdle', weight: 0.34, color: PASTEL.butter },
+      { type: 'emberSoft', weight: 0.26, color: p },
+      { type: 'lightOrb', weight: 0.22, color: fill },
+      { type: 'pollen', weight: 0.18, color: PASTEL.peach },
+    ];
+  }
+  if (id === 'seashell') {
+    return [
+      { type: 'sparkleIdle', weight: 0.32, color: PASTEL.white },
+      { type: 'bubbleFloat', weight: 0.28, color: p },
+      { type: 'lightOrb', weight: 0.22, color: fill },
+      { type: 'snowMote', weight: 0.18, color: PASTEL.powder },
+    ];
+  }
+  if (id === 'feather') {
+    return [
+      { type: 'petal', weight: 0.32, color: PASTEL.lilac },
+      { type: 'sparkleIdle', weight: 0.28, color: PASTEL.white },
+      { type: 'lightOrb', weight: 0.22, color: fill },
+      { type: 'emberSoft', weight: 0.18, color: p },
+    ];
+  }
+  if (id === 'cork') {
+    return [
+      { type: 'pollen', weight: 0.32, color: PASTEL.sand },
+      { type: 'sparkleIdle', weight: 0.26, color: p },
+      { type: 'sugarDust', weight: 0.22, color: PASTEL.cream },
+      { type: 'emberSoft', weight: 0.2, color: fill },
+    ];
+  }
   // sponge default
   return [
     { type: 'pollen', weight: 0.3, color: p },
@@ -663,13 +785,14 @@ export type MaterialMood = 'food' | 'soap' | 'frost' | 'ethereal' | 'tactile';
 export function materialMood(id: MaterialId): MaterialMood {
   const food: MaterialId[] = [
     'butter', 'jelly', 'mochi', 'marshmallow', 'chocolate', 'citrus', 'honeycomb', 'whipped',
+    'popcorn', 'macaron', 'boba',
   ];
-  const nature: MaterialId[] = ['amoeba', 'moss', 'grass', 'cotton', 'blossom', 'kitten'];
+  const nature: MaterialId[] = ['amoeba', 'moss', 'grass', 'cotton', 'blossom', 'kitten', 'mushroom', 'bamboo'];
   const soap: MaterialId[] = [
     'glycerin', 'soapBubble', 'bathFoam', 'lavenderSoap', 'creamSoap', 'sponge',
   ];
   if (id === 'iceSoap') return 'frost';
-  if (id === 'butterSlime' || id === 'cloud' || id === 'velvet' || id === 'silk') return 'ethereal';
+  if (id === 'butterSlime' || id === 'cloud' || id === 'velvet' || id === 'silk' || id === 'feather') return 'ethereal';
   if (nature.includes(id)) return 'tactile';
   if (food.includes(id)) return 'food';
   if (soap.includes(id)) return 'soap';

@@ -412,6 +412,36 @@ export class AudioBus {
             maxDuration: 0.75,
             randomStart: true,
           }),
+        mushroom: () =>
+          this.landWithSample(ctx, land, 'mushroom', pitch, imp, () => this.mushroomSquish(ctx, land, pitch, imp)),
+        kalimba: () =>
+          this.landWithSample(ctx, land, 'kalimba', pitch, imp, () =>
+            this.kalimbaToneAt(ctx, land, pitch, imp, marimbaBar ?? Math.floor(Math.random() * 5)),
+          ),
+        xylophone: () =>
+          this.landWithSample(ctx, land, 'xylophone', pitch, imp, () =>
+            this.xylophoneToneAt(ctx, land, pitch, imp, marimbaBar ?? Math.floor(Math.random() * 8)),
+          ),
+        tambourine: () =>
+          this.landWithSample(ctx, land, 'tambourine', pitch, imp, () => this.tambourineShake(ctx, land, pitch, imp)),
+        popcorn: () =>
+          this.landWithSample(ctx, land, 'popcorn', pitch, imp, () => this.popcornPop(ctx, land, pitch, imp)),
+        bamboo: () =>
+          this.landWithSample(ctx, land, 'bamboo', pitch, imp, () => this.bambooKnock(ctx, land, pitch, imp)),
+        cork: () =>
+          this.landWithSample(ctx, land, 'cork', pitch, imp, () => this.corkPop(ctx, land, pitch, imp)),
+        seashell: () =>
+          this.landWithSample(ctx, land, 'seashell', pitch, imp, () => this.seashellChime(ctx, land, pitch, imp)),
+        macaron: () =>
+          this.landWithSample(ctx, land, 'macaron', pitch, imp, () => this.macaronSoft(ctx, land, pitch, imp)),
+        boba: () =>
+          this.landWithSample(ctx, land, 'boba', pitch, imp, () => this.bobaBlorp(ctx, land, pitch, imp)),
+        feather: () =>
+          this.landWithSample(ctx, land, 'feather', pitch, imp, () => this.featherWhisper(ctx, land, pitch, imp)),
+        woodBlock: () =>
+          this.landWithSample(ctx, land, 'woodBlock', pitch, imp, () =>
+            this.woodBlockKnock(ctx, land, pitch, imp, marimbaBar ?? Math.floor(Math.random() * 4)),
+          ),
       };
       try {
         handlers[material]();
@@ -1511,6 +1541,125 @@ export class AudioBus {
     this.tone(ctx, sfx, 'sine', f, f * 0.5, 0.18, v * 0.7, t);
     this.tone(ctx, sfx, 'triangle', f * 2, f, 0.12, v * 0.35, t + 0.01);
     this.tone(ctx, sfx, 'sine', f * 3, f * 1.5, 0.08, v * 0.18, t + 0.02);
+  }
+
+  private kalimbaToneAt(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    impact: number,
+    tineIndex: number,
+  ): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    const notes = [523, 587, 659, 784, 880];
+    const f = notes[Math.max(0, Math.min(notes.length - 1, tineIndex))]! * pitch;
+    this.tone(ctx, sfx, 'sine', f, f * 0.55, 0.22, v * 0.65, t);
+    this.tone(ctx, sfx, 'triangle', f * 2.2, f * 0.9, 0.14, v * 0.28, t + 0.012);
+    this.softNoise(ctx, sfx, 0.04, 3200, v * 0.12, t + 0.02, 'highpass');
+  }
+
+  private xylophoneToneAt(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    impact: number,
+    barIndex: number,
+  ): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    const notes = [440, 494, 523, 587, 659, 698, 784, 880];
+    const f = notes[Math.max(0, Math.min(notes.length - 1, barIndex))]! * pitch;
+    this.tone(ctx, sfx, 'triangle', f, f * 0.45, 0.16, v * 0.72, t);
+    this.tone(ctx, sfx, 'sine', f * 2.5, f * 1.2, 0.1, v * 0.32, t + 0.008);
+    this.noiseBurst(ctx, sfx, 0.025, 2800, v * 0.22, t, 'bandpass');
+  }
+
+  private tambourineShake(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    for (let i = 0; i < 6; i++) {
+      this.noiseBurst(ctx, sfx, 0.018, 4200 + i * 400, v * 0.28, t + i * 0.012, 'highpass');
+    }
+    this.tone(ctx, sfx, 'sine', 680 * pitch, 420 * pitch, 0.12, v * 0.35, t);
+    this.tone(ctx, sfx, 'triangle', 920 * pitch, 580 * pitch, 0.08, v * 0.2, t + 0.02);
+  }
+
+  private mushroomSquish(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.tone(ctx, sfx, 'sine', 180 * pitch, 90 * pitch, 0.14, v * 0.55, t);
+    this.softNoise(ctx, sfx, 0.08, 420, v * 0.35, t, 'lowpass');
+    this.tone(ctx, sfx, 'triangle', 240 * pitch, 140 * pitch, 0.1, v * 0.25, t + 0.02);
+  }
+
+  private popcornPop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.tone(ctx, sfx, 'sine', 320 * pitch, 120 * pitch, 0.12, v * 0.5, t);
+    this.noiseBurst(ctx, sfx, 0.06, 1800, v * 0.45, t, 'bandpass');
+    this.tone(ctx, sfx, 'triangle', 480 * pitch, 200 * pitch, 0.08, v * 0.22, t + 0.015);
+  }
+
+  private bambooKnock(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.tone(ctx, sfx, 'sine', 280 * pitch, 140 * pitch, 0.1, v * 0.5, t);
+    this.tone(ctx, sfx, 'triangle', 420 * pitch, 220 * pitch, 0.08, v * 0.35, t + 0.006);
+    this.noiseBurst(ctx, sfx, 0.035, 900, v * 0.28, t, 'bandpass');
+  }
+
+  private corkPop(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    this.tone(ctx, sfx, 'sine', 220 * pitch, 80 * pitch, 0.1, v * 0.55, t);
+    this.noiseBurst(ctx, sfx, 0.045, 600, v * 0.4, t, 'lowpass');
+  }
+
+  private seashellChime(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.09, impact);
+    this.tone(ctx, sfx, 'sine', 1040 * pitch, 720 * pitch, 0.2, v * 0.45, t);
+    this.tone(ctx, sfx, 'triangle', 1560 * pitch, 980 * pitch, 0.14, v * 0.28, t + 0.01);
+    this.softNoise(ctx, sfx, 0.06, 2400, v * 0.18, t + 0.02, 'bandpass');
+  }
+
+  private macaronSoft(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.09, impact);
+    this.tone(ctx, sfx, 'sine', 160 * pitch, 80 * pitch, 0.12, v * 0.48, t);
+    this.softNoise(ctx, sfx, 0.06, 680, v * 0.32, t, 'lowpass');
+  }
+
+  private bobaBlorp(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.tone(ctx, sfx, 'sine', 140 * pitch, 70 * pitch, 0.16, v * 0.52, t);
+    this.tone(ctx, sfx, 'triangle', 200 * pitch, 100 * pitch, 0.12, v * 0.3, t + 0.02);
+    this.softNoise(ctx, sfx, 0.05, 520, v * 0.22, t + 0.03, 'bandpass');
+  }
+
+  private featherWhisper(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.06, impact);
+    this.softNoise(ctx, sfx, 0.14, 3200, v * 0.35, t, 'highpass');
+    this.tone(ctx, sfx, 'sine', 520 * pitch, 380 * pitch, 0.18, v * 0.22, t);
+  }
+
+  private woodBlockKnock(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    impact: number,
+    blockIndex: number,
+  ): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    const notes = [220, 262, 294, 330];
+    const f = notes[Math.max(0, Math.min(notes.length - 1, blockIndex))]! * pitch;
+    this.tone(ctx, sfx, 'sine', f, f * 0.4, 0.12, v * 0.65, t);
+    this.tone(ctx, sfx, 'triangle', f * 1.8, f * 0.8, 0.08, v * 0.3, t + 0.008);
+    this.noiseBurst(ctx, sfx, 0.03, 700, v * 0.25, t, 'bandpass');
   }
 
   private ceramicClink(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

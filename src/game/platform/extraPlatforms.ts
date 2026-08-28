@@ -643,3 +643,149 @@ export function drawKitten(a: ExtraDrawArgs): void {
     overlay?.kittenMeowIdx ?? 0,
   );
 }
+
+/** Cogumelo — chapéu arredondado e haste */
+export function drawMushroom(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  const stemW = w * 0.28;
+  fillPx(ctx, cx - stemW / 2, sy + h * 0.35, stemW, h * 0.65, rgba('#F8F0E8', 0.95));
+  fillPx(ctx, cx - stemW / 2, sy + h * 0.35, stemW, u, rgba(mat.stroke, 0.35));
+  const capW = w * (0.95 - press * 0.08);
+  const capH = h * (0.55 + Math.sin(time * 1.6 + wobble) * 0.02);
+  fillPx(ctx, cx - capW / 2, sy + h * 0.35 - capH, capW, capH, mat.fill);
+  fillPx(ctx, cx - capW * 0.35, sy + h * 0.35 - capH + u, capW * 0.7, u * 2, rgba('#FFFFFF', 0.18));
+  for (let i = 0; i < 5; i++) {
+    fillPx(
+      ctx,
+      cx - capW * 0.3 + seeded(seed, i + 90) * capW * 0.6,
+      sy + h * 0.35 - capH + u + seeded(seed, i + 91) * capH * 0.5,
+      u,
+      u,
+      rgba('#FFFFFF', 0.35),
+    );
+  }
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+}
+
+/** Pipoca — monte irregular de flores */
+export function drawPopcorn(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x + u, sy + h * 0.45, w - u * 2, h * 0.55, mat.stroke);
+  for (let i = 0; i < 14; i++) {
+    const px = x + u + seeded(seed, i + 100) * (w - u * 4);
+    const py = sy + h * 0.25 + seeded(seed, i + 110) * h * 0.55;
+    const pw = u * (2 + (i % 2));
+    fillPx(ctx, px, py, pw, pw, i % 3 === 0 ? mat.particle : mat.fill);
+    fillPx(ctx, px + u * 0.3, py - u * 0.5, u, u, rgba('#FFFFFF', 0.55));
+  }
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+}
+
+/** Bambu — segmentos com nós */
+export function drawBamboo(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u } = a;
+  const x = cx - w / 2;
+  const segments = 3;
+  const segH = (h - u) / segments;
+  for (let s = 0; s < segments; s++) {
+    const sy0 = sy + s * segH;
+    fillPx(ctx, x + u, sy0, w - u * 2, segH - u * 0.5, mat.fill);
+    fillPx(ctx, x + u, sy0 + segH - u * 1.2, w - u * 2, u, mat.stroke);
+    fillPx(ctx, x + u * 2, sy0 + u, u, segH - u * 2, rgba(mat.particle, 0.25 + (s % 2) * 0.1));
+  }
+  fillPx(ctx, x, sy + h - u, w, u, rgba(mat.stroke, 0.6));
+}
+
+/** Rolha — cilindro arredondado */
+export function drawCork(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x + u, sy + u, w - u * 2, h - u * 2, mat.fill);
+  fillPx(ctx, x + u * 2, sy + u * 2, w - u * 4, h - u * 4, rgba(mat.particle, 0.35));
+  fillPx(ctx, cx - u, sy + u, u * 2, h - u * 2, rgba('#FFFFFF', 0.12));
+  fillPx(ctx, x, sy, w, u, mat.stroke);
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+}
+
+/** Concha — espiral pastel */
+export function drawSeashell(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble } = a;
+  const shimmer = Math.sin(time * 2.5 + wobble) * u * 0.4;
+  fillPx(ctx, cx - w * 0.42, sy + h * 0.2, w * 0.84, h * 0.72, mat.fill);
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    fillPx(
+      ctx,
+      cx - w * 0.35 + t * w * 0.55,
+      sy + h * (0.25 + t * 0.55) + shimmer,
+      w * (0.12 - t * 0.04),
+      u,
+      rgba(mat.particle, 0.35 - t * 0.05),
+    );
+  }
+  fillPx(ctx, cx - u, sy + h * 0.35, u * 2, h * 0.35, rgba('#FFFFFF', 0.22));
+  fillPx(ctx, cx - w / 2, sy + h - u, w, u, mat.stroke);
+}
+
+/** Macaron — duas metades com recheio */
+export function drawMacaron(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u } = a;
+  const x = cx - w / 2;
+  const r = h * 0.38;
+  fillPx(ctx, x + u, sy + h - r - u, w - u * 2, r, mat.fill);
+  fillPx(ctx, x + u, sy + h - u * 2, w - u * 2, u * 1.5, mat.particle);
+  fillPx(ctx, x + u, sy + h - r * 2 - u * 2, w - u * 2, r, mat.fill);
+  fillPx(ctx, x + u * 2, sy + h - r - u, w - u * 4, u, rgba('#FFFFFF', 0.2));
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+}
+
+/** Boba — copo escuro com pérolas */
+export function drawBoba(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x + u, sy + u, w - u * 2, h - u * 2, mat.fill);
+  fillPx(ctx, x + u * 2, sy + u * 2, w - u * 4, u, rgba('#FFFFFF', 0.08));
+  for (let i = 0; i < 10; i++) {
+    const bx = x + u * 2 + seeded(seed, i + 120) * (w - u * 5);
+    const by = sy + h * 0.35 + ((time * 20 + i * 17 + seed) % (h * 0.5));
+    fillPx(ctx, bx, by, u * 1.5, u * 1.5, mat.particle);
+    fillPx(ctx, bx + u * 0.3, by + u * 0.2, u * 0.6, u * 0.6, rgba('#FFFFFF', 0.35));
+  }
+  fillPx(ctx, x, sy + h - u, w, u, rgba(mat.particle, 0.8));
+}
+
+/** Pena — pluma leve */
+export function drawFeather(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble } = a;
+  const drift = Math.sin(time * 1.4 + wobble) * u * 0.8;
+  fillPx(ctx, cx - u, sy + u + drift, u * 2, h - u * 3, rgba(mat.stroke, 0.35));
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6;
+    const fw = w * (0.55 - t * 0.2);
+    fillPx(ctx, cx - fw / 2, sy + u + t * (h - u * 4) + drift, fw, u, mat.fill);
+    fillPx(ctx, cx - fw / 2 + u, sy + u + t * (h - u * 4) + drift, fw - u * 2, u, rgba('#FFFFFF', 0.15));
+  }
+}
+
+/** Pandeiro — disco com platinelas */
+export function drawTambourine(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time } = a;
+  const r = Math.min(w, h) * 0.42;
+  fillPx(ctx, cx - r, sy + h * 0.25, r * 2, r * 1.5, mat.fill);
+  fillPx(ctx, cx - r + u, sy + h * 0.25 + u, (r - u) * 2, r * 1.5 - u * 2, mat.particle);
+  for (let i = 0; i < 8; i++) {
+    const a0 = (i / 8) * Math.PI * 2 + time * 0.5;
+    fillPx(
+      ctx,
+      cx + Math.cos(a0) * r * 0.75 - u / 2,
+      sy + h * 0.45 + Math.sin(a0) * r * 0.35,
+      u,
+      u,
+      rgba(PASTEL.butter, 0.75),
+    );
+  }
+  fillPx(ctx, cx - u, sy + h * 0.25 + r * 1.5 - u, u * 2, u, mat.stroke);
+}

@@ -301,6 +301,78 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     '#FFE8D8',
     rgba(PASTEL.butter, 0.32),
   ),
+  mushroom: matColors(
+    '#E89878',
+    rgba(PASTEL.coral, 0.42),
+    '#F8C8A8',
+    rgba(PASTEL.peach, 0.32),
+  ),
+  kalimba: matColors(
+    '#C8A878',
+    rgba(PASTEL.caramel, 0.45),
+    '#E8C898',
+    rgba(PASTEL.honey, 0.3),
+  ),
+  xylophone: matColors(
+    '#F0B878',
+    rgba(PASTEL.citrus, 0.42),
+    '#FFD898',
+    rgba(PASTEL.butter, 0.28),
+  ),
+  tambourine: matColors(
+    '#E8C878',
+    rgba(PASTEL.honey, 0.45),
+    '#F8E0A0',
+    rgba(PASTEL.butter, 0.3),
+  ),
+  popcorn: matColors(
+    '#F8E8C8',
+    rgba(PASTEL.cream, 0.48),
+    '#FFF8E8',
+    rgba(PASTEL.butter, 0.26),
+  ),
+  bamboo: matColors(
+    '#98C878',
+    rgba(PASTEL.mint, 0.42),
+    '#B8E098',
+    rgba(PASTEL.seafoam, 0.3),
+  ),
+  cork: matColors(
+    '#C8A070',
+    rgba(PASTEL.sand, 0.4),
+    '#E0C098',
+    rgba(PASTEL.caramel, 0.32),
+  ),
+  seashell: matColors(
+    '#F0D8C8',
+    rgba(PASTEL.blush, 0.45),
+    '#FFF0E8',
+    rgba(PASTEL.peach, 0.28),
+  ),
+  macaron: matColors(
+    '#F0A8C8',
+    rgba(PASTEL.rose, 0.48),
+    '#FFD0E0',
+    rgba(PASTEL.blush, 0.32),
+  ),
+  boba: matColors(
+    '#3A2820',
+    rgba(PASTEL.caramelDeep, 0.35),
+    '#6A5040',
+    rgba(PASTEL.caramel, 0.28),
+  ),
+  feather: matColors(
+    '#F4F0FF',
+    rgba(PASTEL.lilac, 0.42),
+    '#FFFFFF',
+    rgba(PASTEL.mist, 0.22),
+  ),
+  woodBlock: matColors(
+    '#B88858',
+    rgba(PASTEL.caramelDeep, 0.42),
+    '#D8A878',
+    rgba(PASTEL.caramel, 0.3),
+  ),
 };
 
 export interface BiomePastelPalette {

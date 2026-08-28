@@ -10,19 +10,28 @@ import { drawCheeseMouse } from './cheeseMouse';
 import { drawButterGarnish, drawButterKnife } from './butterVisual';
 import {
   drawAmoeba,
+  drawBamboo,
   drawBlossom,
+  drawBoba,
   drawCeramic,
   drawClay,
   drawCloud,
+  drawCork,
   drawCotton,
   drawCrystal,
+  drawFeather,
   drawGrass,
   drawKitten,
+  drawMacaron,
   drawMarimba,
   drawMoss,
+  drawMushroom,
   drawPaper,
   drawPlasticBottle,
+  drawPopcorn,
+  drawSeashell,
   drawSilk,
+  drawTambourine,
   drawVelvet,
 } from './extraPlatforms';
 import { drawTwistedMarshmallowPlatform, MARSHMALLOW_TWIST } from './marshmallowVisual';
@@ -262,6 +271,38 @@ export function renderPixelPlatform(
     case 'kitten':
       drawKitten(args);
       break;
+    case 'mushroom':
+      drawMushroom(args);
+      break;
+    case 'kalimba':
+    case 'xylophone':
+    case 'woodBlock':
+      drawMarimba(args);
+      break;
+    case 'tambourine':
+      drawTambourine(args);
+      break;
+    case 'popcorn':
+      drawPopcorn(args);
+      break;
+    case 'bamboo':
+      drawBamboo(args);
+      break;
+    case 'cork':
+      drawCork(args);
+      break;
+    case 'seashell':
+      drawSeashell(args);
+      break;
+    case 'macaron':
+      drawMacaron(args);
+      break;
+    case 'boba':
+      drawBoba(args);
+      break;
+    case 'feather':
+      drawFeather(args);
+      break;
     default:
       drawButter(args);
   }
@@ -481,7 +522,7 @@ function shouldDrawPersonalityHangs(material: MaterialId): boolean {
 }
 
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
-  if (material === 'keyboard' || material === 'marimba') return false;
+  if (material === 'keyboard' || material === 'marimba' || material === 'kalimba' || material === 'xylophone' || material === 'woodBlock') return false;
   if (material === 'cloud') return false;
   if (isRoundOrbMaterial(material) || isFoamMassMaterial(material)) return false;
   if (BOTTOM_HANG_MATERIALS.has(material)) return true;

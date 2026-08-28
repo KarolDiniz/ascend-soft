@@ -143,6 +143,54 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'kitten_cushion', visualDepth: 0.82, visualSpread: 1.12 },
     { id: 'kitten_nest', visualDepth: 0.9, visualSpread: 1.08 },
   ],
+  mushroom: [
+    { id: 'mushroom_cap', visualDepth: 1.35, visualSpread: 1.08 },
+    { id: 'mushroom_cluster', visualDepth: 1.2, visualSpread: 1.12 },
+  ],
+  kalimba: [
+    { id: 'kalimba_box', visualDepth: 0.72, visualSpread: 1.06 },
+    { id: 'kalimba_wide', visualDepth: 0.68, visualSpread: 1.1 },
+  ],
+  xylophone: [
+    { id: 'xylophone_row', visualDepth: 0.66, visualSpread: 1.12 },
+    { id: 'xylophone_pad', visualDepth: 0.6, visualSpread: 1.08 },
+  ],
+  tambourine: [
+    { id: 'tambourine_disc', visualDepth: 0.55, visualSpread: 1.05 },
+    { id: 'tambourine_ring', visualDepth: 0.62, visualSpread: 1.08 },
+  ],
+  popcorn: [
+    { id: 'popcorn_bowl', visualDepth: 1.05, visualSpread: 1.1 },
+    { id: 'popcorn_mound', visualDepth: 1.2, visualSpread: 1.14 },
+  ],
+  bamboo: [
+    { id: 'bamboo_segment', visualDepth: 1.1, visualSpread: 1.0 },
+    { id: 'bamboo_bundle', visualDepth: 1.25, visualSpread: 1.06 },
+  ],
+  cork: [
+    { id: 'cork_plug', visualDepth: 1.15, visualSpread: 0.95 },
+    { id: 'cork_disk', visualDepth: 0.75, visualSpread: 1.05 },
+  ],
+  seashell: [
+    { id: 'seashell_spiral', visualDepth: 1.05, visualSpread: 1.02 },
+    { id: 'seashell_clam', visualDepth: 0.85, visualSpread: 1.08 },
+  ],
+  macaron: [
+    { id: 'macaron_pair', visualDepth: 0.95, visualSpread: 1.05 },
+    { id: 'macaron_stack', visualDepth: 1.15, visualSpread: 1.0 },
+  ],
+  boba: [
+    { id: 'boba_cup', visualDepth: 1.3, visualSpread: 0.98 },
+    { id: 'boba_puddle', visualDepth: 0.9, visualSpread: 1.12 },
+  ],
+  feather: [
+    { id: 'feather_puff', visualDepth: 1.4, visualSpread: 1.1 },
+    { id: 'feather_drift', visualDepth: 1.25, visualSpread: 1.14 },
+  ],
+  woodBlock: [
+    { id: 'woodBlock_log', visualDepth: 0.88, visualSpread: 1.04 },
+    { id: 'woodBlock_stump', visualDepth: 1.05, visualSpread: 1.02 },
+  ],
 };
 
 export function pickVariant(material: MaterialId, rand: () => number): VariantDef {

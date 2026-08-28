@@ -34,6 +34,13 @@ export class Camera {
     this.punch = 0;
   }
 
+  /** Posiciona a câmera sem spring — usado na transição título → jogo. */
+  setPosition(worldY: number, lookAhead = 80): void {
+    this.targetY = worldY - lookAhead;
+    this.y = this.targetY;
+    this.vy = 0;
+  }
+
   worldToScreen(wx: number, wy: number, canvasW: number, canvasH: number): { x: number; y: number } {
     return {
       x: wx - this.x + canvasW / 2,

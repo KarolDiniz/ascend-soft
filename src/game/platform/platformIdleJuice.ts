@@ -40,6 +40,18 @@ const IDLE_RATE: Record<MaterialId, number> = {
   clay: 2.1,
   silk: 2.0,
   kitten: 2.2,
+  mushroom: 2.3,
+  kalimba: 1.7,
+  xylophone: 1.75,
+  tambourine: 1.9,
+  popcorn: 2.5,
+  bamboo: 2.0,
+  cork: 1.8,
+  seashell: 2.2,
+  macaron: 2.1,
+  boba: 2.4,
+  feather: 2.6,
+  woodBlock: 1.65,
 };
 
 function roll(dt: number, rate: number, density: number): boolean {
@@ -67,9 +79,6 @@ export function emitPlatformIdleJuice(
   const wy = windX * 0.28;
 
   switch (materialId) {
-    case 'marimba':
-      p.musicNotes(rx(), surfaceY - 6, 1, false, 0);
-      break;
     case 'keyboard':
       p.keyboardLetters(rx(), surfaceY - 2, 1, false, 0);
       break;
@@ -212,6 +221,60 @@ export function emitPlatformIdleJuice(
         vy: 10 + Math.random() * 14,
         life: 0.4,
         size: 1.5 + Math.random() * 2,
+      });
+      break;
+    case 'marimba':
+    case 'kalimba':
+    case 'xylophone':
+    case 'tambourine':
+    case 'woodBlock':
+      p.musicNotes(rx(), surfaceY - 6, 1, false, 0);
+      break;
+    case 'mushroom':
+      p.mossBits(rx(), surfaceY, 1, false, 0);
+      break;
+    case 'popcorn':
+      p.idleParticle(rx(), surfaceY - 2, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 20,
+        vy: 8 + Math.random() * 16,
+        life: 0.35,
+        size: 1.5 + Math.random() * 2,
+      });
+      break;
+    case 'bamboo':
+      p.idleParticle(rx(), surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 8,
+        vy: 6 + Math.random() * 10,
+        life: 0.45,
+        size: 1.5,
+      });
+      break;
+    case 'seashell':
+      p.idleParticle(rx(), surfaceY - 4, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 12,
+        vy: 8 + Math.random() * 14,
+        life: 0.5,
+        size: 2,
+      });
+      break;
+    case 'macaron':
+    case 'boba':
+      p.idleParticle(rx(), surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 10 + Math.random() * 12,
+        life: 0.42,
+        size: 2,
+      });
+      break;
+    case 'feather':
+      p.cottonFluff(rx(), surfaceY - 4, 1, false, 0);
+      break;
+    case 'cork':
+      p.idleParticle(rx(), surfaceY, color, 'crumb', {
+        vx: (Math.random() - 0.5) * 16,
+        vy: 12 + Math.random() * 14,
+        life: 0.38,
+        size: 2,
       });
       break;
     default:
