@@ -145,7 +145,7 @@ export class Hud {
     this.fallScreen.classList.remove('hidden');
     this.fallScreen.classList.add('is-entering');
     window.setTimeout(() => this.fallScreen.classList.remove('is-entering'), 500);
-    this.fallMascot.start();
+    this.fallMascot.start(summary.height);
     window.setTimeout(() => this.fallTears.start(), 120);
 
     const muted = this.audio?.isMuted ?? false;

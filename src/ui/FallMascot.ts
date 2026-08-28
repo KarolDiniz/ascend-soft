@@ -4,6 +4,7 @@ import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
   drawPlayerPixelShadow,
+  defeatHeadBumpScale,
   getDefeatEyeTearOrigins,
   PLAYER_DRAW_H,
   PLAYER_DRAW_W,
@@ -28,6 +29,7 @@ export class FallMascot {
   private raf = 0;
   private active = false;
   private animT = 0;
+  private bumpScale = 1;
   private pose: FallMascotPose = { cx: 0, baseY: 0, sway: 0, squash: 1, stretch: 1, tilt: 0 };
 
   constructor(canvasId = 'fall-mascot', wrapId = 'fall-mascot-wrap') {
@@ -65,9 +67,10 @@ export class FallMascot {
     });
   }
 
-  start(): void {
+  start(fallHeight = 0): void {
     this.active = true;
     this.animT = 0;
+    this.bumpScale = defeatHeadBumpScale(fallHeight);
     this.wrap.classList.add('is-crying');
     if (this.raf) cancelAnimationFrame(this.raf);
     this.tick();
@@ -132,7 +135,7 @@ export class FallMascot {
       solid: true,
       earWiggle: -Math.max(0, sob) * 0.9,
     });
-    drawPlayerDefeatHeadBump(ctx, bw, bh, this.animT);
+    drawPlayerDefeatHeadBump(ctx, bw, bh, this.animT, this.bumpScale);
     drawPlayerDefeatCloud(ctx, bw, bh, this.animT);
     drawPlayerPixelFace(ctx, bw, bh, {
       facing: 1,

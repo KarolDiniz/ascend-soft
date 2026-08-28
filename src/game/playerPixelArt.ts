@@ -85,20 +85,34 @@ export function drawPlayerDefeatCloud(
   fillPx(ctx, -u * 2, cy + u * 3, u, u * 2, rgba('#7ec8e8', 0.45));
 }
 
+/** Escala do galo na derrota — quanto mais alto caiu, maior o catombo (0.6–2.45) */
+export function defeatHeadBumpScale(height: number): number {
+  const h = Math.max(0, height);
+  const t = 1 - Math.exp(-h / 130);
+  return 0.6 + t * 1.85;
+}
+
 /** Galo rosado na cabeça — machucado de queda, só tela game over */
 export function drawPlayerDefeatHeadBump(
   ctx: CanvasRenderingContext2D,
   bw: number,
   bh: number,
   animT = 0,
+  bumpScale = 1,
 ): void {
-  const wobble = Math.sin(animT * 4.5) * u * 0.2;
+  const scale = Math.max(0.55, bumpScale);
+  const wobble = Math.sin(animT * 4.5) * u * 0.2 * scale;
   const bx = bw * 0.08 + wobble;
-  const by = -bh * 0.41;
+  const by = -bh * 0.41 - u * (scale - 1) * 1.4;
   const bruise = rgba(PASTEL.rose, 0.96);
   const bruiseHi = rgba('#F8D0D8', 0.92);
   const bruiseLo = rgba('#C97A8A', 0.94);
   const bruiseInk = rgba('#B86A7A', 0.55);
+
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.scale(scale, scale);
+  ctx.translate(-bx, -by);
 
   fillPx(ctx, bx - u * 2, by + u, u * 4, u * 2, bruiseLo);
   fillPx(ctx, bx - u * 2.5, by - u * 0.5, u * 5, u * 3, bruise);
@@ -108,6 +122,17 @@ export function drawPlayerDefeatHeadBump(
   fillPx(ctx, bx - u * 2.5, by + u, u, u, bruiseInk);
   fillPx(ctx, bx + u * 1.5, by, u, u, bruiseInk);
   fillPx(ctx, bx - u * 3, by + u * 0.5, u * 2, u, rgba(PASTEL.coral, 0.35));
+
+  if (scale >= 1.55) {
+    fillPx(ctx, bx - u * 3.5, by - u * 3, u * 2, u * 2, bruiseLo);
+    fillPx(ctx, bx + u * 2, by - u * 2.5, u * 2, u, rgba(PASTEL.coral, 0.4));
+  }
+  if (scale >= 2) {
+    fillPx(ctx, bx - u * 0.5, by - u * 3.5, u * 2, u * 2, bruiseHi);
+    fillPx(ctx, bx - u * 4, by - u * 1, u, u * 2, bruiseInk);
+  }
+
+  ctx.restore();
 }
 
 function bodyColorForRow(index: number, total: number): string {
