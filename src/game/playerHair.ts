@@ -40,15 +40,21 @@ export function hairLayers(_id: HairStyleId): HairLayer[] {
   return ['underFace'];
 }
 
+export interface HairMotion {
+  walkPhase?: number;
+  speedNorm?: number;
+}
+
 export function drawPlayerHairIfAny(
   ctx: CanvasRenderingContext2D,
   bw: number,
   bh: number,
   app: PlayerAppearance,
   animT: number,
+  motion: HairMotion = {},
 ): void {
   if (app.hairStyle === 'none') return;
-  drawPlayerHair(ctx, bw, bh, app.hairStyle, 'underFace', animT, resolveHairColors(app));
+  drawPlayerHair(ctx, bw, bh, app.hairStyle, 'underFace', animT, resolveHairColors(app), motion);
 }
 
 export function drawPlayerHair(
@@ -59,18 +65,19 @@ export function drawPlayerHair(
   layer: HairLayer,
   animT: number,
   colors: HairColors,
+  motion: HairMotion = {},
 ): void {
   if (style === 'none' || layer !== 'underFace') return;
 
   switch (style) {
     case 'pigtails':
-      drawPigtails(ctx, bw, bh, animT, colors);
+      drawPigtails(ctx, bw, bh, animT, colors, motion);
       break;
     case 'mohawk':
-      drawMohawk(ctx, bw, bh, animT, colors);
+      drawMohawk(ctx, bw, bh, animT, colors, motion);
       break;
     case 'mullet':
-      drawMullet(ctx, bw, bh, animT, colors);
+      drawMullet(ctx, bw, bh, animT, colors, motion);
       break;
   }
 }
@@ -183,11 +190,16 @@ function drawPigtails(
   bh: number,
   animT: number,
   c: HairColors,
+  motion: HairMotion = {},
 ): void {
-  const bounceL = Math.sin(animT * 5.2) * u * 0.35;
-  const bounceR = Math.sin(animT * 5.2 + 1.4) * u * 0.35;
-  const swayL = Math.sin(animT * 3.8) * u * 0.1;
-  const swayR = Math.sin(animT * 3.8 + 0.9) * u * 0.1;
+  const speed = motion.speedNorm ?? 0;
+  const walk = motion.walkPhase ?? 0;
+  const moveBoost = 1 + speed * 2.4;
+  const walkWave = speed > 0.08 ? Math.sin(walk * Math.PI * 2) * u * speed * 1.6 : 0;
+  const bounceL = (Math.sin(animT * 5.2) * u * 0.35 + walkWave) * moveBoost;
+  const bounceR = (Math.sin(animT * 5.2 + 1.4) * u * 0.35 - walkWave) * moveBoost;
+  const swayL = Math.sin(animT * 3.8 + walk * 6.28) * u * (0.1 + speed * 0.22);
+  const swayR = Math.sin(animT * 3.8 + 0.9 + walk * 6.28) * u * (0.1 + speed * 0.22);
 
   drawHairCrown(ctx, bw, bh, c);
   drawHairBangs(ctx, bw, bh, c);
@@ -244,7 +256,10 @@ function drawMohawk(
   bh: number,
   animT: number,
   c: HairColors,
+  motion: HairMotion = {},
 ): void {
+  const speed = motion.speedNorm ?? 0;
+  const walk = motion.walkPhase ?? 0;
   const base = -bh * 0.44;
 
   // laterais raspadas — sombra sutil
@@ -265,7 +280,9 @@ function drawMohawk(
   ];
 
   for (const { i, h } of spikes) {
-    const sway = Math.sin(animT * 7 + i * 0.9) * u * (0.14 + Math.abs(i) * 0.05);
+    const sway =
+      Math.sin(animT * 7 + i * 0.9) * u * (0.14 + Math.abs(i) * 0.05) +
+      Math.sin(walk * Math.PI * 2 + i) * u * speed * 0.35;
     drawHairSpike(ctx, i * u * 2, base - u * 0.35, u * h, c, sway, 1.35);
   }
 
@@ -280,8 +297,13 @@ function drawMullet(
   bh: number,
   animT: number,
   c: HairColors,
+  motion: HairMotion = {},
 ): void {
-  const sway = Math.sin(animT * 3.2) * u * 0.25;
+  const speed = motion.speedNorm ?? 0;
+  const walk = motion.walkPhase ?? 0;
+  const sway =
+    Math.sin(animT * 3.2) * u * (0.25 + speed * 0.35) +
+    Math.sin(walk * Math.PI * 2) * u * speed * 0.45;
 
   // topo texturizado
   fillPx(ctx, -bw * 0.3, -bh * 0.44, bw * 0.6, u * 3.2, HAIR.deep);

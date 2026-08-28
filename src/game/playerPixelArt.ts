@@ -24,12 +24,16 @@ const BODY_ROWS: readonly [number, number][] = [
 export interface PlayerBodyOptions {
   /** Corpo liso — uma cor só, sem faixas (banner) */
   solid?: boolean;
-  /** Orelhinhas balançando (banner falando) */
+  /** Orelhinhas balançando (banner falando / passos) */
   earWiggle?: number;
   /** Contorno mais forte (tela inicial) */
   boldOutline?: boolean;
   /** Paleta do corpo — customização do jogador */
   colors?: PlayerBodyColors;
+  /** 0–1 — passos mais marcados no corpo */
+  speedNorm?: number;
+  /** Ciclo de caminhada 0–1 */
+  walkPhase?: number;
 }
 
 export function defaultBodyColors(): PlayerBodyColors {
@@ -63,6 +67,16 @@ export interface PlayerFaceOptions {
   titleBold?: boolean;
   /** Olhos enormes lacrimejando — aviso ao sair */
   leavePlea?: boolean;
+  /** Subindo no pulo */
+  motionRising?: boolean;
+  /** Caindo */
+  motionFalling?: boolean;
+  /** Correndo no chão */
+  motionSprint?: boolean;
+  /** Pulo duplo — flash breve */
+  motionAirJump?: boolean;
+  /** Impacto ao pousar — olhos fechados */
+  motionLanding?: boolean;
 }
 
 /** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
@@ -226,11 +240,16 @@ export function drawPlayerPixelBody(
 
   const colors = opts.colors ?? defaultBodyColors();
   const total = BODY_ROWS.length;
+  const earW = (opts.earWiggle ?? Math.sin(animT * 3.2) * 0.25) * u;
+  const speed = opts.speedNorm ?? 0;
+  const walk = opts.walkPhase ?? 0;
+  const stepSquish = speed > 0.08 ? Math.sin(walk * Math.PI * 2) * speed * 0.08 : 0;
 
   for (let i = 0; i < total; i++) {
     const [ww, yy] = BODY_ROWS[i]!;
-    const rw = px(bw * ww);
-    const ry = px(bh * yy);
+    const rowSquish = i >= total - 3 ? 1 - stepSquish * 0.5 : 1 + stepSquish * 0.25;
+    const rw = px(bw * ww * rowSquish);
+    const ry = px(bh * yy) + (i >= total - 2 ? stepSquish * bh * 0.06 : 0);
     fillPx(ctx, -rw / 2, ry, rw, rowHeight(bh, i), bodyColorForRow(i, total, colors));
   }
 
@@ -244,10 +263,15 @@ export function drawPlayerPixelBody(
     fillPx(ctx, bw * 0.14, -bh * 0.18, u, u, rgba(PASTEL.white, 0.55));
   }
 
-  fillPx(ctx, -bw * 0.36, -bh * 0.38, u * 2, u * 2, colors.bodyTop);
-  fillPx(ctx, bw * 0.28, -bh * 0.38, u * 2, u * 2, colors.bodyTop);
-  fillPx(ctx, -bw * 0.34, -bh * 0.36, u, u, colors.bodyHi);
-  fillPx(ctx, bw * 0.3, -bh * 0.36, u, u, colors.bodyHi);
+  fillPx(ctx, -bw * 0.36, -bh * 0.38 - earW, u * 2, u * 2, colors.bodyTop);
+  fillPx(ctx, bw * 0.28, -bh * 0.38 + earW * 0.65, u * 2, u * 2, colors.bodyTop);
+  fillPx(ctx, -bw * 0.34, -bh * 0.36 - earW * 0.8, u, u, colors.bodyHi);
+  fillPx(ctx, bw * 0.3, -bh * 0.36 + earW * 0.5, u, u, colors.bodyHi);
+
+  if (speed > 0.45 && Math.sin(walk * Math.PI * 2) > 0.55) {
+    fillPx(ctx, -bw * 0.34, bh * 0.36, u * 2, u, colors.bodyShade);
+    fillPx(ctx, bw * 0.22, bh * 0.36, u * 2, u, colors.bodyShade);
+  }
 
   fillPx(ctx, -bw * 0.32, bh * 0.3, bw * 0.64, u * 2, colors.bodyBot);
 
@@ -259,10 +283,51 @@ export function drawPlayerPixelShadow(
   bw: number,
   bh: number,
   scale = 1,
+  speedNorm = 0,
 ): void {
-  const spread = 0.42 + (scale - 1) * 0.04;
+  const spread = 0.42 + (scale - 1) * 0.04 + speedNorm * 0.06;
   fillPx(ctx, -bw * spread, bh * 0.4, bw * spread * 2, u * 2, PLAYER_PASTEL.shadow);
   fillPx(ctx, -bw * (spread - 0.14), bh * 0.42, bw * (spread - 0.14) * 2, u, rgba(PLAYER_PASTEL.shadow, 0.65));
+}
+
+/** Olhos fechados — arco pixel por contexto de movimento */
+function drawPlayerShutEyes(
+  ctx: CanvasRenderingContext2D,
+  eyeOff: number,
+  look: number,
+  eyeY: number,
+  eyeW: number,
+  eyeLine: string,
+  style: 'jump' | 'fall' | 'land',
+): void {
+  const lx = eyeOff - u * 4 + look;
+  const rx = eyeOff + u * 1 + look;
+
+  if (style === 'jump') {
+    const y = eyeY + u * 1.6;
+    fillPx(ctx, lx, y, eyeW, u, eyeLine);
+    fillPx(ctx, rx, y, eyeW, u, eyeLine);
+    fillPx(ctx, lx + u * 0.5, y - u * 0.6, u * 2.5, u, eyeLine);
+    fillPx(ctx, rx + u * 0.5, y - u * 0.6, u * 2.5, u, eyeLine);
+    fillPx(ctx, lx + u * 1.2, y + u * 0.15, u * 1.5, u, rgba(PASTEL.rose, 0.28));
+    fillPx(ctx, rx + u * 1.2, y + u * 0.15, u * 1.5, u, rgba(PASTEL.rose, 0.28));
+  } else if (style === 'fall') {
+    const y = eyeY + u * 2.1;
+    fillPx(ctx, lx, y, eyeW, u * 1.15, eyeLine);
+    fillPx(ctx, rx, y, eyeW, u * 1.15, eyeLine);
+    fillPx(ctx, lx - u * 0.3, y - u * 1.1, u * 2.8, u, eyeLine);
+    fillPx(ctx, rx + u * 0.3, y - u * 1.1, u * 2.8, u, eyeLine);
+    fillPx(ctx, lx + u * 0.4, y + u * 0.35, u * 2.2, u, eyeLine);
+    fillPx(ctx, rx + u * 0.4, y + u * 0.35, u * 2.2, u, eyeLine);
+  } else {
+    const y = eyeY + u * 2.3;
+    fillPx(ctx, lx, y, eyeW, u * 1.35, eyeLine);
+    fillPx(ctx, rx, y, eyeW, u * 1.35, eyeLine);
+    fillPx(ctx, lx + u * 0.6, y - u * 0.85, u * 2.2, u, eyeLine);
+    fillPx(ctx, rx + u * 0.6, y - u * 0.85, u * 2.2, u, eyeLine);
+    fillPx(ctx, lx + u, y + u * 0.2, u * 1.6, u, rgba(PASTEL.rose, 0.32));
+    fillPx(ctx, rx + u, y + u * 0.2, u * 1.6, u, rgba(PASTEL.rose, 0.32));
+  }
 }
 
 /** Rosto, blush e olhos */
@@ -284,19 +349,39 @@ export function drawPlayerPixelFace(
   const landPop = opts.landPop ?? false;
   const landSticky = opts.landSticky ?? false;
   const titleBold = opts.titleBold ?? false;
+  const motionRising = opts.motionRising ?? false;
+  const motionFalling = opts.motionFalling ?? false;
+  const motionSprint = opts.motionSprint ?? false;
+  const motionAirJump = opts.motionAirJump ?? false;
+  const motionLanding = opts.motionLanding ?? false;
+  const eyesShutAir =
+    motionLanding || motionFalling || motionRising || motionAirJump;
   const eyeLine = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeLine;
   const eyeFill = titleBold ? PASTEL.ink : PLAYER_PASTEL.eyeFill;
   const look = (opts.look ?? 0) + facing;
   const eyeOff = 5 * facing;
   const eyeY = -u * 5;
   const eyeW = u * 4;
-  const eyeH = excited && mouthOpen && !crying && !defeatSad ? u * 6 : u * 5;
+  let eyeH = excited && mouthOpen && !crying && !defeatSad ? u * 6 : u * 5;
+  if (motionSprint && !eyesShutAir) eyeH += u;
   const mouthY = u * 2.5;
   const blushY = u * 1.5;
 
   fillPx(ctx, -bw * 0.14, -bh * 0.32, bw * 0.28, u, rgba(PASTEL.white, 0.35));
 
-  const blushAlpha = defeatSad ? 0.38 : crying ? 0.42 : excited && mouthOpen ? 0.65 : 0.55;
+  const blushAlpha = defeatSad
+    ? 0.38
+    : crying
+      ? 0.42
+      : motionSprint
+        ? 0.72
+        : excited && mouthOpen
+          ? 0.65
+          : eyesShutAir
+            ? motionFalling
+              ? 0.48
+              : 0.52
+            : 0.55;
   const blush = rgba(PASTEL.rose, blushAlpha);
   fillPx(ctx, -u * 5, blushY, u * 2, u, blush);
   fillPx(ctx, -u * 4, blushY + u, u, u, blush);
@@ -378,9 +463,15 @@ export function drawPlayerPixelFace(
     return;
   }
 
-  if (blinking) {
+  if (blinking && !eyesShutAir) {
     fillPx(ctx, eyeOff - u * 4, eyeY + u * 2, eyeW, u, eyeLine);
     fillPx(ctx, eyeOff + u * 1, eyeY + u * 2, eyeW, u, eyeLine);
+  } else if (motionLanding) {
+    drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'land');
+  } else if (motionFalling) {
+    drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'fall');
+  } else if (motionRising || motionAirJump) {
+    drawPlayerShutEyes(ctx, eyeOff, look, eyeY, eyeW, eyeLine, 'jump');
   } else if (landBliss) {
     fillPx(ctx, eyeOff - u * 4 + look, eyeY + u * 2, eyeW, u, eyeLine);
     fillPx(ctx, eyeOff + u * 1 + look, eyeY + u * 2, eyeW, u, eyeLine);
@@ -398,6 +489,17 @@ export function drawPlayerPixelFace(
     fillPx(ctx, eyeOff + u * 1 + look, eyeY + u, eyeW, u * 3, eyeLine);
     fillPx(ctx, eyeOff - u * 2 + look, eyeY + u, u * 2, u, eyeFill);
     fillPx(ctx, eyeOff + u * 3 + look, eyeY + u, u * 2, u, eyeFill);
+  } else if (motionSprint) {
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u * 0.5, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u * 0.5, eyeW, eyeH, eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u * 3, u * 3.5, eyeFill);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u * 3, u * 3.5, eyeFill);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY - u, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY - u, u, u, PASTEL.white);
+    if (Math.sin(animT * 12) > 0.2) {
+      fillPx(ctx, eyeOff - u * 1.5 + look, eyeY + u, u, u, rgba(PASTEL.white, 0.55));
+      fillPx(ctx, eyeOff + u * 3.5 + look, eyeY + u, u, u, rgba(PASTEL.white, 0.55));
+    }
   } else {
     fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, eyeLine);
     fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, eyeLine);
@@ -416,9 +518,20 @@ export function drawPlayerPixelFace(
     fillPx(ctx, eyeOff - u * 2, mouthY, u * 5, mouthH, eyeLine);
     fillPx(ctx, eyeOff - u, mouthY + u, u * 3, u, rgba(PASTEL.rose, 0.45));
     fillPx(ctx, eyeOff - u * 0.5, mouthY + u * 0.5, u * 2, u, rgba(PASTEL.white, 0.35));
-  } else if (landBliss) {
+  } else if (landBliss || motionLanding) {
     fillPx(ctx, eyeOff - u * 2, mouthY + u, u * 2, u, eyeLine);
     fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY, u * 3, u, eyeLine);
+  } else if (motionFalling) {
+    fillPx(ctx, eyeOff - u * 1.5, mouthY + u * 0.5, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u * 0.5, u * 2, u, eyeLine);
+  } else if (motionRising || motionAirJump) {
+    fillPx(ctx, eyeOff - u * 1.5, mouthY + u * 0.5, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2.5, mouthY + u * 0.5, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u * 0.5, mouthY, u * 2, u, eyeLine);
+  } else if (motionSprint) {
+    fillPx(ctx, eyeOff - u * 2, mouthY + u * 0.5, u * 2.5, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u * 0.5, u * 2.5, u, eyeLine);
     fillPx(ctx, eyeOff - u, mouthY, u * 3, u, eyeLine);
   } else {
     fillPx(ctx, eyeOff - u, mouthY, u * 2, u, eyeLine);
