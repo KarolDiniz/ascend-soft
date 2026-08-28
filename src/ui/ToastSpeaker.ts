@@ -8,6 +8,7 @@ import {
 } from '../game/playerPixelArt';
 import { getPlayerAppearance } from '../game/playerAppearance';
 import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
+import { drawPlayerHairIfAny } from '../game/playerHair';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -154,12 +155,14 @@ export class ToastSpeaker {
 
     drawPlayerPixelShadow(ctx, bw, bh, pose.shadowScale);
     const colors = defaultBodyColors();
-    const accessory = getPlayerAppearance().accessory;
+    const appearance = getPlayerAppearance();
+    const accessory = appearance.accessory;
     drawPlayerPixelBody(ctx, bw, bh, this.animT, {
       solid: true,
       earWiggle: pose.earWiggle,
       colors,
     });
+    drawPlayerHairIfAny(ctx, bw, bh, appearance, this.animT);
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
         drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, pose.facing);

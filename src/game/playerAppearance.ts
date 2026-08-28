@@ -12,7 +12,14 @@ export type AccessoryId =
   | 'sunhat'
   | 'sprout'
   | 'star'
-  | 'headphones';
+  | 'headphones'
+  | 'alienAntenna'
+  | 'santaHat'
+  | 'catEars'
+  | 'mickeyEars'
+  | 'marioCap';
+
+export type HairStyleId = 'none' | 'pigtails' | 'mohawk' | 'mullet';
 
 export interface PlayerBodyColors {
   bodyTop: string;
@@ -26,6 +33,7 @@ export interface PlayerBodyColors {
 
 export interface PlayerAppearance {
   bodyColor: BodyColorId;
+  hairStyle: HairStyleId;
   accessory: AccessoryId;
 }
 
@@ -40,8 +48,14 @@ export interface AccessoryOption {
   label: string;
 }
 
+export interface HairStyleOption {
+  id: HairStyleId;
+  label: string;
+}
+
 export const DEFAULT_APPEARANCE: PlayerAppearance = {
   bodyColor: 'sky',
+  hairStyle: 'pigtails',
   accessory: 'none',
 };
 
@@ -140,6 +154,18 @@ export const ACCESSORY_OPTIONS: AccessoryOption[] = [
   { id: 'sprout', label: 'Brotinho' },
   { id: 'star', label: 'Estrela' },
   { id: 'headphones', label: 'Fones' },
+  { id: 'alienAntenna', label: 'Antenas alien' },
+  { id: 'santaHat', label: 'Touca Natal' },
+  { id: 'catEars', label: 'Orelhas gato' },
+  { id: 'mickeyEars', label: 'Orelhas Mickey' },
+  { id: 'marioCap', label: 'Boné Mario' },
+];
+
+export const HAIR_STYLE_OPTIONS: HairStyleOption[] = [
+  { id: 'none', label: 'Nenhum' },
+  { id: 'pigtails', label: 'Maria-chiquinha' },
+  { id: 'mohawk', label: 'Moicano' },
+  { id: 'mullet', label: 'Mullet' },
 ];
 
 let cachedAppearance: PlayerAppearance = { ...DEFAULT_APPEARANCE };
@@ -183,7 +209,10 @@ function sanitizeAppearance(p: Partial<PlayerAppearance>): PlayerAppearance {
   const accessory = ACCESSORY_OPTIONS.some((o) => o.id === p.accessory)
     ? p.accessory!
     : DEFAULT_APPEARANCE.accessory;
-  return { bodyColor, accessory };
+  const hairStyle = HAIR_STYLE_OPTIONS.some((o) => o.id === p.hairStyle)
+    ? p.hairStyle!
+    : DEFAULT_APPEARANCE.hairStyle;
+  return { bodyColor, hairStyle, accessory };
 }
 
 // Inicializa cache na importação

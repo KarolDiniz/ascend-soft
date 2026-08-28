@@ -1,4 +1,5 @@
 import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
+import { drawPlayerHairIfAny } from '../game/playerHair';
 import {
   drawPlayerPixelBody,
   drawPlayerPixelFace,
@@ -31,7 +32,7 @@ export class CharacterPreview {
   constructor(canvasId = 'char-preview') {
     this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
-    this.appearance = { bodyColor: 'sky', accessory: 'none' };
+    this.appearance = { bodyColor: 'sky', hairStyle: 'pigtails', accessory: 'none' };
   }
 
   setAppearance(app: PlayerAppearance): void {
@@ -118,6 +119,8 @@ export class CharacterPreview {
       boldOutline: true,
       colors,
     });
+
+    drawPlayerHairIfAny(ctx, bw, bh, this.appearance, t);
 
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {

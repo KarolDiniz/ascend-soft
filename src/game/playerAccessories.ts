@@ -47,6 +47,21 @@ export function drawPlayerAccessory(
     case 'headphones':
       if (over) drawHeadphones(ctx, bw, bh, animT);
       break;
+    case 'alienAntenna':
+      if (under) drawAlienAntenna(ctx, bw, bh, animT);
+      break;
+    case 'santaHat':
+      if (under) drawSantaHat(ctx, bw, bh, animT);
+      break;
+    case 'catEars':
+      if (under) drawCatEars(ctx, bw, bh, animT);
+      break;
+    case 'mickeyEars':
+      if (under) drawMickeyEars(ctx, bw, bh, animT);
+      break;
+    case 'marioCap':
+      if (under) drawMarioCap(ctx, bw, bh, animT);
+      break;
     default:
       break;
   }
@@ -315,6 +330,187 @@ function drawHeadphones(
   }
 }
 
+function drawAlienAntenna(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const s = 1.42;
+  const pulse = Math.sin(animT * 5.5) * 0.15 + 0.85;
+  const stem = '#7A8898';
+  const stemLo = '#5A6878';
+  const glow = PASTEL.mint;
+  const glowHi = rgba(PASTEL.white, 0.75);
+  const glowCore = '#98F0C0';
+
+  const antenna = (bx: number, phase: number): void => {
+    const wob = Math.sin(animT * 4.2 + phase) * u * 0.45;
+    const tilt = Math.sin(animT * 3.1 + phase) * u * 0.28;
+    const x = bx + wob;
+    const baseY = -bh * 0.4;
+
+    fillPx(ctx, x - u * 0.6 * s + tilt, baseY - u * 7.2 * s, u * 1.2 * s, u * 7.5 * s, stemLo);
+    fillPx(ctx, x - u * 0.42 * s + tilt * 0.6, baseY - u * 6.8 * s, u * 0.9 * s, u * 7 * s, stem);
+    fillPx(ctx, x - u * 0.24 * s + tilt * 0.4, baseY - u * 6.2 * s, u * 0.5 * s, u * 6 * s, rgba(stem, 0.85));
+
+    const orbY = baseY - u * 8 * s + Math.sin(animT * 6 + phase) * u * 0.35;
+    const r = u * (1.85 + pulse * 0.35) * s;
+    fillPx(ctx, x - r - u * 0.25, orbY - r, r * 2 + u * 0.5, r * 2 + u * 0.4, rgba(glow, 0.35));
+    fillPx(ctx, x - r, orbY - r + u * 0.2, r * 2, r * 2, glow);
+    fillPx(ctx, x - r * 0.65, orbY - r * 0.65, r * 1.3, r * 1.3, glowCore);
+    fillPx(ctx, x - u * 0.6, orbY - u * 0.7, u * 0.75, u * 0.75, glowHi);
+  };
+
+  antenna(-bw * 0.18, 0);
+  antenna(bw * 0.14, 1.8);
+}
+
+function drawSantaHat(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const s = 1.4;
+  const sway = Math.sin(animT * 2.8) * u * 0.2;
+  const brimY = -bh * 0.36;
+  const red = '#D85858';
+  const redLo = '#B84040';
+  const redHi = '#E87878';
+  const fur = PASTEL.cream;
+  const furLo = '#E8E0D8';
+  const furHi = rgba(PASTEL.white, 0.9);
+  const pom = PASTEL.cream;
+
+  // barra de pelúcia
+  fillPx(ctx, -bw * 0.38 + sway, brimY + u * 0.25, bw * 0.76, u * 2.8 * s, furLo);
+  fillPx(ctx, -bw * 0.36 + sway, brimY, bw * 0.72, u * 2.5 * s, fur);
+  fillPx(ctx, -bw * 0.28 + sway, brimY + u * 0.35, bw * 0.56, u * 1.2, furHi);
+
+  // corpo do gorro inclinado
+  fillPx(ctx, -bw * 0.26 + sway, brimY - u * 3.2 * s, bw * 0.44, u * 4 * s, redLo);
+  fillPx(ctx, -bw * 0.22 + sway, brimY - u * 3.8 * s, bw * 0.38, u * 4.5 * s, red);
+  fillPx(ctx, -bw * 0.12 + sway, brimY - u * 5.6 * s, bw * 0.28, u * 3.5 * s, red);
+  fillPx(ctx, bw * 0.02 + sway, brimY - u * 7.2 * s, u * 3.5 * s, u * 3 * s, redLo);
+  fillPx(ctx, bw * 0.1 + sway, brimY - u * 8.5 * s, u * 2.8 * s, u * 2.6 * s, red);
+  fillPx(ctx, bw * 0.16 + sway, brimY - u * 9.8 * s, u * 2.4 * s, u * 2.2 * s, redHi);
+
+  // pompom
+  const pomX = bw * 0.26 + sway;
+  const pomY = brimY - u * 10.8 * s + Math.sin(animT * 3.5) * u * 0.15;
+  fillPx(ctx, pomX - u * 1.8 * s, pomY - u * 1.5 * s, u * 3.6 * s, u * 3.2 * s, furLo);
+  fillPx(ctx, pomX - u * 1.45 * s, pomY - u * 1.15 * s, u * 2.9 * s, u * 2.6 * s, pom);
+  fillPx(ctx, pomX - u * 0.75 * s, pomY - u * 0.7 * s, u * 1.5 * s, u * 1.5 * s, furHi);
+}
+
+function drawCatEars(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const s = 1.05;
+  const twitchL = Math.sin(animT * 5.5) * u * 0.22;
+  const twitchR = Math.sin(animT * 5.5 + 1.2) * u * 0.22;
+  const fur = '#988878';
+  const furLo = '#786858';
+  const furHi = '#B8A898';
+  const inner = PASTEL.blush;
+  const innerHi = '#F8C8D0';
+  const baseY = -bh * 0.42;
+
+  const lx = -bw * 0.32 + twitchL;
+  fillPx(ctx, lx - u * 3 * s, baseY - u * 4.2 * s, u * 3.8 * s, u * 5.4 * s, furLo);
+  fillPx(ctx, lx - u * 2.55 * s, baseY - u * 4.9 * s, u * 3.1 * s, u * 6.1 * s, fur);
+  fillPx(ctx, lx - u * 1.85 * s, baseY - u * 6.6 * s, u * 2.2 * s, u * 3.8 * s, furHi);
+  fillPx(ctx, lx - u * 1.5 * s, baseY - u * 9 * s, u * 1.5 * s, u * 2.6 * s, fur);
+  fillPx(ctx, lx - u * 1.15 * s, baseY - u * 10.6 * s, u * 1.1 * s, u * 1.7 * s, furHi);
+  fillPx(ctx, lx - u * 2.35 * s, baseY - u * 4 * s, u * 2 * s, u * 3.8 * s, inner);
+  fillPx(ctx, lx - u * 1.95 * s, baseY - u * 5.2 * s, u * 1.5 * s, u * 2.9 * s, innerHi);
+
+  const rx = bw * 0.24 + twitchR;
+  fillPx(ctx, rx - u * 0.8 * s, baseY - u * 4.2 * s, u * 3.8 * s, u * 5.4 * s, furLo);
+  fillPx(ctx, rx - u * 0.55 * s, baseY - u * 4.9 * s, u * 3.1 * s, u * 6.1 * s, fur);
+  fillPx(ctx, rx - u * 0.25 * s, baseY - u * 6.6 * s, u * 2.2 * s, u * 3.8 * s, furHi);
+  fillPx(ctx, rx + u * 0.05, baseY - u * 9 * s, u * 1.5 * s, u * 2.6 * s, fur);
+  fillPx(ctx, rx + u * 0.3 * s, baseY - u * 10.6 * s, u * 1.1 * s, u * 1.7 * s, furHi);
+  fillPx(ctx, rx + u * 0.25 * s, baseY - u * 4 * s, u * 2 * s, u * 3.8 * s, inner);
+  fillPx(ctx, rx + u * 0.55 * s, baseY - u * 5.2 * s, u * 1.5 * s, u * 2.9 * s, innerHi);
+}
+
+/** Orelhas redondas clássicas — estilo Mickey */
+function drawMickeyEars(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const s = 1.35;
+  const bob = Math.sin(animT * 3.2) * u * 0.12;
+  const bandY = -bh * 0.36 + bob;
+  const black = '#2E2C34';
+  const blackLo = '#1E1C24';
+  const shine = rgba(PASTEL.white, 0.22);
+
+  // faixa na cabeça
+  fillPx(ctx, -bw * 0.3, bandY + u * 0.4, bw * 0.6, u * 1.6 * s, blackLo);
+  fillPx(ctx, -bw * 0.28, bandY + u * 0.55, bw * 0.56, u * 1.2 * s, black);
+
+  const ear = (cx: number, phase: number): void => {
+    const wob = Math.sin(animT * 4 + phase) * u * 0.08;
+    const x = cx + wob;
+    const cy = bandY - u * 2.2 * s;
+
+    fillPx(ctx, x - u * 3 * s, cy - u * 2.8 * s, u * 6 * s, u * 5.6 * s, blackLo);
+    fillPx(ctx, x - u * 2.65 * s, cy - u * 2.45 * s, u * 5.3 * s, u * 5 * s, black);
+    fillPx(ctx, x - u * 2.1 * s, cy - u * 2.1 * s, u * 4.2 * s, u * 4 * s, black);
+    fillPx(ctx, x - u * 1.4 * s, cy - u * 2.4 * s, u * 1.4 * s, u * 1.2 * s, shine);
+  };
+
+  ear(-bw * 0.34, 0);
+  ear(bw * 0.28, 1.5);
+}
+
+/** Boné vermelho com M — estilo Mario */
+function drawMarioCap(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  const s = 1.38;
+  const bob = Math.sin(animT * 2.6) * u * 0.1;
+  const cy = -bh * 0.38 + bob;
+  const red = '#E04848';
+  const redLo = '#C03030';
+  const redHi = '#F06868';
+  const brimLo = '#A82828';
+  const white = PASTEL.cream;
+
+  // aba na frente
+  fillPx(ctx, -bw * 0.3, cy + u * 2.2 * s, bw * 0.6, u * 1.6 * s, brimLo);
+  fillPx(ctx, -bw * 0.28, cy + u * 2 * s, bw * 0.56, u * 1.3 * s, redLo);
+  fillPx(ctx, -bw * 0.22, cy + u * 2.35 * s, bw * 0.44, u * 0.6, redHi);
+
+  // copa
+  fillPx(ctx, -bw * 0.28, cy - u * 0.5 * s, bw * 0.56, u * 3.2 * s, redLo);
+  fillPx(ctx, -bw * 0.26, cy - u * 1.2 * s, bw * 0.52, u * 3.8 * s, red);
+  fillPx(ctx, -bw * 0.2, cy - u * 2.5 * s, bw * 0.4, u * 3.2 * s, red);
+  fillPx(ctx, -bw * 0.14, cy - u * 3.8 * s, bw * 0.28, u * 2.4 * s, redHi);
+
+  // círculo branco + M
+  fillPx(ctx, -u * 2.8 * s, cy - u * 1.8 * s, u * 5.6 * s, u * 4.8 * s, white);
+  fillPx(ctx, -u * 2.5 * s, cy - u * 1.5 * s, u * 5 * s, u * 4.2 * s, rgba(white, 0.95));
+  // M pixelado
+  fillPx(ctx, -u * 1.9 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
+  fillPx(ctx, -u * 0.35 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
+  fillPx(ctx, -u * 1.45 * s, cy - u * 1.5 * s, u * 0.9 * s, u * 1.2 * s, red);
+  fillPx(ctx, -u * 0.85 * s, cy - u * 0.2 * s, u * 0.9 * s, u * 1.4 * s, red);
+  fillPx(ctx, u * 0.55 * s, cy - u * 0.8 * s, u * 0.9 * s, u * 2.8 * s, redLo);
+  fillPx(ctx, -u * 0.05 * s, cy - u * 1.5 * s, u * 0.9 * s, u * 1.2 * s, red);
+}
+
 /** Mini ícone para botões do editor */
 export function drawAccessoryIcon(
   ctx: CanvasRenderingContext2D,
@@ -324,7 +520,26 @@ export function drawAccessoryIcon(
   ctx.clearRect(0, 0, size, size);
   ctx.save();
   ctx.translate(size / 2, size * 0.62);
-  const boost = id === 'bow' || id === 'sprout' || id === 'star' || id === 'headphones' ? 1 : 0.72;
+  const bigIcon =
+    id === 'bow' ||
+    id === 'sprout' ||
+    id === 'star' ||
+    id === 'headphones' ||
+    id === 'alienAntenna' ||
+    id === 'santaHat' ||
+    id === 'catEars' ||
+    id === 'mickeyEars' ||
+    id === 'marioCap';
+  const boost =
+    id === 'alienAntenna' ||
+    id === 'santaHat' ||
+    id === 'catEars' ||
+    id === 'mickeyEars' ||
+    id === 'marioCap'
+      ? 1.12
+      : bigIcon
+        ? 1
+        : 0.72;
   const bw = px(size * boost);
   const bh = px(size * boost);
   if (id === 'none') {

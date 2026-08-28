@@ -17,6 +17,7 @@ import {
   type PlayerAppearance,
 } from './playerAppearance';
 import { accessoryLayers, drawPlayerAccessory } from './playerAccessories';
+import { drawPlayerHairIfAny } from './playerHair';
 
 interface TrailPoint {
   x: number;
@@ -335,11 +336,14 @@ export class Player {
 
     // Body — stepped oval (cute pixel slime)
     const colors = defaultBodyColors();
-    const accessory = getPlayerAppearance().accessory;
+    const appearance = getPlayerAppearance();
+    const accessory = appearance.accessory;
     drawPlayerPixelBody(ctx, bw, bh, this.animT, {
       boldOutline: titleBoost,
       colors,
     });
+
+    drawPlayerHairIfAny(ctx, bw, bh, appearance, this.animT);
 
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
