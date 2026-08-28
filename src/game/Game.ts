@@ -865,16 +865,20 @@ export class Game {
     const isNew = addCollected(this.collected, id);
     this.runCollectibles += 1;
     this.audio.playCollect();
+    if (!this.userSettings.reduceMotion) {
+      this.screenPunch = Math.min(1, this.screenPunch + 0.35);
+      if (isNew) this.particles.confetti(this.player.x, this.player.y + 16);
+    }
     this.particles.burst(
       this.player.x,
       this.player.y + 8,
       def.primary,
-      10,
+      16,
       'spark',
       true,
       def.accent,
     );
-    this.addFloater(this.player.x, this.player.y + 28, isNew ? `+${def.name}!` : def.name, def.primary);
+    this.addFloater(this.player.x, this.player.y + 32, isNew ? `+${def.name}!` : def.name, def.primary);
     this.onCatalogRefresh?.();
   }
 

@@ -501,29 +501,35 @@ export class AudioBus {
   playCollect(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, t);
-      osc.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.12, t + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-      osc.connect(g);
-      g.connect(sfx);
-      osc.start(t);
-      osc.stop(t + 0.16);
-      const osc2 = ctx.createOscillator();
-      const g2 = ctx.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(660, t + 0.04);
-      g2.gain.setValueAtTime(0.0001, t + 0.04);
-      g2.gain.exponentialRampToValueAtTime(0.06, t + 0.05);
-      g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      osc2.connect(g2);
-      g2.connect(sfx);
-      osc2.start(t + 0.04);
-      osc2.stop(t + 0.14);
+      // Jingle tipo "win" — arpejo ascendente + brilho final
+      const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+      for (const [i, f] of notes.entries()) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = i < 3 ? 'square' : 'sine';
+        osc.frequency.setValueAtTime(f, t + i * 0.07);
+        const st = t + i * 0.07;
+        g.gain.setValueAtTime(0.0001, st);
+        g.gain.exponentialRampToValueAtTime(0.11 - i * 0.012, st + 0.018);
+        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.22);
+        osc.connect(g);
+        g.connect(sfx);
+        osc.start(st);
+        osc.stop(st + 0.24);
+      }
+      // Harmônico de celebração
+      const shimmer = ctx.createOscillator();
+      const sg = ctx.createGain();
+      shimmer.type = 'triangle';
+      shimmer.frequency.setValueAtTime(1568, t + 0.28);
+      shimmer.frequency.exponentialRampToValueAtTime(2093, t + 0.48);
+      sg.gain.setValueAtTime(0.0001, t + 0.28);
+      sg.gain.exponentialRampToValueAtTime(0.07, t + 0.32);
+      sg.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      shimmer.connect(sg);
+      sg.connect(sfx);
+      shimmer.start(t + 0.28);
+      shimmer.stop(t + 0.58);
     });
   }
 
