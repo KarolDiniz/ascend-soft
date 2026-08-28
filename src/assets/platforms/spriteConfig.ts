@@ -52,4 +52,10 @@ export const ALL_SPRITE_MATERIALS: MaterialId[] = [
   'paper',
   'plasticBottle',
   'velvet',
+  'blossom',
+  'marimba',
+  'crystal',
+  'ceramic',
+  'clay',
+  'silk',
 ];

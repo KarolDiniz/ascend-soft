@@ -48,6 +48,12 @@ const LAND_SAMPLE_URLS: Record<MaterialId, readonly string[]> = {
   paper: landFiles('paper.mp3'),
   plasticBottle: landFiles('plasticBottle.mp3'),
   velvet: landFiles('velvet.mp3'),
+  blossom: landFiles('grass.mp3'),
+  marimba: landFiles('keyboard.mp3'),
+  crystal: landFiles('iceSoap.mp3'),
+  ceramic: landFiles('glycerin.mp3'),
+  clay: landFiles('kinetic.mp3'),
+  silk: landFiles('velvet.mp3'),
 };
 
 export class LandSampleBank {

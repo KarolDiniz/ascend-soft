@@ -115,6 +115,30 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'velvet_pad', visualDepth: 0.7, visualSpread: 1.0 },
     { id: 'velvet_fold', visualDepth: 0.78, visualSpread: 1.04 },
   ],
+  blossom: [
+    { id: 'blossom_meadow', visualDepth: 0.85, visualSpread: 1.1 },
+    { id: 'blossom_clump', visualDepth: 0.95, visualSpread: 1.06 },
+  ],
+  marimba: [
+    { id: 'marimba_row', visualDepth: 0.68, visualSpread: 1.12 },
+    { id: 'marimba_pad', visualDepth: 0.62, visualSpread: 1.08 },
+  ],
+  crystal: [
+    { id: 'crystal_shard', visualDepth: 1.42, visualSpread: 1.02 },
+    { id: 'crystal_block', visualDepth: 1.28, visualSpread: 0.98 },
+  ],
+  ceramic: [
+    { id: 'ceramic_plate', visualDepth: 0.72, visualSpread: 1.08 },
+    { id: 'ceramic_bowl', visualDepth: 1.05, visualSpread: 1.02 },
+  ],
+  clay: [
+    { id: 'clay_mound', visualDepth: 1.08, visualSpread: 1.1 },
+    { id: 'clay_tile', visualDepth: 0.78, visualSpread: 1.04 },
+  ],
+  silk: [
+    { id: 'silk_fold', visualDepth: 0.68, visualSpread: 1.02 },
+    { id: 'silk_pad', visualDepth: 0.74, visualSpread: 1.0 },
+  ],
 };
 
 export function pickVariant(material: MaterialId, rand: () => number): VariantDef {

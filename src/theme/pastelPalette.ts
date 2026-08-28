@@ -259,6 +259,42 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     '#E8B8C8',
     rgba(PASTEL.blush, 0.3),
   ),
+  blossom: matColors(
+    '#F0A8C0',
+    rgba(PASTEL.blush, 0.5),
+    '#FFD0E0',
+    rgba(PASTEL.rose, 0.32),
+  ),
+  marimba: matColors(
+    '#D8A878',
+    rgba(PASTEL.caramel, 0.45),
+    '#F0C898',
+    rgba(PASTEL.peach, 0.3),
+  ),
+  crystal: matColors(
+    '#B8D8F0',
+    rgba(PASTEL.sky, 0.55),
+    '#E0F0FF',
+    rgba(PASTEL.powder, 0.32),
+  ),
+  ceramic: matColors(
+    '#E8C8A8',
+    rgba(PASTEL.caramel, 0.42),
+    '#F8E0C8',
+    rgba(PASTEL.cream, 0.3),
+  ),
+  clay: matColors(
+    '#C89878',
+    rgba(PASTEL.caramelDeep, 0.4),
+    '#E0B898',
+    rgba(PASTEL.sand, 0.34),
+  ),
+  silk: matColors(
+    '#D8C0E8',
+    rgba(PASTEL.lilac, 0.48),
+    '#F0E0F8',
+    rgba(PASTEL.blush, 0.28),
+  ),
 };
 
 export interface BiomePastelPalette {

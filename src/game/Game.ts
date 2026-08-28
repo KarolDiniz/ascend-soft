@@ -446,6 +446,24 @@ export class Game {
           this.player.vx,
         );
       }
+      if (prevPlat.material === 'blossom') {
+        this.particles.blossomPetals(
+          this.player.x,
+          prevPlat.surfaceY,
+          12 + Math.min(6, Math.floor(Math.abs(this.player.vx) * 0.05)),
+          true,
+          this.player.vx,
+        );
+      }
+      if (prevPlat.material === 'marimba') {
+        this.particles.musicNotes(
+          this.player.x,
+          prevPlat.surfaceY,
+          7 + Math.min(5, Math.floor(Math.abs(this.player.vx) * 0.04)),
+          true,
+          this.player.vx,
+        );
+      }
     }
 
     const wall = this.worldHalfW + 20;
@@ -758,6 +776,47 @@ export class Game {
           break;
         case 'velvet':
           this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          break;
+        case 'blossom':
+          this.particles.blossomPetals(
+            this.player.x,
+            platformTop,
+            14 + Math.floor(impact * 12),
+            true,
+            this.player.vx,
+          );
+          this.particles.burst(this.player.x, platformTop, mat.particle, 8, 'glitter', false);
+          break;
+        case 'marimba':
+          this.particles.musicNotes(
+            this.player.x,
+            platformTop,
+            9 + Math.floor(impact * 8),
+            true,
+            this.player.vx,
+          );
+          break;
+        case 'crystal':
+          this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 18);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'glitter', false);
+          break;
+        case 'ceramic':
+          this.particles.crackSpark(this.player.x, platformTop, mat.particle);
+          this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'shard', false);
+          break;
+        case 'clay':
+          this.particles.sandWhirl(
+            this.player.x,
+            platformTop,
+            mat.particle,
+            impact * 0.85,
+            this.player.vx,
+            true,
+          );
+          break;
+        case 'silk':
+          this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
+          this.particles.burst(this.player.x, platformTop, '#FFFFFF', 6, 'glitter', false);
           break;
         default:
           break;

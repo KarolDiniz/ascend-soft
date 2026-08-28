@@ -73,7 +73,19 @@ export type PlatformVariant =
   | 'cloud_puff'
   | 'cloud_drift'
   | 'velvet_pad'
-  | 'velvet_fold';
+  | 'velvet_fold'
+  | 'blossom_meadow'
+  | 'blossom_clump'
+  | 'marimba_row'
+  | 'marimba_pad'
+  | 'crystal_shard'
+  | 'crystal_block'
+  | 'ceramic_plate'
+  | 'ceramic_bowl'
+  | 'clay_mound'
+  | 'clay_tile'
+  | 'silk_fold'
+  | 'silk_pad';
 
 export interface VariantDef {
   id: PlatformVariant;

@@ -1,5 +1,5 @@
 import type { MaterialDef } from '../../audio/materials';
-import { rgba } from '../../theme/pastelPalette';
+import { PASTEL, rgba } from '../../theme/pastelPalette';
 import { fillPx } from '../../theme/pixel';
 import { amoebaNucleusColor } from './amoebaColors';
 import type { PixelPlatformOverlay } from './PixelPlatformRenderer';
@@ -204,4 +204,141 @@ export function drawVelvet(a: ExtraDrawArgs): void {
     );
   }
   fillPx(ctx, cx - w * 0.15, sy + u, w * 0.3, h * 0.5, rgba('#FFFFFF', 0.08));
+}
+
+const BLOSSOM_PETALS = ['#F0A8C0', '#F8C0D8', '#F8E0A8', '#E8B8D8', '#FFB8C8'];
+const STEM_GREEN = '#78B868';
+
+/** Canteiro de flores — pétalas e caules balançando */
+export function drawBlossom(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x + u, sy + h * 0.55, w - u * 2, h * 0.45, mat.stroke);
+  fillPx(ctx, x + u * 2, sy + h * 0.6, w - u * 4, h * 0.38, mat.fill);
+  const flowers = 7;
+  for (let i = 0; i < flowers; i++) {
+    const fx = x + u * 2 + (i / Math.max(1, flowers - 1)) * (w - u * 4);
+    const sway = Math.sin(time * 2.8 + i + wobble) * u * 0.5;
+    const stemH = h * (0.35 + seeded(seed, i) * 0.25);
+    fillPx(ctx, fx + sway, sy + h - stemH, u, stemH, STEM_GREEN);
+    const petalColor = BLOSSOM_PETALS[i % BLOSSOM_PETALS.length]!;
+    for (let p = 0; p < 4; p++) {
+      const pa = (p / 4) * Math.PI * 2;
+      fillPx(
+        ctx,
+        fx + sway + Math.cos(pa) * u * 1.2 - u / 2,
+        sy + h - stemH - u + Math.sin(pa) * u * 0.6,
+        u,
+        u,
+        petalColor,
+      );
+    }
+    fillPx(ctx, fx + sway - u / 2, sy + h - stemH - u, u, u, '#F8E878');
+  }
+  fillPx(ctx, x + u * 2, sy + h - u, w - u * 4, u, rgba(mat.particle, 0.45));
+}
+
+/** Marimba — barras de madeira ressonantes */
+export function drawMarimba(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x, sy + h - u * 2, w, u * 2, mat.stroke);
+  const bars = 7;
+  for (let i = 0; i < bars; i++) {
+    const bw = w / bars - u * 0.4;
+    const bx = x + (i / bars) * w + u * 0.2;
+    const barH = h * (0.55 + (i % 3) * 0.12) * (1 - press * 0.08);
+    const wood = i % 2 === 0 ? mat.fill : mat.particle;
+    fillPx(ctx, bx, sy + h - barH - u, bw, barH, wood);
+    fillPx(ctx, bx, sy + h - barH - u, bw, u, rgba('#FFFFFF', 0.22));
+    if (seeded(seed, i) > 0.6) {
+      fillPx(ctx, bx + bw * 0.3, sy + h - barH - u * 2, u, u, rgba(mat.stroke, 0.35));
+    }
+  }
+  fillPx(ctx, cx - w * 0.45, sy + h - u, w * 0.9, u, rgba(mat.stroke, 0.5));
+}
+
+/** Cristal — facetas translúcidas */
+export function drawCrystal(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, time, wobble, seed } = a;
+  const x = cx - w / 2;
+  const shimmer = Math.sin(time * 3.5 + wobble) * u;
+  fillPx(ctx, x + u * 2, sy + h * 0.25, w - u * 4, h * 0.75, rgba(mat.fill, 0.72));
+  fillPx(ctx, cx - u * 2 + shimmer, sy + u, u * 4, h - u * 2, rgba(mat.particle, 0.55));
+  fillPx(ctx, cx - w * 0.35, sy + u * 2, w * 0.7, h * 0.55, mat.fill);
+  fillPx(ctx, cx - u + shimmer, sy + u, u * 2, h * 0.4, rgba('#FFFFFF', 0.45));
+  for (let i = 0; i < 5; i++) {
+    const fx = x + u * 3 + seeded(seed, i) * (w - u * 6);
+    const fy = sy + u * 2 + seeded(seed, i + 5) * (h - u * 5);
+    fillPx(ctx, fx, fy, u, u * (2 + (i % 2)), rgba(PASTEL.white, 0.35 + Math.sin(time * 4 + i) * 0.15));
+  }
+  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, rgba(mat.stroke, 0.4));
+}
+
+/** Cerâmica — prato esmaltado */
+export function drawCeramic(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed } = a;
+  const x = cx - w / 2;
+  const press = a.overlay?.pressAmount ?? 0;
+  fillPx(ctx, x + u, sy + h * 0.35, w - u * 2, h * 0.65, mat.fill);
+  fillPx(ctx, x, sy + h * 0.5, w, h * 0.5, rgba(mat.particle, 0.65));
+  fillPx(ctx, x + u * 2, sy + h * 0.42, w - u * 4, u * 2, rgba('#FFFFFF', 0.35));
+  for (let i = 0; i < 6; i++) {
+    fillPx(
+      ctx,
+      x + u * 2 + seeded(seed, i) * (w - u * 6),
+      sy + h * 0.48 + (i % 2) * u,
+      u * 2,
+      u,
+      rgba(mat.stroke, 0.22 + press * 0.15),
+    );
+  }
+  fillPx(ctx, cx - w * 0.28, sy + h * 0.55, w * 0.56, u, rgba(mat.stroke, 0.3));
+}
+
+/** Argila — torrão modelável */
+export function drawClay(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, wobble } = a;
+  const x = cx - w / 2;
+  const hop = Math.sin(wobble * 0.8) * u * 0.4;
+  for (let row = 0; row < h; row += u) {
+    const t = row / Math.max(1, h - u);
+    const ww = w * (0.78 + Math.sin(t * 3 + seed) * 0.12);
+    fillPx(ctx, cx - ww / 2 + hop * t, sy + row, ww, u, mat.fill);
+  }
+  for (let i = 0; i < 10; i++) {
+    fillPx(
+      ctx,
+      x + seeded(seed, i) * w,
+      sy + h * (0.2 + seeded(seed, i + 8) * 0.55),
+      u,
+      u,
+      rgba(mat.particle, 0.45 + seeded(seed, i + 16) * 0.25),
+    );
+  }
+  fillPx(ctx, x + u, sy + h - u, w - u * 2, u, rgba(mat.stroke, 0.45));
+}
+
+/** Seda — tecido com brilho suave */
+export function drawSilk(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time } = a;
+  const x = cx - w / 2;
+  fillPx(ctx, x, sy, w, h, mat.fill);
+  for (let i = 0; i < w; i += u * 2) {
+    const wave = Math.sin(time * 2.2 + i * 0.08) * u * 0.3;
+    fillPx(ctx, x + i, sy + u + wave, u, h - u * 2, rgba(mat.stroke, 0.1 + (i % 4 === 0 ? 0.06 : 0)));
+  }
+  fillPx(ctx, cx - w * 0.35, sy + u, w * 0.7, h * 0.45, rgba('#FFFFFF', 0.1 + Math.sin(time * 1.8) * 0.04));
+  for (let i = 0; i < 8; i++) {
+    fillPx(
+      ctx,
+      x + u + seeded(seed, i + 70) * (w - u * 4),
+      sy + u + seeded(seed, i + 80) * (h - u * 3),
+      u,
+      u,
+      rgba(mat.particle, 0.3 + seeded(seed, i) * 0.2),
+    );
+  }
+  fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
 }

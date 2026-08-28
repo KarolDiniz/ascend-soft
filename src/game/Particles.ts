@@ -18,7 +18,8 @@ export type GameplayFx =
   | 'grassBlade'
   | 'leaf'
   | 'sandWhirl'
-  | 'bonbon';
+  | 'bonbon'
+  | 'musicNote';
 
 interface Particle {
   x: number;
@@ -69,6 +70,10 @@ const KEYBOARD_LETTER_COLORS = ['#3a4450', '#4a5568', '#5a6578', PASTEL.inkSoft,
 const GRASS_BLADE_COLORS = ['#6A9A62', '#7CB072', '#8EC880', '#98C898'];
 const GRASS_LEAF_COLORS = ['#7CB068', '#98C878', '#B8E088', '#C8E8A0', '#D8F0B0'];
 
+const BLOSSOM_PETAL_COLORS = ['#F0A8C0', '#F8C0D8', '#F8E0A8', '#FFB8C8', '#E8B8D8', '#FFD0E0'];
+const MUSIC_NOTE_GLYPHS = '♩♪♫♬';
+const MUSIC_NOTE_COLORS = ['#D8A878', '#E8C898', '#C88858', '#F0D0A8', '#B87848'];
+
 const SAND_WHIRL_COLORS = ['#D8C8A8', '#E8D8B8', '#C8B898', '#F0E0C0', '#B8A888', '#E0D0B0'];
 const BONBON_FILL_COLORS = ['#C88878', '#B87868', '#D8A090', '#A87060', '#E0B0A0'];
 const BONBON_WRAP_COLORS = ['#F8E8F0', '#FFF0D8', '#E8F0FF', '#FFE8E0', '#F0E8FF', '#FFF8E8'];
@@ -103,6 +108,12 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   paper: 'crumb',
   plasticBottle: 'spark',
   velvet: 'foam',
+  blossom: 'glitter',
+  marimba: 'spark',
+  crystal: 'glitter',
+  ceramic: 'shard',
+  clay: 'sand',
+  silk: 'foam',
 };
 
 export class Particles {
@@ -123,6 +134,8 @@ export class Particles {
   private grassFoliageAcc = 0;
   private sandWhirlAcc = 0;
   private chocolateBonbonAcc = 0;
+  private musicNoteAcc = 0;
+  private blossomPetalAcc = 0;
 
   constructor() {
     for (let i = 0; i < POOL; i++) {
@@ -276,6 +289,41 @@ export class Particles {
         life: burst ? 0.75 + Math.random() * 0.45 : 0.55 + Math.random() * 0.35,
         size: 7 + Math.random() * 2,
         spin: (Math.random() - 0.5) * (burst ? 8 : 4),
+      });
+    }
+  }
+
+  /** Notas musicais ao pisar na marimba */
+  musicNotes(x: number, y: number, count = 6, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const glyph = MUSIC_NOTE_GLYPHS[i % MUSIC_NOTE_GLYPHS.length]!;
+      const color = MUSIC_NOTE_COLORS[i % MUSIC_NOTE_COLORS.length]!;
+      const spread = burst ? 36 : 22;
+      const lift = burst ? 50 + Math.random() * 70 : 30 + Math.random() * 45;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, 'musicNote', {
+        glyph,
+        vx: -walkVx * 0.2 + (Math.random() - 0.5) * (burst ? 65 : 45),
+        vy: lift,
+        life: burst ? 0.8 + Math.random() * 0.45 : 0.58 + Math.random() * 0.35,
+        size: 8 + Math.random() * 2,
+        spin: (Math.random() - 0.5) * (burst ? 7 : 4),
+      });
+    }
+  }
+
+  /** Pétalas ao pisar nas flores */
+  blossomPetals(x: number, y: number, count = 10, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const color = BLOSSOM_PETAL_COLORS[Math.floor(Math.random() * BLOSSOM_PETAL_COLORS.length)]!;
+      const spread = burst ? 40 : 26;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, 'leaf', {
+        vx: -walkVx * 0.22 + (Math.random() - 0.5) * (burst ? 72 : 50),
+        vy: (burst ? 38 : 24) + Math.random() * (burst ? 58 : 40),
+        life: burst ? 0.75 + Math.random() * 0.5 : 0.52 + Math.random() * 0.38,
+        size: 3 + Math.random() * 2.5,
+        spin: (Math.random() - 0.5) * (burst ? 11 : 7),
       });
     }
   }
@@ -582,6 +630,20 @@ export class Particles {
         this.chocolateBonbonAcc -= 1;
         this.chocolateBonbons(x, surfaceY, 1 + Math.floor(Math.random() * 2), false, vx);
       }
+    } else if (materialId === 'marimba') {
+      const walkRate = (speed * 0.09 + 0.45) * rateBoost;
+      this.musicNoteAcc += dt * walkRate * this.densityScale;
+      while (this.musicNoteAcc >= 1) {
+        this.musicNoteAcc -= 1;
+        this.musicNotes(x, surfaceY, 1, false, vx);
+      }
+    } else if (materialId === 'blossom') {
+      const walkRate = (speed * 0.14 + 0.75) * rateBoost;
+      this.blossomPetalAcc += dt * walkRate * this.densityScale;
+      while (this.blossomPetalAcc >= 1) {
+        this.blossomPetalAcc -= 1;
+        this.blossomPetals(x, surfaceY, 2, false, vx);
+      }
     }
 
     this.pressAcc += dt * (4.5 + press * 14) * this.densityScale;
@@ -707,6 +769,17 @@ export class Particles {
       this.drip(x + (Math.random() - 0.5) * 20, surfaceY, color, 1);
     } else if (materialId === 'kinetic' && Math.random() < dt * 6 * rateBoost) {
       this.sandFall(x + (Math.random() - 0.5) * 28, surfaceY, color, 8);
+    } else if (materialId === 'clay' && Math.random() < dt * 5 * rateBoost) {
+      this.sandFall(x + (Math.random() - 0.5) * 24, surfaceY, color, 6);
+    } else if (materialId === 'blossom' && Math.random() < dt * 5 * rateBoost) {
+      this.blossomPetals(x + (Math.random() - 0.5) * 16, surfaceY, 1, false, vx);
+    } else if (materialId === 'crystal' && Math.random() < dt * 4 * rateBoost) {
+      this.spawn(x + (Math.random() - 0.5) * 20, surfaceY, accent, 'glitter', {
+        vx: (Math.random() - 0.5) * 14,
+        vy: 10 + Math.random() * 22,
+        life: 0.5,
+        size: 1.5 + Math.random() * 2,
+      });
     } else if (materialId === 'sponge' && Math.random() < dt * 4.5 * rateBoost) {
       this.spawn(x + (Math.random() - 0.5) * 22, surfaceY, color, 'foam', {
         vx: (Math.random() - 0.5) * 16,
@@ -787,6 +860,12 @@ export class Particles {
       paper: 1.6,
       plasticBottle: 2.2,
       velvet: 1.8,
+      blossom: 2.4,
+      marimba: 1.5,
+      crystal: 2.6,
+      ceramic: 1.8,
+      clay: 2.0,
+      silk: 1.9,
     };
     const rate = rates[materialId] ?? 1.5;
     if (Math.random() > dt * rate * this.densityScale) return;
@@ -1287,7 +1366,9 @@ export class Particles {
         p.type === 'grassBlade' ||
         p.type === 'bonbon'
           ? 0.4
-          : p.type === 'sandWhirl'
+          : p.type === 'musicNote'
+            ? 0.38
+            : p.type === 'sandWhirl'
             ? 0.18
             : 0.12;
       p.x += (p.vx + this.windX * windMul) * dt;
@@ -1318,6 +1399,8 @@ export class Particles {
         g = 40;
       } else if (p.type === 'bonbon') {
         g = 145;
+      } else if (p.type === 'musicNote') {
+        g = 30;
       } else if (p.type === 'sandWhirl') {
         g = 95;
       }
@@ -1438,6 +1521,16 @@ export class Particles {
         ctx.fillStyle = p.color;
         ctx.fillText(p.glyph, 0, 0);
         ctx.restore();
+      } else if (p.type === 'musicNote' && p.glyph) {
+        ctx.save();
+        ctx.translate(Math.round(s.x), Math.round(s.y));
+        ctx.rotate(p.rot);
+        ctx.font = PIXEL.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.glyph, 0, 0);
+        ctx.restore();
       } else if (p.type === 'grassBlade') {
         ctx.save();
         ctx.translate(Math.round(s.x), Math.round(s.y));
@@ -1482,6 +1575,8 @@ export class Particles {
     this.grassFoliageAcc = 0;
     this.sandWhirlAcc = 0;
     this.chocolateBonbonAcc = 0;
+    this.musicNoteAcc = 0;
+    this.blossomPetalAcc = 0;
     this.airTrailAcc = 0;
     this.squeezeAcc = 0;
   }

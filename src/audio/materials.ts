@@ -28,7 +28,13 @@ export type MaterialId =
   | 'cotton'
   | 'moss'
   | 'cloud'
-  | 'velvet';
+  | 'velvet'
+  | 'blossom'
+  | 'marimba'
+  | 'crystal'
+  | 'ceramic'
+  | 'clay'
+  | 'silk';
 
 export type ParticleStyle =
   | 'drip'
@@ -112,6 +118,12 @@ export const MATERIALS: Record<MaterialId, MaterialDef> = {
   paper: mat('paper', 'papel', 'crumb', 0.9, 1.25, 1850),
   plasticBottle: mat('plasticBottle', 'garrafa PET', 'spark', 0.65, 1.4, 1950),
   velvet: mat('velvet', 'veludo', 'foam', 1.25, 1.45, 2100),
+  blossom: mat('blossom', 'flores', 'glitter', 1.2, 1.35, 2200),
+  marimba: mat('marimba', 'marimba', 'spark', 0.72, 1.38, 2280),
+  crystal: mat('crystal', 'cristal', 'glitter', 0.55, 1.42, 2360),
+  ceramic: mat('ceramic', 'cerâmica', 'shard', 0.68, 1.4, 2440),
+  clay: mat('clay', 'argila', 'sand', 1.05, 1.32, 2520),
+  silk: mat('silk', 'seda', 'foam', 1.22, 1.44, 2600),
 };
 
 export const MATERIAL_ORDER: MaterialId[] = [
@@ -143,6 +155,12 @@ export const MATERIAL_ORDER: MaterialId[] = [
   'paper',
   'plasticBottle',
   'velvet',
+  'blossom',
+  'marimba',
+  'crystal',
+  'ceramic',
+  'clay',
+  'silk',
 ];
 
 export function unlockedMaterials(height: number): MaterialId[] {

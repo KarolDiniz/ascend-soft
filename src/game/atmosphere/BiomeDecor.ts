@@ -69,6 +69,18 @@ export function drawDecor(
     case 'bird':
       drawBird(ctx, s, phase, color, flyDir);
       break;
+    case 'flowerBouquet':
+      drawFlowerBouquet(ctx, s, phase);
+      break;
+    case 'windChime':
+      drawWindChime(ctx, s, phase);
+      break;
+    case 'marimbaBar':
+      drawMarimbaBar(ctx, s);
+      break;
+    case 'pottery':
+      drawPottery(ctx, s);
+      break;
     default:
       drawAbstractMote(ctx, s, phase);
   }
@@ -321,6 +333,72 @@ function drawAbstractMote(ctx: CanvasRenderingContext2D, s: number, phase: numbe
   ctx.globalAlpha *= 0.5;
   ctx.beginPath();
   ctx.ellipse(s * 0.2, -s * 0.1, s * 0.35, s * 0.28, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawFlowerBouquet(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  const bob = Math.sin(phase * 0.8) * s * 0.06;
+  ctx.fillStyle = '#78B868';
+  ctx.fillRect(-s * 0.06, bob, s * 0.12, s * 0.55);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + phase * 0.08;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.cos(a) * s * 0.28,
+      bob - s * 0.35 + Math.sin(a) * s * 0.18,
+      s * 0.2,
+      s * 0.14,
+      a,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  ctx.globalAlpha *= 0.75;
+  ctx.beginPath();
+  ctx.arc(0, bob - s * 0.35, s * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWindChime(ctx: CanvasRenderingContext2D, s: number, phase: number): void {
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.7);
+  ctx.lineTo(0, -s * 0.2);
+  ctx.stroke();
+  for (let i = -1; i <= 1; i++) {
+    const swing = Math.sin(phase * 2 + i) * s * 0.12;
+    ctx.beginPath();
+    ctx.moveTo(i * s * 0.22, -s * 0.2);
+    ctx.lineTo(i * s * 0.22 + swing, s * 0.35);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(i * s * 0.22 + swing, s * 0.42, s * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawMarimbaBar(ctx: CanvasRenderingContext2D, s: number): void {
+  for (let i = 0; i < 4; i++) {
+    const bw = s * 0.85;
+    const bh = s * (0.12 + (i % 2) * 0.04);
+    ctx.globalAlpha *= 0.85 - i * 0.08;
+    ctx.beginPath();
+    ctx.roundRect(-bw / 2, -s * 0.35 + i * s * 0.18, bw, bh, 3);
+    ctx.fill();
+  }
+}
+
+function drawPottery(ctx: CanvasRenderingContext2D, s: number): void {
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.15, s * 0.42, s * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(0, -s * 0.08, s * 0.32, s * 0.38, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha *= 0.35;
+  ctx.beginPath();
+  ctx.ellipse(0, -s * 0.22, s * 0.2, s * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
 }
 

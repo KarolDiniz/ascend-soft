@@ -397,6 +397,18 @@ export class AudioBus {
           ),
         velvet: () =>
           this.landWithSample(ctx, land, 'velvet', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
+        blossom: () =>
+          this.landWithSample(ctx, land, 'blossom', pitch, imp, () => this.grassCrunch(ctx, land, pitch, imp)),
+        marimba: () =>
+          this.landWithSample(ctx, land, 'marimba', pitch, imp, () => this.marimbaTone(ctx, land, pitch, imp)),
+        crystal: () =>
+          this.landWithSample(ctx, land, 'crystal', pitch, imp, () => this.iceTing(ctx, land, pitch, imp)),
+        ceramic: () =>
+          this.landWithSample(ctx, land, 'ceramic', pitch, imp, () => this.ceramicClink(ctx, land, pitch, imp)),
+        clay: () =>
+          this.landWithSample(ctx, land, 'clay', pitch, imp, () => this.kineticSand(ctx, land, pitch, imp)),
+        silk: () =>
+          this.landWithSample(ctx, land, 'silk', pitch, imp, () => this.velvetThud(ctx, land, pitch, imp)),
       };
       handlers[material]();
       if (perfect) this.perfectChime(ctx, land, pitch, streak);
@@ -1383,6 +1395,24 @@ export class AudioBus {
     this.tone(ctx, sfx, 'triangle', 820 * pitch, 420 * pitch, 0.04, v * 0.55, t);
     this.tone(ctx, sfx, 'sine', 1200 * pitch, 600 * pitch, 0.035, v * 0.35, t + 0.008);
     this.noiseBurst(ctx, sfx, 0.02, 4500, v * 0.25, t + 0.012, 'highpass');
+  }
+
+  private marimbaTone(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.11, impact);
+    const notes = [392, 440, 494, 523, 587, 659];
+    const f = notes[Math.floor(Math.random() * notes.length)]! * pitch;
+    this.tone(ctx, sfx, 'sine', f, f * 0.5, 0.18, v * 0.7, t);
+    this.tone(ctx, sfx, 'triangle', f * 2, f, 0.12, v * 0.35, t + 0.01);
+    this.tone(ctx, sfx, 'sine', f * 3, f * 1.5, 0.08, v * 0.18, t + 0.02);
+  }
+
+  private ceramicClink(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+    const t = ctx.currentTime;
+    const v = this.impactVol(0.1, impact);
+    this.tone(ctx, sfx, 'triangle', 880 * pitch, 440 * pitch, 0.06, v * 0.55, t);
+    this.tone(ctx, sfx, 'sine', 1320 * pitch, 660 * pitch, 0.045, v * 0.4, t + 0.006);
+    this.noiseBurst(ctx, sfx, 0.03, 2400, v * 0.35, t, 'bandpass');
   }
 
   private kineticSand(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {

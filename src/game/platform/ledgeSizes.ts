@@ -84,6 +84,18 @@ export const MATERIAL_LEDGE: Record<
   cloud: { minW: 54, maxW: 68, visualDepth: 1.22, visualSpread: 1.12 },
   /** veludo — placa baixa */
   velvet: { minW: 48, maxW: 58, visualDepth: 0.72, visualSpread: 1.0 },
+  /** flores — canteiro largo */
+  blossom: { minW: 54, maxW: 68, visualDepth: 0.88, visualSpread: 1.1 },
+  /** marimba — larga e baixa */
+  marimba: { minW: 58, maxW: 72, visualDepth: 0.64, visualSpread: 1.08 },
+  /** cristal — estreita e alta */
+  crystal: { minW: 40, maxW: 50, visualDepth: 1.38, visualSpread: 0.96 },
+  /** cerâmica — prato médio */
+  ceramic: { minW: 46, maxW: 56, visualDepth: 0.8, visualSpread: 1.02 },
+  /** argila — monte largo */
+  clay: { minW: 52, maxW: 64, visualDepth: 1.02, visualSpread: 1.08 },
+  /** seda — placa suave */
+  silk: { minW: 48, maxW: 58, visualDepth: 0.7, visualSpread: 1.02 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {

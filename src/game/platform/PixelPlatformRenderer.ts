@@ -10,12 +10,18 @@ import { drawCheeseMouse } from './cheeseMouse';
 import { drawButterGarnish, drawButterKnife } from './butterVisual';
 import {
   drawAmoeba,
+  drawBlossom,
+  drawCeramic,
+  drawClay,
   drawCloud,
   drawCotton,
+  drawCrystal,
   drawGrass,
+  drawMarimba,
   drawMoss,
   drawPaper,
   drawPlasticBottle,
+  drawSilk,
   drawVelvet,
 } from './extraPlatforms';
 import { drawHoneyBees, drawHoneyPooh } from './honeyBees';
@@ -217,6 +223,24 @@ export function renderPixelPlatform(
     case 'velvet':
       drawVelvet(args);
       break;
+    case 'blossom':
+      drawBlossom(args);
+      break;
+    case 'marimba':
+      drawMarimba(args);
+      break;
+    case 'crystal':
+      drawCrystal(args);
+      break;
+    case 'ceramic':
+      drawCeramic(args);
+      break;
+    case 'clay':
+      drawClay(args);
+      break;
+    case 'silk':
+      drawSilk(args);
+      break;
     default:
       drawButter(args);
   }
@@ -393,7 +417,7 @@ function drawShelfFrontFace(a: DrawArgs): void {
 }
 
 function shouldDrawSoftSpill(material: MaterialId, behavior: PlatformBehavior): boolean {
-  if (material === 'keyboard') return false;
+  if (material === 'keyboard' || material === 'marimba') return false;
   return (
     behavior === 'melt' ||
     behavior === 'elastic' ||
