@@ -295,6 +295,12 @@ export const MATERIAL_PASTEL: Record<string, PastelMaterialColors> = {
     '#F0E0F8',
     rgba(PASTEL.blush, 0.28),
   ),
+  kitten: matColors(
+    '#F0C8A8',
+    rgba(PASTEL.peach, 0.48),
+    '#FFE8D8',
+    rgba(PASTEL.butter, 0.32),
+  ),
 };
 
 export interface BiomePastelPalette {

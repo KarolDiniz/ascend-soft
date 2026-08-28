@@ -13,6 +13,7 @@ import { hasCheeseMouse, isCheeseMouseFleeDone } from './platform/cheeseMouse';
 import { isHoneyBeeScatterDone } from './platform/honeyBees';
 import { hasSpongeFlies, isSpongeFlyScatterDone } from './platform/spongeFlies';
 import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
+import { getKittenCount, kittenIndexAtPlayer } from './platform/kittenPlatform';
 import { pickVariant } from './platform/PlatformVariant';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
 
@@ -66,6 +67,9 @@ export class Platform {
   /** Barra da marimba pisada — 0…6 */
   marimbaBarIndex = 0;
   marimbaBarFlash = 0;
+  kittenMeowFlash = 0;
+  kittenMeowIdx = 0;
+  private kittenMeowCooldown = 0;
 
   /** 1 = intact, 0 = destroyed */
   integrity = 1;
@@ -185,6 +189,17 @@ export class Platform {
     this.marimbaBarIndex = Math.max(0, Math.min(bars - 1, Math.floor(t * bars)));
     this.marimbaBarFlash = 1;
     return this.marimbaBarIndex;
+  }
+
+  /** Gatinho mais perto mia quando pisado */
+  noteKittenMeow(playerX: number): boolean {
+    if (this.material !== 'kitten') return false;
+    if (this.kittenMeowCooldown > 0) return false;
+    this.kittenMeowCooldown = 0.32;
+    this.kittenMeowFlash = 1;
+    const count = getKittenCount(this.seed);
+    this.kittenMeowIdx = kittenIndexAtPlayer(this.seed, playerX, this.x, this.w, count);
+    return true;
   }
 
   setPressed(pressed: boolean, impact = 0.6): void {
@@ -344,6 +359,8 @@ export class Platform {
 
     if (this.releaseTimer > 0) this.releaseTimer = Math.max(0, this.releaseTimer - dt);
     if (this.marimbaBarFlash > 0) this.marimbaBarFlash = Math.max(0, this.marimbaBarFlash - dt * 4.5);
+    if (this.kittenMeowFlash > 0) this.kittenMeowFlash = Math.max(0, this.kittenMeowFlash - dt * 3.8);
+    if (this.kittenMeowCooldown > 0) this.kittenMeowCooldown = Math.max(0, this.kittenMeowCooldown - dt);
 
     // Press spring — softer, bouncier for fluid satisfying squash
     const mat = MATERIALS[this.material];
@@ -586,6 +603,8 @@ export class Platform {
       honeyBeeScatterY: beeScatterScreenY,
       marimbaBarIndex: this.marimbaBarIndex,
       marimbaBarFlash: this.marimbaBarFlash,
+      kittenMeowFlash: this.kittenMeowFlash,
+      kittenMeowIdx: this.kittenMeowIdx,
     });
   }
 }

@@ -272,6 +272,7 @@ export const BEHAVIOR_BY_MATERIAL: Record<MaterialId, BehaviorDef> = {
     jumpBoost: 1.05,
     canMove: false,
   },
+  kitten: immortal('elastic', 1.08, true),
 };
 
 export function isMortalBehavior(b: PlatformBehavior): boolean {

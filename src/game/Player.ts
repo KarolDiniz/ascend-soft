@@ -192,7 +192,8 @@ export class Player {
       material === 'silk' ||
       material === 'cotton' ||
       material === 'moss' ||
-      material === 'cloud'
+      material === 'cloud' ||
+      material === 'kitten'
     ) {
       this.landFace = 'bliss';
     } else if (material === 'bubbleWrap' || material === 'soapBubble' || material === 'marimba') {

@@ -114,6 +114,7 @@ const MAT_SECONDARY: Partial<Record<MaterialId, ParticleStyle>> = {
   ceramic: 'shard',
   clay: 'sand',
   silk: 'foam',
+  kitten: 'glitter',
 };
 
 export class Particles {
@@ -978,6 +979,7 @@ export class Particles {
       ceramic: 1.8,
       clay: 2.0,
       silk: 1.9,
+      kitten: 2.2,
     };
     const rate = rates[materialId] ?? 1.5;
     if (Math.random() > dt * rate * this.densityScale) return;

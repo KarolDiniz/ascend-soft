@@ -17,6 +17,7 @@ import {
   drawCotton,
   drawCrystal,
   drawGrass,
+  drawKitten,
   drawMarimba,
   drawMoss,
   drawPaper,
@@ -46,6 +47,8 @@ export interface PixelPlatformOverlay {
   honeyBeeScatterY?: number;
   marimbaBarIndex?: number;
   marimbaBarFlash?: number;
+  kittenMeowFlash?: number;
+  kittenMeowIdx?: number;
 }
 
 function parseTone(c: string): [number, number, number] {
@@ -242,6 +245,9 @@ export function renderPixelPlatform(
       break;
     case 'silk':
       drawSilk(args);
+      break;
+    case 'kitten':
+      drawKitten(args);
       break;
     default:
       drawButter(args);

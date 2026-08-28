@@ -85,7 +85,9 @@ export type PlatformVariant =
   | 'clay_mound'
   | 'clay_tile'
   | 'silk_fold'
-  | 'silk_pad';
+  | 'silk_pad'
+  | 'kitten_cushion'
+  | 'kitten_nest';
 
 export interface VariantDef {
   id: PlatformVariant;

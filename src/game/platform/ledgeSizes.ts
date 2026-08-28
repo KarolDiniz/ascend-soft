@@ -96,6 +96,7 @@ export const MATERIAL_LEDGE: Record<
   clay: { minW: 52, maxW: 64, visualDepth: 1.02, visualSpread: 1.08 },
   /** seda — placa suave */
   silk: { minW: 48, maxW: 58, visualDepth: 0.7, visualSpread: 1.02 },
+  kitten: { minW: 52, maxW: 66, visualDepth: 0.86, visualSpread: 1.1 },
 };
 
 export function rollLedgeWidth(id: MaterialId, rand: () => number): number {

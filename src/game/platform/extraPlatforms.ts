@@ -3,6 +3,7 @@ import { PASTEL, rgba } from '../../theme/pastelPalette';
 import { fillPx } from '../../theme/pixel';
 import { amoebaNucleusColor } from './amoebaColors';
 import type { PixelPlatformOverlay } from './PixelPlatformRenderer';
+import { drawKittenPlatform } from './kittenPlatform';
 import type { PlatformPersonality } from './platformPersonality';
 
 export interface ExtraDrawArgs {
@@ -347,4 +348,25 @@ export function drawSilk(a: ExtraDrawArgs): void {
     );
   }
   fillPx(ctx, x, sy + h - u, w, u, mat.stroke);
+}
+
+/** Almofada com gatinhos — miam ao serem pisados */
+export function drawKitten(a: ExtraDrawArgs): void {
+  const { ctx, cx, sy, w, h, mat, u, seed, time, wobble, overlay } = a;
+  const press = overlay?.pressAmount ?? 0;
+  drawKittenPlatform(
+    ctx,
+    u,
+    seed,
+    time,
+    wobble,
+    cx,
+    sy,
+    w,
+    h,
+    mat,
+    press,
+    overlay?.kittenMeowFlash ?? 0,
+    overlay?.kittenMeowIdx ?? 0,
+  );
 }

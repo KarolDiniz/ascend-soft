@@ -139,6 +139,10 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'silk_fold', visualDepth: 0.68, visualSpread: 1.02 },
     { id: 'silk_pad', visualDepth: 0.74, visualSpread: 1.0 },
   ],
+  kitten: [
+    { id: 'kitten_cushion', visualDepth: 0.82, visualSpread: 1.12 },
+    { id: 'kitten_nest', visualDepth: 0.9, visualSpread: 1.08 },
+  ],
 };
 
 export function pickVariant(material: MaterialId, rand: () => number): VariantDef {

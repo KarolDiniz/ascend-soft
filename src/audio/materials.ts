@@ -34,7 +34,8 @@ export type MaterialId =
   | 'crystal'
   | 'ceramic'
   | 'clay'
-  | 'silk';
+  | 'silk'
+  | 'kitten';
 
 export type ParticleStyle =
   | 'drip'
@@ -124,6 +125,7 @@ export const MATERIALS: Record<MaterialId, MaterialDef> = {
   ceramic: mat('ceramic', 'cerâmica', 'shard', 0.68, 1.4, 2440),
   clay: mat('clay', 'argila', 'sand', 1.05, 1.32, 2520),
   silk: mat('silk', 'seda', 'foam', 1.22, 1.44, 2600),
+  kitten: mat('kitten', 'gatinhos', 'glitter', 1.28, 1.42, 2680),
 };
 
 export const MATERIAL_ORDER: MaterialId[] = [
@@ -161,6 +163,7 @@ export const MATERIAL_ORDER: MaterialId[] = [
   'ceramic',
   'clay',
   'silk',
+  'kitten',
 ];
 
 export function unlockedMaterials(height: number): MaterialId[] {

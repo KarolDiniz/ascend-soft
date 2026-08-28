@@ -91,6 +91,7 @@ export class Game {
   private userSettings: UserSettings = loadSettings();
   private lightMode = this.userSettings.lightMode;
   private lastMarimbaBar = -1;
+  private kittenWalkAcc = 0;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -533,6 +534,17 @@ export class Game {
           this.lastMarimbaBar = bar;
         }
       }
+      if (gp.material === 'kitten') {
+        const walkRate = Math.abs(this.player.vx) * 0.007 + gp.pressAmount * 1.8 + 0.4;
+        this.kittenWalkAcc += dt * walkRate;
+        while (this.kittenWalkAcc >= 1) {
+          this.kittenWalkAcc -= 1;
+          if (gp.noteKittenMeow(this.player.x)) {
+            this.audio.playKittenMeow();
+            this.particles.burst(this.player.x, gp.surfaceY, mat.particle, 3, 'glitter', false);
+          }
+        }
+      }
     } else if (!this.player.onGround) {
       this.particles.emitAirTrail(dt, this.player.x, this.player.y, this.player.trailColor);
     }
@@ -869,6 +881,18 @@ export class Game {
             this.player.vx,
           );
           this.particles.burst(this.player.x, platformTop, '#FFFFFF', 6, 'glitter', false);
+          break;
+        case 'kitten':
+          p.noteKittenMeow(this.player.x);
+          this.particles.cottonFluff(
+            this.player.x,
+            platformTop,
+            8 + Math.floor(impact * 6),
+            true,
+            this.player.vx,
+          );
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'glitter', false);
+          this.addFloater(this.player.x, platformTop + 16, 'miau~', mat.particle);
           break;
         default:
           break;

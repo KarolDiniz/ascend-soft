@@ -39,6 +39,7 @@ export const PHASE_ORDER: MaterialId[] = [
   'ceramic',
   'clay',
   'silk',
+  'kitten',
 ];
 
 /** Altitude span per themed phase (player.y). */
@@ -195,6 +196,7 @@ export const PHASE_QUOTES: Record<MaterialId, string> = {
   ceramic: 'Formado com cuidado. Imperfeição também é arte.',
   clay: 'Modele o instante. Tudo pode ser refeito.',
   silk: 'Deslize com graça. Leveza também sustenta.',
+  kitten: 'Miau com calma. Carinho também é caminho.',
 };
 
 export function phaseQuote(id: MaterialId): string {
@@ -247,6 +249,7 @@ const DECOR: Record<MaterialId, DecorKind[]> = {
   ceramic: ['pottery', 'spoon', 'stone', 'abstractMote'],
   clay: ['pottery', 'stone', 'abstractMote', 'leaf'],
   silk: ['towel', 'softOrb', 'flowerBouquet', 'lightRing'],
+  kitten: ['softOrb', 'creamCloud', 'abstractMote', 'softOrb'],
 };
 
 const OVERLAY: Record<MaterialId, OverlayKind> = {
@@ -284,6 +287,7 @@ const OVERLAY: Record<MaterialId, OverlayKind> = {
   ceramic: 'mottle',
   clay: 'mottle',
   silk: 'goldBloom',
+  kitten: 'sugarVeil',
 };
 
 const BLOBS: Record<MaterialId, BlobKind[]> = {
@@ -321,6 +325,7 @@ const BLOBS: Record<MaterialId, BlobKind[]> = {
   ceramic: ['slice', 'scoop', 'flake'],
   clay: ['flake', 'slice', 'orb'],
   silk: ['petal', 'scoop', 'flake'],
+  kitten: ['orb', 'petal', 'flake'],
 };
 
 /** Per-phase wind / particle mood — dense ASMR particle field. */
@@ -359,6 +364,7 @@ const WIND: Record<MaterialId, { windX: number; windY: number; density: number; 
   ceramic: { windX: 10, windY: 7, density: 1.52, breathPeriod: 11, grainAlpha: 0.03, particleBudget: 710 },
   clay: { windX: 20, windY: -2, density: 1.65, breathPeriod: 11, grainAlpha: 0.04, particleBudget: 730 },
   silk: { windX: 6, windY: 11, density: 1.58, breathPeriod: 13, grainAlpha: 0.024, particleBudget: 720 },
+  kitten: { windX: 8, windY: 9, density: 1.54, breathPeriod: 12, grainAlpha: 0.028, particleBudget: 710 },
 };
 
 function ambientFor(id: MaterialId): AmbientPreset[] {
@@ -580,7 +586,7 @@ export function materialMood(id: MaterialId): MaterialMood {
   const food: MaterialId[] = [
     'butter', 'jelly', 'mochi', 'marshmallow', 'chocolate', 'citrus', 'honeycomb', 'whipped',
   ];
-  const nature: MaterialId[] = ['amoeba', 'moss', 'grass', 'cotton', 'blossom'];
+  const nature: MaterialId[] = ['amoeba', 'moss', 'grass', 'cotton', 'blossom', 'kitten'];
   const soap: MaterialId[] = [
     'glycerin', 'soapBubble', 'bathFoam', 'lavenderSoap', 'creamSoap', 'sponge',
   ];
