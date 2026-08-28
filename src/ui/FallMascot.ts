@@ -107,7 +107,8 @@ export class FallMascot {
     const t = this.animT;
     const sob = Math.sin(t * 4.2);
     const bob = sob * 3 + (sob > 0.85 ? 1.5 : 0);
-    const baseY = H - u * 8 + bob;
+    const bumpSink = Math.max(0, this.bumpScale - 1.6) * 5;
+    const baseY = H - u * 8 + bob + bumpSink;
     const squash = 1 + Math.max(0, sob) * 0.07;
     const stretch = 1 - Math.max(0, sob) * 0.045;
     const tilt = Math.sin(t * 2.1) * 0.045 - 0.035;

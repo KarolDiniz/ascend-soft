@@ -88,11 +88,12 @@ export function getCryingEyeTearOrigins(facing = 1, look = 0): { x: number; y: n
   return getDefeatEyeTearOrigins(facing, look);
 }
 
-/** Escala do galo na derrota — quanto mais alto caiu, maior o catombo (0.6–2.45) */
+/** Escala do galo na derrota — quanto mais alto caiu, maior o catombo (~0.55–3.4) */
 export function defeatHeadBumpScale(height: number): number {
   const h = Math.max(0, height);
-  const t = 1 - Math.exp(-h / 130);
-  return 0.6 + t * 1.85;
+  const core = 1 - Math.exp(-h / 200);
+  const tall = h > 140 ? 1 - Math.exp(-(h - 140) / 480) : 0;
+  return 0.55 + core * 2.05 + tall * 0.95;
 }
 
 /** Galo rosado na cabeça — machucado de queda, só tela game over */
