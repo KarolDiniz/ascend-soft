@@ -89,66 +89,47 @@ export function drawPlayerAccessory(
   }
 }
 
+/** Laço vermelho — sprite 22×18 extraído da referência */
+const BOW_SPRITE = [
+  '..BBBBB........BBBBB..',
+  '.BBRRRRBB....BBRRRRBB.',
+  'BBRRRRRBBBBBBBBRRRRRBB',
+  'BRRRRRRRBBBBBBRRRRRRRB',
+  'BRRRRRBRBRRRRBRBRRRRRB',
+  '.BRRRRRBBRRRRBBRRRRRB.',
+  'BRRRRRBRBRRRRBRBRRRRRB',
+  'BRRRRRRRBBBBBBRRRRRRRB',
+  'BBRRRRRBRBBBBRBRRRRRBB',
+  '.BBBBBBRRBBBBRRBBBBBB.',
+  '..BBBBBRRBBBBRRBBBBB..',
+  '...BBBRRRBBBBRRRBBB...',
+  '..BBBRRRBB..BBRRRBBB..',
+  '..BBRRRRBB..BBRRRRBB..',
+  '..BBBRRRBB..BBRRRBBB..',
+  '...BBBRRBB..BBRRBBB...',
+  '...BBBBBBB..BBBBBBB...',
+  '....BBBBB....BBBBB....',
+] as const;
+
+const BOW_COLORS: Record<string, string> = {
+  R: '#F00000',
+  B: '#000000',
+};
+
 function drawBow(
   ctx: CanvasRenderingContext2D,
-  _bw: number,
+  bw: number,
   bh: number,
-  _facing: number,
+  facing: number,
   animT: number,
 ): void {
   const sway = Math.sin(animT * 4.5) * u * 0.1;
   const tilt = Math.sin(animT * 3.2) * 0.04;
-  const cx = sway;
-  const cy = -bh * 0.41;
-
-  const rose = PASTEL.rose;
-  const blush = PASTEL.blush;
-  const deep = '#C87890';
-  const shadow = '#B06878';
-  const hi = rgba(PASTEL.white, 0.72);
-  const knot = '#A86078';
-  const ribbon = '#E8A8B8';
-
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(sway, 0);
   ctx.rotate(tilt);
-  ctx.translate(-cx, -cy);
-
-  const lx = cx - u * 4.2;
-  const rx = cx + u * 1.4;
-
-  // sombra suave atrás
-  fillPx(ctx, lx - u, cy + u * 0.2, u * 4.8, u * 3.2, rgba(shadow, 0.35));
-  fillPx(ctx, rx - u * 0.5, cy + u * 0.2, u * 4.8, u * 3.2, rgba(shadow, 0.35));
-
-  // loop esquerdo — camadas (borda → corpo → brilho)
-  fillPx(ctx, lx - u * 0.5, cy - u * 2.6, u * 4.2, u * 3.4, deep);
-  fillPx(ctx, lx, cy - u * 2.4, u * 3.6, u * 3, rose);
-  fillPx(ctx, lx + u * 0.4, cy - u * 2.1, u * 2.8, u * 2.4, blush);
-  fillPx(ctx, lx + u * 0.8, cy - u * 2.5, u * 1.2, u * 1.4, hi);
-  fillPx(ctx, lx + u * 2.2, cy - u * 0.4, u * 1.4, u * 1.8, rose);
-
-  // loop direito
-  fillPx(ctx, rx - u * 0.5, cy - u * 2.6, u * 4.2, u * 3.4, deep);
-  fillPx(ctx, rx + u * 0.1, cy - u * 2.4, u * 3.6, u * 3, rose);
-  fillPx(ctx, rx + u * 0.5, cy - u * 2.1, u * 2.8, u * 2.4, blush);
-  fillPx(ctx, rx + u * 0.9, cy - u * 2.5, u * 1.2, u * 1.4, hi);
-  fillPx(ctx, rx - u * 0.8, cy - u * 0.4, u * 1.4, u * 1.8, rose);
-
-  // nó central — pérola fofa
-  fillPx(ctx, cx - u * 1.1, cy - u * 0.55, u * 2.2, u * 2.4, knot);
-  fillPx(ctx, cx - u * 0.85, cy - u * 0.35, u * 1.7, u * 1.8, deep);
-  fillPx(ctx, cx - u * 0.55, cy - u * 0.2, u * 1.1, u * 1.2, rose);
-  fillPx(ctx, cx - u * 0.35, cy - u * 0.45, u * 0.6, u * 0.6, hi);
-
-  // fitas com ponta em V
-  fillPx(ctx, cx - u * 1.6, cy + u * 1.2, u * 1.3, u * 3.2, ribbon);
-  fillPx(ctx, cx - u * 1.35, cy + u * 3.8, u * 0.9, u * 1.2, blush);
-  fillPx(ctx, cx - u * 1.75, cy + u * 4.6, u * 0.7, u * 0.7, rose);
-  fillPx(ctx, cx + u * 0.35, cy + u * 1.2, u * 1.3, u * 3.2, ribbon);
-  fillPx(ctx, cx + u * 0.6, cy + u * 3.8, u * 0.9, u * 1.2, blush);
-  fillPx(ctx, cx + u * 0.2, cy + u * 4.6, u * 0.7, u * 0.7, rose);
-
+  // Linha 5 = nó central sobre a cabeça
+  drawSpriteHat(ctx, bw, bh, animT, BOW_SPRITE, BOW_COLORS, facing, 0.41, 5, 0);
   ctx.restore();
 }
 
@@ -279,40 +260,46 @@ function drawCrown(
   drawSpriteHat(ctx, bw, bh, animT, CROWN_SPRITE, CROWN_COLORS, 1, 0.4, 24, 0.2);
 }
 
+/** Antenas alien — sprite 32×18 extraído da referência */
+const ALIEN_ANTENNA_SPRITE = [
+  '.DDDDL....................LDDDD.',
+  'DDDDDD....................DDDDDD',
+  'DDDDDD....................DDDDDD',
+  'DDDDDD....................DDDDDD',
+  'DDDDDDD..................DDDDDDD',
+  'DDDDDDMD................DMDDDDDD',
+  'DDDDDDDDD..............DDDDDDDDD',
+  'DDDDDDDDDD............DDDDDDDDDD',
+  '.DDDD..DDDDD........DDDDD..DDDD.',
+  '........DDDD........DDDD........',
+  '........DDDDD......DDDDD........',
+  '.........DDDDD....DDDDD.........',
+  '.........DDDDD....DDDDD.........',
+  '..........DDDDD..DDDDD..........',
+  '..........DDDDD..DDDDD..........',
+  '..........DDDDDMMDDDDD..........',
+  '...........DDDDDDDDDD...........',
+  '...........DD......DD...........',
+] as const;
+
+const ALIEN_ANTENNA_COLORS: Record<string, string> = {
+  L: '#B9D2A5',
+  M: '#91AD72',
+  D: '#479607',
+};
+
 function drawAlienAntenna(
   ctx: CanvasRenderingContext2D,
   bw: number,
   bh: number,
   animT: number,
 ): void {
-  const s = 1.42;
-  const pulse = Math.sin(animT * 5.5) * 0.15 + 0.85;
-  const stem = '#7A8898';
-  const stemLo = '#5A6878';
-  const glow = PASTEL.mint;
-  const glowHi = rgba(PASTEL.white, 0.75);
-  const glowCore = '#98F0C0';
-
-  const antenna = (bx: number, phase: number): void => {
-    const wob = Math.sin(animT * 4.2 + phase) * u * 0.45;
-    const tilt = Math.sin(animT * 3.1 + phase) * u * 0.28;
-    const x = bx + wob;
-    const baseY = -bh * 0.4;
-
-    fillPx(ctx, x - u * 0.6 * s + tilt, baseY - u * 7.2 * s, u * 1.2 * s, u * 7.5 * s, stemLo);
-    fillPx(ctx, x - u * 0.42 * s + tilt * 0.6, baseY - u * 6.8 * s, u * 0.9 * s, u * 7 * s, stem);
-    fillPx(ctx, x - u * 0.24 * s + tilt * 0.4, baseY - u * 6.2 * s, u * 0.5 * s, u * 6 * s, rgba(stem, 0.85));
-
-    const orbY = baseY - u * 8 * s + Math.sin(animT * 6 + phase) * u * 0.35;
-    const r = u * (1.85 + pulse * 0.35) * s;
-    fillPx(ctx, x - r - u * 0.25, orbY - r, r * 2 + u * 0.5, r * 2 + u * 0.4, rgba(glow, 0.35));
-    fillPx(ctx, x - r, orbY - r + u * 0.2, r * 2, r * 2, glow);
-    fillPx(ctx, x - r * 0.65, orbY - r * 0.65, r * 1.3, r * 1.3, glowCore);
-    fillPx(ctx, x - u * 0.6, orbY - u * 0.7, u * 0.75, u * 0.75, glowHi);
-  };
-
-  antenna(-bw * 0.18, 0);
-  antenna(bw * 0.14, 1.8);
+  const sway = Math.sin(animT * 4.2) * u * 0.1;
+  ctx.save();
+  ctx.translate(sway, 0);
+  // Linha 17 = bases escuras apoiadas no topo da cabeça
+  drawSpriteHat(ctx, bw, bh, animT, ALIEN_ANTENNA_SPRITE, ALIEN_ANTENNA_COLORS, 1, 0.38, 17, 0.05);
+  ctx.restore();
 }
 
 function drawSantaHat(
@@ -689,6 +676,7 @@ export function drawAccessoryIcon(
     id === 'marioCap' ||
     id === 'pirateHat';
   const boost =
+    id === 'bow' ||
     id === 'sprout' ||
     id === 'alienAntenna' ||
     id === 'santaHat' ||
