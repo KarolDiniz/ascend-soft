@@ -870,18 +870,20 @@ body {
 
 .char-acc-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 .char-acc-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 7px 2px 5px;
-  border: 2px solid rgba(90, 97, 108, 0.2);
-  background: rgba(255, 255, 255, 0.45);
+  justify-content: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 10px 4px 8px;
+  border: 3px solid rgba(90, 97, 108, 0.22);
+  background: rgba(255, 255, 255, 0.52);
   cursor: pointer;
   transition:
     transform 0.1s steps(3),
@@ -890,29 +892,41 @@ body {
 }
 
 .char-acc-btn:hover {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(90, 97, 108, 0.38);
 }
 
 .char-acc-btn.is-selected {
   border-color: var(--ink);
   background: var(--butter);
   transform: translateY(-2px);
-  box-shadow: 0 3px 0 rgba(90, 97, 108, 0.22);
+  box-shadow: 0 4px 0 rgba(90, 97, 108, 0.24);
   animation: swatch-pop 0.28s steps(4) both;
 }
 
 .char-acc-icon {
   image-rendering: pixelated;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
 }
 
 .char-acc-label {
-  font-size: 0.58rem;
-  color: var(--ink-soft);
-  line-height: 1.15;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
   text-transform: lowercase;
   text-align: center;
+}
+
+@media (min-width: 400px) {
+  .char-acc-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .char-acc-btn {
+    min-height: 68px;
+  }
 }
 
 @media (min-width: 520px) {

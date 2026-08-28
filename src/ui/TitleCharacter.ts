@@ -92,12 +92,12 @@ export class TitleCharacter {
 
       const canvas = document.createElement('canvas');
       canvas.className = 'char-acc-icon';
-      canvas.width = 28;
-      canvas.height = 28;
+      canvas.width = 44;
+      canvas.height = 44;
       canvas.setAttribute('aria-hidden', 'true');
       const ctx = canvas.getContext('2d')!;
       enablePixelMode(ctx);
-      drawAccessoryIcon(ctx, opt.id, 28);
+      drawAccessoryIcon(ctx, opt.id, 44);
 
       const label = document.createElement('span');
       label.className = 'char-acc-label';
