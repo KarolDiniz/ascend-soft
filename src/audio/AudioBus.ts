@@ -1418,11 +1418,43 @@ export class AudioBus {
 
   private paperCrinkle(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    const v = this.impactVol(0.11, impact);
-    for (let i = 0; i < 5; i++) {
-      this.noiseBurst(ctx, sfx, 0.028, 3200 + i * 400, v * (0.55 - i * 0.06), t + i * 0.018, 'highpass');
+    const v = this.impactVol(0.14, impact);
+    const p = pitch * (0.94 + Math.random() * 0.12);
+
+    // Toque seco na folha
+    this.noiseBurst(ctx, sfx, 0.016, 5200 * p, v * 0.78, t, 'highpass');
+    this.noiseBurst(ctx, sfx, 0.012, 6800, v * 0.42, t + 0.004, 'bandpass');
+
+    // Corpo leve da folha
+    this.softThud(ctx, sfx, t + 0.006, p * 0.96, impact, 142);
+    this.warmLandTone(ctx, sfx, 'triangle', 188 * p, 148 * p, 0.08, v * 0.34, t + 0.01, 1900);
+
+    // Cascata de amassar — estalos em sequência
+    for (let i = 0; i < 7; i++) {
+      const st = t + 0.014 + i * 0.019 + Math.random() * 0.008;
+      const freq = 2600 + i * 340 + Math.random() * 480;
+      this.noiseBurst(ctx, sfx, 0.022 + Math.random() * 0.012, freq * p, v * (0.6 - i * 0.05), st, 'highpass');
     }
-    this.tone(ctx, sfx, 'triangle', 240 * pitch, 180 * pitch, 0.06, v * 0.25, t);
+
+    // Textura de folha roçando
+    this.softNoise(ctx, sfx, 0.11, 3800, v * 0.45, t + 0.022, 'bandpass', 1.45);
+    this.softNoise(ctx, sfx, 0.15, 2400, v * 0.36, t + 0.038, 'bandpass', 1.05);
+    this.softNoise(ctx, sfx, 0.13, 1200, v * 0.26, t + 0.052, 'lowpass');
+
+    // Micro estalos na cauda
+    for (let i = 0; i < 4; i++) {
+      this.noiseBurst(
+        ctx,
+        sfx,
+        0.014,
+        4200 + i * 520 + Math.random() * 300,
+        v * (0.24 - i * 0.04),
+        t + 0.1 + i * 0.022,
+        'highpass',
+      );
+    }
+
+    this.tone(ctx, sfx, 'triangle', 255 * p, 198 * p, 0.055, v * 0.24, t + 0.018);
   }
 
   private velvetThud(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
