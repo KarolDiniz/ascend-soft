@@ -63,6 +63,9 @@ export class Platform {
   pressVel = 0;
   pressHold = PRESS_MIN;
   releaseTimer = 0;
+  /** Barra da marimba pisada — 0…6 */
+  marimbaBarIndex = 0;
+  marimbaBarFlash = 0;
 
   /** 1 = intact, 0 = destroyed */
   integrity = 1;
@@ -171,6 +174,17 @@ export class Platform {
   /** Cores/material visual — gelatinas variam por seed */
   getMaterialDef() {
     return resolvePlatformMaterial(this.material, this.seed);
+  }
+
+  /** Índice da barra de marimba sob o jogador */
+  noteMarimbaHit(playerX: number): number {
+    if (this.material !== 'marimba') return 0;
+    const bars = 7;
+    const left = this.x - this.w / 2;
+    const t = (playerX - left) / Math.max(1, this.w);
+    this.marimbaBarIndex = Math.max(0, Math.min(bars - 1, Math.floor(t * bars)));
+    this.marimbaBarFlash = 1;
+    return this.marimbaBarIndex;
   }
 
   setPressed(pressed: boolean, impact = 0.6): void {
@@ -329,6 +343,7 @@ export class Platform {
     this.moveDeltaX = this.moving && this.solid ? this.x - prevX : 0;
 
     if (this.releaseTimer > 0) this.releaseTimer = Math.max(0, this.releaseTimer - dt);
+    if (this.marimbaBarFlash > 0) this.marimbaBarFlash = Math.max(0, this.marimbaBarFlash - dt * 4.5);
 
     // Press spring — softer, bouncier for fluid satisfying squash
     const mat = MATERIALS[this.material];
@@ -569,6 +584,8 @@ export class Platform {
       spongeFlyScatterY: flyScatterScreenY,
       honeyBeeScatterT: this.honeyBeeScatterT,
       honeyBeeScatterY: beeScatterScreenY,
+      marimbaBarIndex: this.marimbaBarIndex,
+      marimbaBarFlash: this.marimbaBarFlash,
     });
   }
 }

@@ -245,6 +245,8 @@ export function drawMarimba(a: ExtraDrawArgs): void {
   const press = a.overlay?.pressAmount ?? 0;
   fillPx(ctx, x, sy + h - u * 2, w, u * 2, mat.stroke);
   const bars = 7;
+  const hitBar = a.overlay?.marimbaBarIndex ?? -1;
+  const barFlash = a.overlay?.marimbaBarFlash ?? 0;
   for (let i = 0; i < bars; i++) {
     const bw = w / bars - u * 0.4;
     const bx = x + (i / bars) * w + u * 0.2;
@@ -254,6 +256,10 @@ export function drawMarimba(a: ExtraDrawArgs): void {
     fillPx(ctx, bx, sy + h - barH - u, bw, u, rgba('#FFFFFF', 0.22));
     if (seeded(seed, i) > 0.6) {
       fillPx(ctx, bx + bw * 0.3, sy + h - barH - u * 2, u, u, rgba(mat.stroke, 0.35));
+    }
+    if (i === hitBar && barFlash > 0.05) {
+      fillPx(ctx, bx, sy + h - barH - u, bw, barH, rgba('#FFFFFF', 0.28 * barFlash));
+      fillPx(ctx, bx, sy + h - barH - u * 3, bw, u * 2, rgba(PASTEL.butter, 0.55 * barFlash));
     }
   }
   fillPx(ctx, cx - w * 0.45, sy + h - u, w * 0.9, u, rgba(mat.stroke, 0.5));

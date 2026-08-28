@@ -136,6 +136,8 @@ export class Particles {
   private chocolateBonbonAcc = 0;
   private musicNoteAcc = 0;
   private blossomPetalAcc = 0;
+  private cottonFluffAcc = 0;
+  private mossBitAcc = 0;
 
   constructor() {
     for (let i = 0; i < POOL; i++) {
@@ -328,6 +330,77 @@ export class Particles {
     }
   }
 
+  /** Fiapos de algodão flutuando */
+  cottonFluff(x: number, y: number, count = 10, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const spread = burst ? 36 : 24;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, '#FFFFFF', 'foam', {
+        vx: -walkVx * 0.15 + (Math.random() - 0.5) * (burst ? 42 : 28),
+        vy: (burst ? 22 : 14) + Math.random() * (burst ? 38 : 26),
+        life: burst ? 0.85 + Math.random() * 0.55 : 0.62 + Math.random() * 0.42,
+        size: 5 + Math.random() * 4,
+        spin: (Math.random() - 0.5) * (burst ? 5 : 3),
+      });
+      if (Math.random() > 0.5) {
+        this.spawn(x + (Math.random() - 0.5) * spread * 0.6, y, PASTEL.blush, 'glitter', {
+          vx: (Math.random() - 0.5) * 20,
+          vy: 18 + Math.random() * 24,
+          life: 0.5 + Math.random() * 0.35,
+          size: 2 + Math.random() * 2,
+        });
+      }
+    }
+  }
+
+  /** Musgo e musguinhos soltos */
+  mossBits(x: number, y: number, count = 10, burst = false, walkVx = 0): void {
+    const colors = ['#7CB87A', '#5A9E58', '#8FD48C', '#6AAF68'];
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const color = colors[i % colors.length]!;
+      const spread = burst ? 34 : 22;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, 'grassBlade', {
+        vx: -walkVx * 0.18 + (Math.random() - 0.5) * (burst ? 55 : 38),
+        vy: (burst ? 32 : 18) + Math.random() * (burst ? 42 : 30),
+        life: burst ? 0.72 + Math.random() * 0.4 : 0.5 + Math.random() * 0.32,
+        size: 3 + Math.random() * 2.5,
+        spin: (Math.random() - 0.5) * (burst ? 8 : 5),
+      });
+    }
+  }
+
+  /** Fibras de veludo macio */
+  velvetFibers(x: number, y: number, color: string, count = 10, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const spread = burst ? 30 : 20;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, color, 'crumb', {
+        vx: -walkVx * 0.12 + (Math.random() - 0.5) * (burst ? 38 : 24),
+        vy: (burst ? 18 : 10) + Math.random() * (burst ? 28 : 18),
+        life: burst ? 0.65 + Math.random() * 0.38 : 0.45 + Math.random() * 0.28,
+        size: 3 + Math.random() * 2,
+        spin: (Math.random() - 0.5) * (burst ? 6 : 4),
+      });
+    }
+  }
+
+  /** Fios de seda brilhantes */
+  silkThreads(x: number, y: number, color: string, count = 12, burst = false, walkVx = 0): void {
+    const n = this.cap(count);
+    for (let i = 0; i < n; i++) {
+      const spread = burst ? 38 : 24;
+      const c = Math.random() > 0.45 ? '#FFFFFF' : color;
+      this.spawn(x + (Math.random() - 0.5) * spread, y - 1, c, 'glitter', {
+        vx: -walkVx * 0.1 + (Math.random() - 0.5) * (burst ? 48 : 32),
+        vy: (burst ? 28 : 16) + Math.random() * (burst ? 40 : 28),
+        life: burst ? 0.78 + Math.random() * 0.45 : 0.55 + Math.random() * 0.35,
+        size: 2 + Math.random() * 2.5,
+        spin: (Math.random() - 0.5) * (burst ? 9 : 6),
+      });
+    }
+  }
+
   /** Redemoinho de areia ao pisar na areia cinética */
   sandWhirl(
     x: number,
@@ -413,10 +486,12 @@ export class Particles {
     perfect: boolean,
     zoneAccent: string,
     materialId?: MaterialId,
+    perfectStreak = 0,
   ): void {
     const tint = zoneAccent;
     const secondary = (materialId && MAT_SECONDARY[materialId]) || style;
-    const nA = this.cap(18 + Math.floor(impact * 14) + (perfect ? 8 : 0));
+    const streakBoost = perfect && perfectStreak > 1 ? Math.min(6, perfectStreak - 1) : 0;
+    const nA = this.cap(18 + Math.floor(impact * 14) + (perfect ? 8 : 0) + streakBoost * 2);
 
     // Wave A — impact
     for (let i = 0; i < nA; i++) {
@@ -482,9 +557,12 @@ export class Particles {
     }
 
     if (perfect) {
-      this.rings.push({ x, y, life: 0.55, maxLife: 0.55, color: tint, kind: 'land' });
-      this.rings.push({ x, y, life: 0.4, maxLife: 0.4, color: tint, kind: 'shock' });
-      for (let i = 0; i < this.cap(10); i++) {
+      this.rings.push({ x, y, life: 0.55 + streakBoost * 0.04, maxLife: 0.55 + streakBoost * 0.04, color: tint, kind: 'land' });
+      this.rings.push({ x, y, life: 0.4 + streakBoost * 0.03, maxLife: 0.4 + streakBoost * 0.03, color: tint, kind: 'shock' });
+      if (perfectStreak >= 3) {
+        this.rings.push({ x, y, life: 0.65, maxLife: 0.65, color: tint, kind: 'land' });
+      }
+      for (let i = 0; i < this.cap(10 + streakBoost * 2); i++) {
         const a = Math.random() * Math.PI * 2;
         this.spawn(x, y, tint, 'shockSoft', {
           vx: Math.cos(a) * (30 + Math.random() * 50),
@@ -502,7 +580,7 @@ export class Particles {
         wG.color = tint;
         wG.tint = tint;
         wG.style = 'glitter';
-        wG.count = this.cap(12);
+        wG.count = this.cap(12 + streakBoost * 3);
         wG.mode = 'glitter';
       }
       const wCf = this.allocWave();
@@ -514,7 +592,7 @@ export class Particles {
         wCf.color = tint;
         wCf.tint = tint;
         wCf.style = 'glitter';
-        wCf.count = this.cap(10);
+        wCf.count = this.cap(10 + streakBoost * 2);
         wCf.mode = 'confetti';
       }
     }
@@ -643,6 +721,28 @@ export class Particles {
       while (this.blossomPetalAcc >= 1) {
         this.blossomPetalAcc -= 1;
         this.blossomPetals(x, surfaceY, 2, false, vx);
+      }
+    } else if (materialId === 'cotton') {
+      const walkRate = (speed * 0.1 + 0.55) * rateBoost;
+      this.cottonFluffAcc += dt * walkRate * this.densityScale;
+      while (this.cottonFluffAcc >= 1) {
+        this.cottonFluffAcc -= 1;
+        this.cottonFluff(x, surfaceY, 2, false, vx);
+      }
+    } else if (materialId === 'moss') {
+      const walkRate = (speed * 0.12 + 0.6) * rateBoost;
+      this.mossBitAcc += dt * walkRate * this.densityScale;
+      while (this.mossBitAcc >= 1) {
+        this.mossBitAcc -= 1;
+        this.mossBits(x, surfaceY, 2, false, vx);
+      }
+    } else if (materialId === 'velvet') {
+      if (Math.random() < dt * (3.5 + press * 5) * this.densityScale) {
+        this.velvetFibers(x, surfaceY, color, 1, false, vx);
+      }
+    } else if (materialId === 'silk') {
+      if (Math.random() < dt * (4 + press * 4) * this.densityScale) {
+        this.silkThreads(x, surfaceY, color, 2, false, vx);
       }
     }
 
@@ -1617,6 +1717,8 @@ export class Particles {
     this.chocolateBonbonAcc = 0;
     this.musicNoteAcc = 0;
     this.blossomPetalAcc = 0;
+    this.cottonFluffAcc = 0;
+    this.mossBitAcc = 0;
     this.airTrailAcc = 0;
     this.squeezeAcc = 0;
   }

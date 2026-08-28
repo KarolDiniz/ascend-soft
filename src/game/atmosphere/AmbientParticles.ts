@@ -282,6 +282,10 @@ export class AmbientParticles {
     if (kind === 'lightRing' || kind === 'softOrb') return Math.random() > 0.5 ? 'lightOrb' : 'emberSoft';
     if (kind === 'citrus') return 'petal';
     if (kind === 'bird') return Math.random() > 0.6 ? 'pollen' : 'petal';
+    if (kind === 'flowerBouquet') return 'petal';
+    if (kind === 'windChime') return 'sparkleIdle';
+    if (kind === 'marimbaBar') return 'sparkleIdle';
+    if (kind === 'pottery') return 'sprinkle';
     return null;
   }
 
@@ -563,6 +567,43 @@ export class AmbientParticles {
       type === 'steam' || type === 'lightOrb'
         ? 0.12 + Math.random() * 0.18
         : 0.3 + Math.random() * 0.35;
+  }
+
+  /** Partículas do cenário reagem a pouso perto de decor */
+  sceneryLandRipple(
+    emitters: { x: number; y: number; color: string; kind?: string }[],
+    landX: number,
+    landY: number,
+    viewW: number,
+    viewH: number,
+  ): void {
+    let spawned = 0;
+    for (const e of emitters) {
+      if (spawned >= 8) break;
+      const dx = e.x - landX;
+      const dy = e.y - landY;
+      if (Math.hypot(dx, dy) > 120) continue;
+      const p = this.allocScreen();
+      if (!p) break;
+      spawned++;
+      const forced = this.typeForDecor(e.kind);
+      p.active = true;
+      p.type = forced ?? (Math.random() > 0.5 ? 'sparkleIdle' : 'pollen');
+      p.color = e.color;
+      p.x = e.x + (Math.random() - 0.5) * 24;
+      p.y = e.y + (Math.random() - 0.5) * 16;
+      p.vx = dx * 0.08 + (Math.random() - 0.5) * 60;
+      p.vy = -35 - Math.random() * 55;
+      p.size = 2 + Math.random() * 4;
+      p.alpha = 0.5;
+      p.life = 0.9 + Math.random() * 0.6;
+      p.maxLife = p.life;
+      p.phase = Math.random() * 10;
+      p.layer = 2;
+      p.rot = Math.random() * Math.PI;
+      p.spin = (Math.random() - 0.5) * 4;
+      if (e.x < -20 || e.x > viewW + 20 || e.y < -20 || e.y > viewH + 20) p.active = false;
+    }
   }
 
   biomeBurst(x: number, y: number, atm: Atmosphere): void {

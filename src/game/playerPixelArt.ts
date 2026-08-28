@@ -41,6 +41,14 @@ export interface PlayerFaceOptions {
   crying?: boolean;
   /** Semblante de derrota — só tela game over */
   defeatSad?: boolean;
+  /** Olhos fechados de prazer — veludo, seda, algodão */
+  landBliss?: boolean;
+  /** Boca “O” — sabonete, esponja */
+  landOoh?: boolean;
+  /** Olhos arregalados — pop, marimba */
+  landPop?: boolean;
+  /** Semicerrado — grudento */
+  landSticky?: boolean;
 }
 
 /** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
@@ -238,6 +246,10 @@ export function drawPlayerPixelFace(
   const excited = opts.excited ?? false;
   const crying = opts.crying ?? false;
   const defeatSad = opts.defeatSad ?? false;
+  const landBliss = opts.landBliss ?? false;
+  const landOoh = opts.landOoh ?? false;
+  const landPop = opts.landPop ?? false;
+  const landSticky = opts.landSticky ?? false;
   const look = (opts.look ?? 0) + facing;
   const eyeOff = 5 * facing;
   const eyeY = -u * 5;
@@ -289,6 +301,23 @@ export function drawPlayerPixelFace(
   if (blinking) {
     fillPx(ctx, eyeOff - u * 4, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff + u * 1, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+  } else if (landBliss) {
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u * 2, eyeW, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 3 + look, eyeY + u, u * 2, u, rgba(PASTEL.rose, 0.35));
+    fillPx(ctx, eyeOff + u * 2 + look, eyeY + u, u * 2, u, rgba(PASTEL.rose, 0.35));
+  } else if (landPop) {
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY - u, eyeW, eyeH + u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2 + look, eyeY, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff + u * 3 + look, eyeY, u * 2, u * 2, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff - u * 2 + look, eyeY, u, u, PASTEL.white);
+    fillPx(ctx, eyeOff + u * 3 + look, eyeY, u, u, PASTEL.white);
+  } else if (landSticky) {
+    fillPx(ctx, eyeOff - u * 4 + look, eyeY + u, eyeW, u * 3, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 1 + look, eyeY + u, eyeW, u * 3, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u * 2 + look, eyeY + u, u * 2, u, PLAYER_PASTEL.eyeFill);
+    fillPx(ctx, eyeOff + u * 3 + look, eyeY + u, u * 2, u, PLAYER_PASTEL.eyeFill);
   } else {
     fillPx(ctx, eyeOff - u * 4 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff + u * 1 + look, eyeY, eyeW, eyeH, PLAYER_PASTEL.eyeLine);
@@ -302,11 +331,15 @@ export function drawPlayerPixelFace(
     }
   }
 
-  if (mouthOpen) {
-    const mouthH = excited ? u * 3 : u * 2;
+  if (landOoh || mouthOpen) {
+    const mouthH = landOoh || excited ? u * 3 : u * 2;
     fillPx(ctx, eyeOff - u * 2, mouthY, u * 5, mouthH, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff - u, mouthY + u, u * 3, u, rgba(PASTEL.rose, 0.45));
     fillPx(ctx, eyeOff - u * 0.5, mouthY + u * 0.5, u * 2, u, rgba(PASTEL.white, 0.35));
+  } else if (landBliss) {
+    fillPx(ctx, eyeOff - u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff + u * 2, mouthY + u, u * 2, u, PLAYER_PASTEL.eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY, u * 3, u, PLAYER_PASTEL.eyeLine);
   } else {
     fillPx(ctx, eyeOff - u, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);
     fillPx(ctx, eyeOff + u * 2, mouthY, u * 2, u, PLAYER_PASTEL.eyeLine);

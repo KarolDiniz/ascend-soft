@@ -305,7 +305,7 @@ export class AudioBus {
     src.stop(t + 0.45);
   }
 
-  playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1): void {
+  playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1, marimbaBar?: number): void {
     this.withLandCtx((ctx, landBus) => {
       this.duckAmbient(300, 0.07);
       const land = ctx.createGain();
@@ -400,7 +400,9 @@ export class AudioBus {
         blossom: () =>
           this.landWithSample(ctx, land, 'blossom', pitch, imp, () => this.grassCrunch(ctx, land, pitch, imp)),
         marimba: () =>
-          this.landWithSample(ctx, land, 'marimba', pitch, imp, () => this.marimbaTone(ctx, land, pitch, imp)),
+          this.landWithSample(ctx, land, 'marimba', pitch, imp, () =>
+            this.marimbaToneAt(ctx, land, pitch, imp, marimbaBar ?? Math.floor(Math.random() * 7)),
+          ),
         crystal: () =>
           this.landWithSample(ctx, land, 'crystal', pitch, imp, () => this.iceTing(ctx, land, pitch, imp)),
         ceramic: () =>
@@ -1397,11 +1399,29 @@ export class AudioBus {
     this.noiseBurst(ctx, sfx, 0.02, 4500, v * 0.25, t + 0.012, 'highpass');
   }
 
-  private marimbaTone(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
+  /** Nota de marimba por barra — escala pentatônica G4→G5 */
+  playMarimbaBar(barIndex: number, impact = 1): void {
+    this.withLandCtx((ctx, landBus) => {
+      const land = ctx.createGain();
+      land.gain.value = this.landBusGain * this.landIntensityMul;
+      land.connect(landBus);
+      const pitch = 0.94 + Math.random() * 0.08;
+      this.marimbaToneAt(ctx, land, pitch, clamp(impact, 0.35, 1.35), barIndex);
+    });
+  }
+
+  private marimbaToneAt(
+    ctx: AudioContext,
+    sfx: GainNode,
+    pitch: number,
+    impact: number,
+    barIndex: number,
+  ): void {
     const t = ctx.currentTime;
     const v = this.impactVol(0.11, impact);
-    const notes = [392, 440, 494, 523, 587, 659];
-    const f = notes[Math.floor(Math.random() * notes.length)]! * pitch;
+    const notes = [392, 440, 494, 523, 587, 659, 784];
+    const idx = Math.max(0, Math.min(notes.length - 1, barIndex));
+    const f = notes[idx]! * pitch;
     this.tone(ctx, sfx, 'sine', f, f * 0.5, 0.18, v * 0.7, t);
     this.tone(ctx, sfx, 'triangle', f * 2, f, 0.12, v * 0.35, t + 0.01);
     this.tone(ctx, sfx, 'sine', f * 3, f * 1.5, 0.08, v * 0.18, t + 0.02);

@@ -90,6 +90,7 @@ export class Game {
   private fallSummaryPending: FallSummary | null = null;
   private userSettings: UserSettings = loadSettings();
   private lightMode = this.userSettings.lightMode;
+  private lastMarimbaBar = -1;
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
@@ -523,6 +524,15 @@ export class Game {
         gp.behavior,
         this.atmosphere.getAccent(),
       );
+      if (gp.material === 'marimba' && Math.abs(this.player.vx) > 35) {
+        const prevBar = this.lastMarimbaBar;
+        const bar = gp.noteMarimbaHit(this.player.x);
+        if (bar !== prevBar) {
+          this.audio.playMarimbaBar(bar, 0.45 + gp.pressAmount * 0.25);
+          this.particles.musicNotes(this.player.x, gp.surfaceY, 2, false, this.player.vx);
+          this.lastMarimbaBar = bar;
+        }
+      }
     } else if (!this.player.onGround) {
       this.particles.emitAirTrail(dt, this.player.x, this.player.y, this.player.trailColor);
     }
@@ -661,7 +671,17 @@ export class Game {
           perfect,
           this.atmosphere.getAccent(),
           p.material,
+          perfect ? this.perfectStreak + 1 : 0,
         );
+      }
+
+      this.player.setLandExpression(p.material);
+      let marimbaBar: number | undefined;
+      if (p.material === 'marimba') {
+        marimbaBar = p.noteMarimbaHit(this.player.x);
+        this.lastMarimbaBar = marimbaBar;
+      } else {
+        this.lastMarimbaBar = -1;
       }
 
       // Material-specific juice — cada item tem assinatura própria
@@ -752,8 +772,23 @@ export class Game {
           this.particles.jellySlimeDrops(this.player.x, platformTop, mat.particle, p.w, impact);
           break;
         case 'moss':
+          this.particles.mossBits(
+            this.player.x,
+            platformTop,
+            12 + Math.floor(impact * 10),
+            true,
+            this.player.vx,
+          );
+          this.addFloater(this.player.x, platformTop + 16, 'macio~', mat.particle);
+          break;
         case 'cotton':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          this.particles.cottonFluff(
+            this.player.x,
+            platformTop,
+            14 + Math.floor(impact * 12),
+            true,
+            this.player.vx,
+          );
           break;
         case 'grass':
           this.particles.grassFoliage(
@@ -776,7 +811,15 @@ export class Game {
           this.particles.burst(this.player.x, platformTop, mat.particle, 10, 'spark', false);
           break;
         case 'velvet':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 12, 'foam', false);
+          this.particles.velvetFibers(
+            this.player.x,
+            platformTop,
+            mat.particle,
+            12 + Math.floor(impact * 10),
+            true,
+            this.player.vx,
+          );
+          this.particles.burst(this.player.x, platformTop, mat.particle, 6, 'foam', false);
           break;
         case 'blossom':
           this.particles.blossomPetals(
@@ -796,6 +839,7 @@ export class Game {
             true,
             this.player.vx,
           );
+          this.addFloater(this.player.x, platformTop + 16, '♪', mat.particle);
           break;
         case 'crystal':
           this.particles.risingBubbles(this.player.x, platformTop, mat.particle, 18);
@@ -816,20 +860,38 @@ export class Game {
           );
           break;
         case 'silk':
-          this.particles.burst(this.player.x, platformTop, mat.particle, 14, 'foam', false);
+          this.particles.silkThreads(
+            this.player.x,
+            platformTop,
+            mat.particle,
+            14 + Math.floor(impact * 10),
+            true,
+            this.player.vx,
+          );
           this.particles.burst(this.player.x, platformTop, '#FFFFFF', 6, 'glitter', false);
           break;
         default:
           break;
       }
 
-      this.audio.playLand(p.material, perfect, this.perfectStreak, impact);
+      this.audio.playLand(p.material, perfect, this.perfectStreak, impact, marimbaBar);
+
+      if (!this.userSettings.reduceMotion) {
+        const landScreen = this.toScreen(this.player.x, platformTop);
+        this.ambient.sceneryLandRipple(
+          this.scenery.collectEmitters(this.W, this.H, this.camera.y),
+          landScreen.x,
+          landScreen.y,
+          this.W,
+          this.H,
+        );
+      }
 
       if (perfect) {
         this.perfectStreak += 1;
         if (!this.userSettings.reduceMotion) {
-          this.camera.nudgePerfect(5 + Math.min(4, this.perfectStreak));
-          this.screenPunch = 0.55;
+          this.camera.nudgePerfect(5 + Math.min(6, this.perfectStreak));
+          this.screenPunch = 0.55 + Math.min(0.25, this.perfectStreak * 0.04);
         }
         this.addFloater(
           this.player.x,

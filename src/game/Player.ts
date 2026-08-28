@@ -1,5 +1,7 @@
 import type { Input } from './Input';
 import type { Platform } from './Platform';
+import type { MaterialId } from '../audio/materials';
+import { isSoapBarMaterial } from './platform/soapColors';
 import { PHYS } from './physics';
 import { PLAYER_PASTEL } from '../theme/pastelPalette';
 import { PIXEL, enablePixelMode, fillPx, px, snapPt } from '../theme/pixel';
@@ -36,6 +38,8 @@ export class Player {
   private trailTimer = 0;
   private blinkT = 0;
   private animT = 0;
+  private landFace: 'none' | 'bliss' | 'ooh' | 'pop' | 'sticky' = 'none';
+  private landFaceT = 0;
   groundedPlatform: Platform | null = null;
 
   readonly gravity = PHYS.gravity;
@@ -72,6 +76,8 @@ export class Player {
     this.trailColor = PLAYER_PASTEL.trail;
     this.blinkT = 0;
     this.animT = 0;
+    this.landFace = 'none';
+    this.landFaceT = 0;
     this.jumpBoost = 1;
   }
 
@@ -126,6 +132,10 @@ export class Player {
 
     this.animT += dt;
     this.blinkT -= dt;
+    if (this.landFaceT > 0) {
+      this.landFaceT = Math.max(0, this.landFaceT - dt);
+      if (this.landFaceT <= 0) this.landFace = 'none';
+    }
     if (this.blinkT < -2.2) this.blinkT = 0.12 + Math.random() * 0.08;
 
     this.trailTimer -= dt;
@@ -173,6 +183,29 @@ export class Player {
     this.stretch = 1 - intensity * 0.32;
   }
 
+  /** Expressão breve ao pousar — reação ASMR por material */
+  setLandExpression(material: MaterialId): void {
+    if (isSoapBarMaterial(material) || material === 'sponge' || material === 'whipped' || material === 'bathFoam') {
+      this.landFace = 'ooh';
+    } else if (
+      material === 'velvet' ||
+      material === 'silk' ||
+      material === 'cotton' ||
+      material === 'moss' ||
+      material === 'cloud'
+    ) {
+      this.landFace = 'bliss';
+    } else if (material === 'bubbleWrap' || material === 'soapBubble' || material === 'marimba') {
+      this.landFace = 'pop';
+    } else if (material === 'clearSlime' || material === 'honeycomb' || material === 'jelly') {
+      this.landFace = 'sticky';
+    } else {
+      this.landFace = 'none';
+      return;
+    }
+    this.landFaceT = 0.42;
+  }
+
   draw(
     ctx: CanvasRenderingContext2D,
     toScreen: (x: number, y: number) => { x: number; y: number },
@@ -212,6 +245,10 @@ export class Player {
       blinking: this.blinkT > 0,
       animT: this.animT,
       showSparkle: this.onGround,
+      landBliss: this.landFace === 'bliss',
+      landOoh: this.landFace === 'ooh',
+      landPop: this.landFace === 'pop',
+      landSticky: this.landFace === 'sticky',
     });
 
     ctx.restore();

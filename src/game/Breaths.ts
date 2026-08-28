@@ -7,6 +7,7 @@ export class BreathOrb {
   r = 8;
   collected = false;
   private phase: number;
+  private trail: { x: number; y: number; life: number }[] = [];
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -24,6 +25,12 @@ export class BreathOrb {
       this.x += (dx / dist) * pull;
       this.y += (dy / dist) * pull;
     }
+    this.trail.push({ x: this.x, y: this.y, life: 0.35 });
+    for (let i = this.trail.length - 1; i >= 0; i--) {
+      this.trail[i].life -= dt;
+      if (this.trail[i].life <= 0) this.trail.splice(i, 1);
+    }
+    if (this.trail.length > 6) this.trail.splice(0, this.trail.length - 6);
   }
 
   draw(
@@ -33,6 +40,13 @@ export class BreathOrb {
   ): void {
     if (this.collected) return;
     const bob = Math.sin(this.phase + time) * 4;
+    for (const t of this.trail) {
+      const tr = toScreen(t.x, t.y + bob * 0.5);
+      const ts = snapPt(tr.x, tr.y);
+      ctx.globalAlpha = (t.life / 0.35) * 0.35;
+      fillPx(ctx, ts.x - PIXEL.unit, ts.y - PIXEL.unit, PIXEL.unit * 2, PIXEL.unit * 2, PASTEL.peach);
+    }
+    ctx.globalAlpha = 1;
     const raw = toScreen(this.x, this.y + bob);
     const s = snapPt(raw.x, raw.y);
     const pulse = 1 + Math.sin(time * 3 + this.phase) * 0.1;

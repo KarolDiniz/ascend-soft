@@ -44,6 +44,8 @@ export interface PixelPlatformOverlay {
   spongeFlyScatterY?: number;
   honeyBeeScatterT?: number;
   honeyBeeScatterY?: number;
+  marimbaBarIndex?: number;
+  marimbaBarFlash?: number;
 }
 
 function parseTone(c: string): [number, number, number] {
@@ -253,6 +255,9 @@ export function renderPixelPlatform(
   const behavior = overlay?.behavior ?? getBehaviorDef(material).behavior;
   if (shouldDrawSoftSpill(material, behavior)) {
     drawSoftSpillDrips(args, behavior);
+  }
+  if (material !== 'keyboard' && material !== 'marimba') {
+    drawPersonalityHangs(args);
   }
   drawRelaxSparkles(args);
 
@@ -476,14 +481,95 @@ function seeded(seed: number, i: number): number {
   return x - Math.floor(x);
 }
 
-/** Static debris chips at base — disabled (sem migalhas escuras nas bordas) */
-function drawDebris(_a: DrawArgs, _count: number, _color: string): void {}
+/** Migalhas claras na base — só tons pastel */
+function drawDebris(a: DrawArgs, count: number, color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, personality } = a;
+  if (!personality) return;
+  const n = scaledCount(count, personality.debrisMul, 2);
+  for (let i = 0; i < n; i++) {
+    const fx = cx - w / 2 + seeded(seed, i + 200) * w;
+    const fy = sy + h - u + seeded(seed, i + 210) * u * 2.5;
+    const sz = seeded(seed, i + 215) > 0.55 ? u : u * 2;
+    fillPx(ctx, fx, fy, sz, u, rgba(color, 0.28 + seeded(seed, i + 220) * 0.28));
+  }
+}
 
-/** Side flecks / rim crumbs — disabled */
-function drawEdgeFlecks(_a: DrawArgs, _count: number, _color: string): void {}
+/** Cravinhas nas bordas laterais */
+function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
+  const { ctx, cx, sy, w, h, u, seed, personality, time } = a;
+  if (!personality) return;
+  const n = scaledCount(count, personality.debrisMul * 0.85, 2);
+  for (let i = 0; i < n; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const edgeX = cx + side * (w / 2 - u);
+    const fy = sy + u * 2 + seeded(seed, i + 230) * (h - u * 3);
+    const drift = Math.sin(time * 2.4 + i + personality.wobblePhase) * u * 0.4;
+    fillPx(ctx, edgeX + drift, fy, u, u, rgba(color, 0.32 + seeded(seed, i + 235) * 0.25));
+    if (seeded(seed, i + 240) > 0.65) {
+      fillPx(ctx, edgeX + side * u + drift, fy + u, u, u, rgba(PASTEL.white, 0.4));
+    }
+  }
+}
 
-/** Dense surface microdots — disabled */
-function drawSurfaceGrain(_a: DrawArgs, _count: number, _color: string, _alpha = 0.4): void {}
+/** Micro-grãos no topo — textura suave */
+function drawSurfaceGrain(a: DrawArgs, count: number, color: string, alpha = 0.4): void {
+  const { ctx, cx, sy, w, u, seed, personality } = a;
+  if (!personality) return;
+  const n = scaledCount(count, personality.debrisMul * 0.75, 3);
+  for (let i = 0; i < n; i++) {
+    const fx = cx + (seeded(seed, i + 250) - 0.5) * w * 0.88;
+    const fy = sy + u + seeded(seed, i + 255) * u * 3;
+    fillPx(ctx, fx, fy, u, u, rgba(color, alpha * (0.55 + seeded(seed, i + 260) * 0.45)));
+  }
+}
+
+/** Penduricalhos suaves — algodão, fios, gotas (por seed da prateleira) */
+function drawPersonalityHangs(a: DrawArgs): void {
+  const { ctx, cx, sy, w, h, u, mat, seed, time, personality } = a;
+  if (!personality) return;
+  const style = personality.hangStyle;
+  const count = Math.min(5, Math.max(1, Math.floor(personality.hangCount * 0.55)));
+  const lenMul = personality.hangLength;
+
+  for (let i = 0; i < count; i++) {
+    const along = (i + 0.5) / count + personality.edgeBias * 0.03;
+    const hx = cx - w / 2 + along * w;
+    const sway = Math.sin(time * 2.2 + i + personality.wobblePhase) * u * 1.2;
+    const hangLen = u * (2 + lenMul * 3 + seeded(seed, i + 300) * 2);
+
+    switch (style) {
+      case 0:
+        fillPx(ctx, hx + sway, sy + h, u, hangLen, rgba(mat.particle, 0.5));
+        fillPx(ctx, hx + sway - u * 0.5, sy + h + hangLen - u, u * 2, u * 2, rgba(mat.particle, 0.65));
+        break;
+      case 1:
+        fillPx(ctx, hx + sway - u, sy + h, u * 3, u * 2, rgba(PASTEL.white, 0.45));
+        fillPx(ctx, hx + sway, sy + h + u, u * 2, u, rgba(mat.particle, 0.4));
+        break;
+      case 2:
+        fillPx(ctx, hx + sway, sy + h, u, hangLen, rgba(mat.particle, 0.38));
+        if (Math.sin(time * 3 + i) > 0) {
+          fillPx(ctx, hx + sway + u, sy + h + hangLen * 0.45, u, u, rgba(PASTEL.white, 0.32));
+        }
+        break;
+      case 3:
+        fillPx(ctx, hx + sway, sy + h + u, u * 2, u, rgba(mat.particle, 0.42));
+        fillPx(ctx, hx + sway + u, sy + h + u * 2, u, u, rgba(mat.fill, 0.35));
+        break;
+      default:
+        fillPx(
+          ctx,
+          hx + sway,
+          sy + h + Math.sin(time + i) * u * 0.5,
+          u * 2,
+          u * 2,
+          rgba(PASTEL.white, 0.28 + Math.sin(time * 2 + i) * 0.12),
+        );
+        fillPx(ctx, hx + sway + u * 0.5, sy + h + u, u, u, rgba(mat.particle, 0.38));
+        break;
+    }
+  }
+}
 
 /** Twinkling floaters around the platform (idle juice) */
 function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
