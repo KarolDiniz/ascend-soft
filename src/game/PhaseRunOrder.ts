@@ -1,5 +1,4 @@
 import type { MaterialId } from '../audio/materials';
-import { blendHex } from '../theme/contrastPalette';
 import {
   buildThemedZonesForOrder,
   CYCLE_LENGTH,
@@ -66,10 +65,6 @@ export function phaseAt(height: number): MaterialId {
   return getPhaseRun().phaseAt(height);
 }
 
-export function skyMidAt(height: number): string {
-  return getPhaseRun().skyMidAt(height);
-}
-
 /** Ordem embaralhada das fases temáticas — uma sequência por partida */
 export class PhaseRunOrder {
   readonly order: readonly MaterialId[];
@@ -111,17 +106,5 @@ export class PhaseRunOrder {
     if (t <= 0.02) return cur;
     if (t >= 0.98) return next;
     return rand() < t ? next : cur;
-  }
-
-  /** Cor média do céu na altura — para contraste das plataformas. */
-  skyMidAt(height: number): string {
-    const ch = this.cyclicHeight(height);
-    const idx = this.phaseIndexAt(height);
-    const cur = this.zones[idx]!;
-    const next = this.zones[(idx + 1) % PHASE_COUNT]!;
-    const t = blendProgress(ch, idx);
-    if (t <= 0.01) return cur.palette.mid;
-    if (t >= 0.99) return next.palette.mid;
-    return blendHex(cur.palette.mid, next.palette.mid, t);
   }
 }
