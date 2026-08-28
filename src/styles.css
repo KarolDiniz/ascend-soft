@@ -1141,6 +1141,91 @@ body {
   pointer-events: none;
 }
 
+/* —— Aviso ao fechar aba —— */
+.leave-guard {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(18px + var(--safe-top)) 18px calc(22px + var(--safe-bottom));
+  pointer-events: auto;
+}
+
+.leave-guard.hidden {
+  display: none !important;
+}
+
+.leave-guard-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(90, 97, 108, 0.42);
+  cursor: pointer;
+}
+
+.leave-guard-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(92vw, 320px);
+  padding: 1.1rem 1.15rem 1.25rem;
+  animation: panel-pop 0.42s steps(6) both;
+}
+
+.leave-guard-mascot-wrap {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 0.35rem 0 0.15rem;
+  margin-bottom: 0.1rem;
+  border-radius: 0;
+  background: radial-gradient(
+    ellipse 72% 68% at 50% 62%,
+    rgba(201, 228, 222, 0.42) 0%,
+    rgba(210, 228, 240, 0.16) 52%,
+    transparent 78%
+  );
+  filter: drop-shadow(0 8px 16px rgba(90, 97, 108, 0.14));
+}
+
+.leave-guard-mascot {
+  display: block;
+  width: 192px;
+  height: 208px;
+  image-rendering: pixelated;
+}
+
+.leave-guard-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(0.82rem, 4.2vw, 1rem);
+  line-height: 1.55;
+  color: var(--ink);
+  text-align: center;
+  margin: 0;
+}
+
+.leave-guard-quote {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+  text-align: center;
+  margin: 0 0 0.35rem;
+  max-width: 16rem;
+}
+
+.reduce-motion .leave-guard-panel {
+  animation: none;
+}
+
 /* —— Fall —— */
 .fall-screen {
   justify-content: center;

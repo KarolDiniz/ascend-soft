@@ -281,6 +281,24 @@
             </div>
           </div>
         </section>
+
+        <div id="leave-guard" class="leave-guard hidden" role="dialog" aria-modal="true" aria-labelledby="leave-guard-title" aria-hidden="true">
+          <button
+            id="leave-guard-backdrop"
+            class="leave-guard-backdrop"
+            type="button"
+            aria-label="Ficar no jogo"
+            tabindex="-1"
+          ></button>
+          <div class="leave-guard-panel title-panel">
+            <div id="leave-guard-mascot-wrap" class="leave-guard-mascot-wrap">
+              <canvas id="leave-guard-mascot" class="leave-guard-mascot" width="192" height="208" aria-hidden="true"></canvas>
+            </div>
+            <h2 id="leave-guard-title" class="leave-guard-title">já vai?</h2>
+            <p class="leave-guard-quote">por que você já vai…? fica mais um pouquinho…</p>
+            <button id="leave-guard-stay" class="btn btn-primary btn-soap" type="button">ficar!</button>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

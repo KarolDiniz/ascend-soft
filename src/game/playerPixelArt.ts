@@ -53,6 +53,8 @@ export interface PlayerFaceOptions {
   landSticky?: boolean;
   /** Rosto com contraste alto (tela inicial) */
   titleBold?: boolean;
+  /** Olhos enormes lacrimejando — aviso ao sair */
+  leavePlea?: boolean;
 }
 
 /** Pontos de origem das lágrimas na derrota (espaço local do rosto) */
@@ -64,6 +66,19 @@ export function getDefeatEyeTearOrigins(facing = 1, look = 0): { x: number; y: n
   const tearY = eyeY + eyeFill - u * 0.5;
   return [
     { x: eyeOff - u * 1.5 + lookFull, y: tearY },
+    { x: eyeOff + u * 3.5 + lookFull, y: tearY },
+  ];
+}
+
+/** Origem das lágrimas no modal “já vai?” */
+export function getLeavePleaTearOrigins(facing = 1, look = 0): { x: number; y: number }[] {
+  const eyeOff = 5 * facing;
+  const lookFull = look + facing;
+  const eyeY = -u * 5.5;
+  const bigH = u * 7;
+  const tearY = eyeY + bigH - u * 0.5;
+  return [
+    { x: eyeOff - u * 2.5 + lookFull, y: tearY },
     { x: eyeOff + u * 3.5 + lookFull, y: tearY },
   ];
 }
@@ -275,6 +290,50 @@ export function drawPlayerPixelFace(
   fillPx(ctx, -u * 4, blushY + u, u, u, blush);
   fillPx(ctx, u * 3, blushY, u * 2, u, blush);
   fillPx(ctx, u * 4, blushY + u, u, u, blush);
+
+  if (opts.leavePlea) {
+    const blushStrong = rgba(PASTEL.rose, 0.68);
+    fillPx(ctx, -u * 6, blushY - u * 0.5, u * 2, u, blushStrong);
+    fillPx(ctx, -u * 5, blushY + u * 0.5, u, u, blushStrong);
+    fillPx(ctx, u * 4, blushY - u * 0.5, u * 2, u, blushStrong);
+    fillPx(ctx, u * 5, blushY + u * 0.5, u, u, blushStrong);
+
+    const bigW = u * 5;
+    const bigH = u * 7;
+    const eyeYBig = eyeY - u * 0.5;
+    const leftX = eyeOff - u * 4 + look;
+    const rightX = eyeOff + u * 1 + look;
+
+    fillPx(ctx, leftX, eyeYBig, bigW, bigH, PASTEL.white);
+    fillPx(ctx, rightX, eyeYBig, bigW, bigH, PASTEL.white);
+    fillPx(ctx, leftX, eyeYBig, bigW, u, eyeLine);
+    fillPx(ctx, rightX, eyeYBig, bigW, u, eyeLine);
+    fillPx(ctx, leftX, eyeYBig + bigH - u, bigW, u, eyeLine);
+    fillPx(ctx, rightX, eyeYBig + bigH - u, bigW, u, eyeLine);
+    fillPx(ctx, leftX, eyeYBig, u, bigH, eyeLine);
+    fillPx(ctx, leftX + bigW - u, eyeYBig, u, bigH, eyeLine);
+    fillPx(ctx, rightX, eyeYBig, u, bigH, eyeLine);
+    fillPx(ctx, rightX + bigW - u, eyeYBig, u, bigH, eyeLine);
+
+    fillPx(ctx, leftX + u * 0.8, eyeYBig + u * 1.2, u * 3, u * 4, eyeFill);
+    fillPx(ctx, rightX + u * 0.8, eyeYBig + u * 1.2, u * 3, u * 4, eyeFill);
+    fillPx(ctx, leftX + u * 1.2, eyeYBig + u * 0.8, u * 1.5, u * 1.5, PASTEL.white);
+    fillPx(ctx, rightX + u * 1.2, eyeYBig + u * 0.8, u * 1.5, u * 1.5, PASTEL.white);
+    fillPx(ctx, leftX + u * 2.2, eyeYBig + u * 2.8, u, u, rgba(PASTEL.white, 0.75));
+    fillPx(ctx, rightX + u * 2.2, eyeYBig + u * 2.8, u, u, rgba(PASTEL.white, 0.75));
+
+    fillPx(ctx, leftX - u * 0.5, eyeYBig - u * 1.2, u * 3, u, eyeLine);
+    fillPx(ctx, rightX + u * 1.5, eyeYBig - u * 1.2, u * 3, u, eyeLine);
+
+    fillPx(ctx, leftX + u * 1.5, eyeYBig + bigH, u, u * 2, rgba(PASTEL.sky, 0.92));
+    fillPx(ctx, rightX + u * 1.5, eyeYBig + bigH, u, u * 2, rgba(PASTEL.sky, 0.92));
+
+    fillPx(ctx, eyeOff - u * 2.5, mouthY + u * 2, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff + u * 1.5, mouthY + u * 2, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u * 0.5, mouthY + u, u * 2, u, eyeLine);
+    fillPx(ctx, eyeOff - u, mouthY + u * 1.5, u, u, rgba(PASTEL.rose, 0.45));
+    return;
+  }
 
   if (defeatSad) {
     fillPx(ctx, eyeOff - u * 4 + look, eyeY - u, eyeW, eyeH + u, eyeLine);

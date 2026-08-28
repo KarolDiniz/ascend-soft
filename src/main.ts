@@ -3,6 +3,7 @@ import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
 import { Hud } from './ui/Hud';
+import { LeaveGuard } from './ui/LeaveGuard';
 import { TitleCatalog } from './ui/TitleCatalog';
 import { TitleSettings } from './ui/TitleSettings';
 
@@ -12,6 +13,7 @@ const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog();
+const leaveGuard = new LeaveGuard(audio);
 game.onCatalogRefresh = () => titleCatalog.refresh();
 
 void spriteAtlas.init().then(() => {
@@ -71,3 +73,9 @@ window.addEventListener('keydown', (e) => {
 
 game.initTitle();
 game.start();
+
+window.addEventListener('beforeunload', (e) => {
+  leaveGuard.promptLeave();
+  e.preventDefault();
+  e.returnValue = '';
+});
