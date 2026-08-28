@@ -225,7 +225,7 @@ export class PlatformSpawner {
     let moveSpeed = REACH.moveSpeedMin + this.rand() * (REACH.moveSpeedMax - REACH.moveSpeedMin);
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
-      moveSpeed += difficulty * 0.22;
+      moveSpeed += difficulty * 0.3;
       const worstDx = Math.abs(x - last.x) + moveAmp;
       if (worstDx > finalMaxX * 0.95) {
         moveAmp = Math.max(0, finalMaxX * 0.9 - Math.abs(x - last.x));

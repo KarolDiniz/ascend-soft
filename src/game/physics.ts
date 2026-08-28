@@ -37,7 +37,7 @@ export const REACH = {
   /** Amplitude máxima da oscilação horizontal (centros) */
   moveAmpMax: 24,
   /** Velocidade angular sin(time * speed) — maior = mais rápido */
-  moveSpeedMin: 1.05,
-  moveSpeedMax: 1.85,
+  moveSpeedMin: 1.35,
+  moveSpeedMax: 2.45,
   fadeVisibleMin: 2.6,
 };
