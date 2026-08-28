@@ -1359,6 +1359,9 @@ export class Game {
       enablePixelMode(ctx);
     }
 
+    // Depois do céu + cenário + luz — só afeta o fundo, antes das plataformas
+    this.background.drawCenterDepthGradient(ctx, this.W, this.H, this.atmosphere);
+
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     this.collectibles.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
     for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);

@@ -106,6 +106,39 @@ export class Background {
     ctx.fillRect(0, glowY - h * 0.2, w, h * 0.35);
   }
 
+  drawCenterDepthGradient(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    _atm?: Atmosphere,
+  ): void {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+
+    // Centro ~40% mais escuro (multiply 0.6 ≈ #999999)
+    ctx.globalCompositeOperation = 'multiply';
+    const darken = ctx.createLinearGradient(0, 0, w, 0);
+    darken.addColorStop(0, '#ffffff');
+    darken.addColorStop(0.3, '#ececec');
+    darken.addColorStop(0.5, '#999999');
+    darken.addColorStop(0.7, '#ececec');
+    darken.addColorStop(1, '#ffffff');
+    ctx.fillStyle = darken;
+    ctx.fillRect(0, 0, w, h);
+
+    // Laterais levemente mais claras
+    ctx.globalCompositeOperation = 'screen';
+    const lift = ctx.createLinearGradient(0, 0, w, 0);
+    lift.addColorStop(0, 'rgba(255,255,255,0.22)');
+    lift.addColorStop(0.32, 'rgba(255,255,255,0)');
+    lift.addColorStop(0.68, 'rgba(255,255,255,0)');
+    lift.addColorStop(1, 'rgba(255,255,255,0.22)');
+    ctx.fillStyle = lift;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.restore();
+  }
+
   drawLightOverlay(
     ctx: CanvasRenderingContext2D,
     w: number,
