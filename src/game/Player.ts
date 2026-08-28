@@ -408,7 +408,7 @@ export class Player {
       walkPhase: m.walkPhase,
     });
 
-    const itemScale = titleBoost ? 1 : accessoryInGameScale(bw);
+    const itemScale = titleBoost ? 1 : accessoryInGameScale(bw, accessory);
     const headOff = accessoryHeadOffset(this.motion, this.facing, bh);
 
     for (const layer of accessoryLayers(accessory)) {

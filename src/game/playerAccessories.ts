@@ -8,10 +8,9 @@ const u = PIXEL.unit;
 /** Largura de referência do preview/editor (CharacterPreview scale 3.35). */
 const ACCESSORY_REF_BW = PLAYER_DRAW_W * 3.35;
 
-/** Escala para acessórios/cabelo no gameplay.
- *  O corpo in-game já é menor (bw ~36 vs ~100 no editor); coords relativas a bw
- *  bastam — reduzir de novo deixava tudo minúsculo frente ao boné Mario. */
-export function accessoryInGameScale(_bodyW: number): number {
+/** Escala para acessórios no gameplay (preview/editor usa 1). */
+export function accessoryInGameScale(_bodyW: number, accessory?: AccessoryId): number {
+  if (accessory === 'bow') return 0.74;
   return 1;
 }
 
@@ -124,11 +123,24 @@ function drawBow(
 ): void {
   const sway = Math.sin(animT * 4.5) * u * 0.1;
   const tilt = Math.sin(animT * 3.2) * 0.04;
+  const inGame = isInGameBody(bw);
+  const backX = -facing * bw * (inGame ? 0.24 : 0.16);
   ctx.save();
-  ctx.translate(sway, 0);
+  ctx.translate(sway + backX, 0);
   ctx.rotate(tilt);
-  // Linha 5 = nó central sobre a cabeça
-  drawSpriteHat(ctx, bw, bh, animT, BOW_SPRITE, BOW_COLORS, facing, 0.41, 5, 0);
+  // Linha 5 = nó central; in-game sobe e encolhe para não cobrir os olhos
+  drawSpriteHat(
+    ctx,
+    bw,
+    bh,
+    animT,
+    BOW_SPRITE,
+    BOW_COLORS,
+    facing,
+    inGame ? 0.51 : 0.43,
+    inGame ? 4 : 5,
+    inGame ? -3.2 : -1,
+  );
   ctx.restore();
 }
 
@@ -550,9 +562,13 @@ const BUNNY_EARS_COLORS: Record<string, string> = {
   R: '#E87898',
 };
 
+function isInGameBody(bw: number): boolean {
+  return bw < px(ACCESSORY_REF_BW) * 0.9;
+}
+
 function spriteHatPixel(bw: number): number {
   const refBw = px(ACCESSORY_REF_BW);
-  const inGame = bw < refBw * 0.9;
+  const inGame = isInGameBody(bw);
   return u * (bw / refBw) * (inGame ? 1.45 : 1);
 }
 
