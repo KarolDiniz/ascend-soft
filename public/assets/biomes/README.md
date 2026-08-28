@@ -1,27 +1,42 @@
 # Biome scenery sprites (optional)
 
-Place transparent PNGs here to replace/augment procedural silhouettes.
+Place transparent PNGs here to replace/augment procedural silhouettes and horizons.
 
 ```
 public/assets/biomes/
-  garden/   far.png  mid.png  accent.png
-  bakery/   far.png  mid.png  accent.png
-  spa/      far.png  mid.png  accent.png
-  frost/    far.png  mid.png  accent.png
-  ether/    far.png  mid.png  accent.png
+  butter/       far.png  mid.png  accent.png
+  jelly/        far.png  mid.png  accent.png
+  honeycomb/    far.png  mid.png  accent.png
+  keyboard/     far.png  mid.png  accent.png
+  kitten/       far.png  mid.png  accent.png
+  ... (one folder per MaterialId — 35 total)
 ```
+
+Folder names must match `MaterialId` in `src/audio/materials.ts` (e.g. `bubbleWrap`, `iceSoap`, `clearSlime`).
 
 ## Guidelines
 - Transparent PNG, soft pastel / ASMR palette
 - Size: **768–1024** wide
 - Avoid busy details that compete with platforms
-- Missing files → procedural props only
+- Missing files → procedural props + horizon silhouettes only
 
-## Quick AI prompts
-- **garden far**: soft mint cream sky silhouettes of oversized citrus slices and hibiscus leaves, translucent pastel, no text, transparent PNG
-- **bakery mid**: soft whipped cream clouds and cake layers silhouette, peach pink, ASMR food, transparent
-- **spa far**: giant soap bubbles and smooth stone silhouettes, aqua lavender very soft, transparent
-- **frost mid**: soft ice crystals and frosted glass shards, pale blue white, transparent
-- **ether accent**: glowing soft orbs and light rings, cream gold dreamy, transparent
+## Layer roles
+| File | Role | Suggested alpha when drawn |
+|------|------|---------------------------|
+| `far.png` | Distant world silhouette | subtle, wide |
+| `mid.png` | Floating themed elements | medium |
+| `accent.png` | One or two focal details | lightest |
 
-Procedural props always draw; sprites layer on top when loaded.
+## Quick AI prompts (examples)
+
+- **butter far**: soft golden melt hills and cream cloud silhouettes, pastel `#F3E2A8`, ASMR food, transparent PNG
+- **jelly mid**: translucent mint jelly cubes floating, soft seafoam, transparent
+- **honeycomb far**: giant hexagonal honeycomb pattern silhouette, amber pastel, transparent
+- **keyboard far**: mini keyboard key skyline, cream grey soft, transparent
+- **soapBubble mid**: giant soap bubbles and foam crests, aqua lavender, transparent
+- **iceSoap far**: soft ice crystal peaks, pale blue white frost, transparent
+- **kitten accent**: yarn balls and paw prints, blush pink, transparent
+- **marimba mid**: resonating wooden bars and chimes, warm butter tones, transparent
+- **kinetic far**: soft sand dune silhouettes, warm sand pastel, transparent
+
+Procedural decor, horizons, and particles always draw; sprites layer on top when loaded.

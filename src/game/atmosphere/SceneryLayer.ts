@@ -3,6 +3,7 @@ import type { Atmosphere } from './Atmosphere';
 import { materialSceneryColors } from '../ThemedPhases';
 import { rgba, PASTEL } from '../../theme/pastelPalette';
 import { drawDecor } from './BiomeDecor';
+import { drawHorizon } from './HorizonDecor';
 
 interface SceneryProp {
   zoneId: ZoneId;
@@ -31,6 +32,33 @@ const PARALLAX = [0.05, 0.1, 0.18, 0.26];
 const PROP_COUNT = 90;
 /** Slow crossfade — scenery melts between phases */
 const FADE_SPEED = 0.32;
+/** Far layers appear first during phase transitions */
+const LAYER_FADE = [1.45, 1.25, 0.92, 0.78];
+
+function decorMotion(kind: DecorKind, phase: number): { scaleMul: number; extraBob: number; extraSway: number } {
+  switch (kind) {
+    case 'bigBubble':
+    case 'slimeStretch':
+    case 'bubbleCell':
+      return { scaleMul: 1 + Math.sin(phase * 1.4) * 0.06, extraBob: Math.sin(phase * 0.9) * 8, extraSway: 0 };
+    case 'sandDune':
+    case 'ribbon':
+      return { scaleMul: 1, extraBob: 0, extraSway: Math.sin(phase * 0.5) * 14 };
+    case 'snowflake':
+    case 'iceBlock':
+      return { scaleMul: 1, extraBob: 0, extraSway: 0 };
+    case 'marimbaBar':
+    case 'windChime':
+      return { scaleMul: 1 + Math.sin(phase * 2.2) * 0.03, extraBob: Math.sin(phase * 3) * 4, extraSway: 0 };
+    case 'steamWisp':
+      return { scaleMul: 1, extraBob: -Math.abs(Math.sin(phase * 0.7)) * 12, extraSway: Math.sin(phase * 0.4) * 6 };
+    case 'yarnBall':
+    case 'cottonPuff':
+      return { scaleMul: 1 + Math.sin(phase * 0.8) * 0.04, extraBob: Math.cos(phase * 0.6) * 6, extraSway: 0 };
+    default:
+      return { scaleMul: 1, extraBob: 0, extraSway: 0 };
+  }
+}
 
 function zoneColors(id: ZoneId): string[] {
   return materialSceneryColors(id);
@@ -188,10 +216,13 @@ export class SceneryLayer {
       const layerMul = this.skipFar && p.layer < 2 ? 0 : 1;
       p.targetAlpha = w * 0.95 * layerMul;
       const diff = p.targetAlpha - p.alpha;
-      // Ease-out approach — never snappy
-      const step = Math.min(Math.abs(diff), FADE_SPEED * dt * (0.35 + Math.abs(diff) * 1.6));
+      const fadeMul = LAYER_FADE[p.layer] ?? 1;
+      const step = Math.min(Math.abs(diff), FADE_SPEED * dt * (0.35 + Math.abs(diff) * 1.6) * fadeMul);
       p.alpha += Math.sign(diff) * step;
       p.phase += dt * p.speed;
+      if (p.kind === 'snowflake' || p.kind === 'iceBlock') {
+        p.phase += dt * 0.12;
+      }
       if (p.kind === 'bird' && p.flySpeed > 0) {
         p.nx += p.flyDir * p.flySpeed * dt;
         if (p.nx < -0.14) p.nx += 1.28;
@@ -221,6 +252,7 @@ export class SceneryLayer {
     atm: Atmosphere,
   ): void {
     ctx.imageSmoothingEnabled = false;
+    this.drawHorizons(ctx, w, h, cameraY, atm);
     this.drawSpriteLayer(ctx, w, h, cameraY, atm, 'far', 0.07);
     this.drawProps(ctx, w, h, cameraY, 0, 1, atm);
   }
@@ -262,6 +294,25 @@ export class SceneryLayer {
     }
   }
 
+  private drawHorizons(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    cameraY: number,
+    atm: Atmosphere,
+  ): void {
+    const scroll = -((cameraY * 0.04) % (h * 0.35));
+    for (const { zone, weight } of atm.getWeights()) {
+      if (weight < 0.04) continue;
+      const colors = zoneColors(zone.id);
+      const baseY = h * 0.58 + scroll;
+      ctx.save();
+      ctx.globalAlpha = weight * 0.22;
+      drawHorizon(ctx, zone.horizon, w, h, baseY, colors[1] ?? colors[0], this.time + zone.id.length);
+      ctx.restore();
+    }
+  }
+
   private drawProps(
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -285,7 +336,8 @@ export class SceneryLayer {
       if (x < -p.scale * 2 || x > w + p.scale * 2) continue;
 
       const vis = p.alpha * (0.62 + p.layer * 0.1);
-      const s = p.scale;
+      const motion = decorMotion(p.kind, p.phase);
+      const s = p.scale * motion.scaleMul;
       const isBird = p.kind === 'bird';
 
       // Soft contact shadow (light-driven offset) — skip for birds in the sky
@@ -352,11 +404,15 @@ export class SceneryLayer {
     cameraY: number,
   ): { x: number; y: number } {
     const px = PARALLAX[p.layer];
-    const sway = p.kind === 'bird' ? Math.sin(p.phase * 0.7) * 5 : Math.sin(p.phase) * (12 + p.layer * 4);
+    const motion = decorMotion(p.kind, p.phase);
+    const sway =
+      p.kind === 'bird'
+        ? Math.sin(p.phase * 0.7) * 5
+        : Math.sin(p.phase) * (12 + p.layer * 4) + motion.extraSway;
     const bob =
       p.kind === 'bird'
         ? Math.sin(p.phase * 0.45) * 6 + Math.cos(p.phase * 0.22) * 3
-        : Math.cos(p.phase * 0.85) * (8 + p.layer * 3);
+        : Math.cos(p.phase * 0.85) * (8 + p.layer * 3) + motion.extraBob;
     const scroll = -(cameraY * px);
     const x = p.nx * w + sway;
     const band = h + p.scale * 2;

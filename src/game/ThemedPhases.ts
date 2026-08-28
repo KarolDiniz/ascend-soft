@@ -91,9 +91,47 @@ export type DecorKind =
   | 'flowerBouquet'
   | 'windChime'
   | 'marimbaBar'
-  | 'pottery';
+  | 'pottery'
+  | 'honeyDrip'
+  | 'keyCap'
+  | 'bubbleCell'
+  | 'sandDune'
+  | 'yarnBall'
+  | 'pawPrint'
+  | 'ribbon'
+  | 'origami'
+  | 'whippedSpiral'
+  | 'slimeStretch'
+  | 'lavenderSprig'
+  | 'cottonPuff'
+  | 'steamWisp';
 
-export type OverlayKind = 'mottle' | 'sugarVeil' | 'caustics' | 'frostEdge' | 'goldBloom';
+export type OverlayKind =
+  | 'mottle'
+  | 'sugarVeil'
+  | 'caustics'
+  | 'frostEdge'
+  | 'goldBloom'
+  | 'hexVeil'
+  | 'dotMatrix'
+  | 'bubbleGrid'
+  | 'sandDrift'
+  | 'foldLines'
+  | 'staffLines'
+  | 'speckleField'
+  | 'refraction';
+
+export type HorizonKind =
+  | 'meltHills'
+  | 'jellyBlocks'
+  | 'foamArches'
+  | 'leafHills'
+  | 'cloudLayers'
+  | 'crystalPeaks'
+  | 'marimbaSkyline'
+  | 'sandDunes'
+  | 'bubbleHorizon'
+  | 'neutral';
 
 export interface ZonePalette {
   top: string;
@@ -215,41 +253,41 @@ export function materialSceneryColors(id: MaterialId): string[] {
 
 /** Themed decor props per material world. */
 const DECOR: Record<MaterialId, DecorKind[]> = {
-  butter: ['creamCloud', 'spoon', 'abstractMote', 'creamCloud', 'spoon'],
-  jelly: ['bigBubble', 'abstractMote', 'bigBubble', 'softOrb'],
-  mochi: ['donut', 'creamCloud', 'abstractMote', 'donut'],
-  marshmallow: ['creamCloud', 'softOrb', 'abstractMote', 'creamCloud'],
-  chocolate: ['cake', 'spoon', 'donut', 'creamCloud'],
-  sponge: ['towel', 'stone', 'abstractMote', 'towel'],
-  glycerin: ['bottle', 'bigBubble', 'abstractMote', 'bottle'],
-  citrus: ['citrus', 'leaf', 'abstractMote', 'citrus'],
-  clearSlime: ['bigBubble', 'softOrb', 'abstractMote', 'bigBubble'],
-  whipped: ['creamCloud', 'spoon', 'abstractMote', 'creamCloud'],
-  honeycomb: ['donut', 'creamCloud', 'abstractMote', 'spoon'],
-  soapBubble: ['bigBubble', 'softOrb', 'bigBubble', 'abstractMote'],
-  bathFoam: ['towel', 'bigBubble', 'stone', 'abstractMote'],
-  lavenderSoap: ['bottle', 'hibiscus', 'abstractMote', 'bottle'],
-  creamSoap: ['bottle', 'towel', 'creamCloud', 'abstractMote'],
-  keyboard: ['stone', 'abstractMote', 'stone', 'abstractMote'],
-  bubbleWrap: ['bigBubble', 'abstractMote', 'bigBubble', 'softOrb'],
-  kinetic: ['stone', 'abstractMote', 'stone', 'abstractMote'],
+  butter: ['creamCloud', 'spoon', 'honeyDrip', 'creamCloud', 'spoon'],
+  jelly: ['bigBubble', 'slimeStretch', 'bigBubble', 'softOrb'],
+  mochi: ['donut', 'creamCloud', 'softOrb', 'donut'],
+  marshmallow: ['creamCloud', 'cottonPuff', 'softOrb', 'creamCloud'],
+  chocolate: ['cake', 'spoon', 'honeyDrip', 'creamCloud'],
+  sponge: ['towel', 'stone', 'steamWisp', 'towel'],
+  glycerin: ['bottle', 'bigBubble', 'softOrb', 'bottle'],
+  citrus: ['citrus', 'leaf', 'citrus', 'leaf'],
+  clearSlime: ['bigBubble', 'slimeStretch', 'softOrb', 'bigBubble'],
+  whipped: ['whippedSpiral', 'spoon', 'creamCloud', 'whippedSpiral'],
+  honeycomb: ['honeyDrip', 'donut', 'creamCloud', 'honeyDrip'],
+  soapBubble: ['bigBubble', 'softOrb', 'bigBubble', 'steamWisp'],
+  bathFoam: ['towel', 'bigBubble', 'steamWisp', 'stone'],
+  lavenderSoap: ['bottle', 'lavenderSprig', 'hibiscus', 'bottle'],
+  creamSoap: ['bottle', 'towel', 'creamCloud', 'steamWisp'],
+  keyboard: ['keyCap', 'stone', 'keyCap', 'abstractMote'],
+  bubbleWrap: ['bubbleCell', 'bigBubble', 'bubbleCell', 'softOrb'],
+  kinetic: ['sandDune', 'stone', 'sandDune', 'abstractMote'],
   iceSoap: ['iceBlock', 'snowflake', 'crystal', 'snowflake'],
-  butterSlime: ['creamCloud', 'bigBubble', 'softOrb', 'abstractMote'],
-  amoeba: ['softOrb', 'bigBubble', 'abstractMote', 'softOrb'],
-  moss: ['leaf', 'stone', 'abstractMote', 'leaf'],
+  butterSlime: ['slimeStretch', 'bigBubble', 'softOrb', 'creamCloud'],
+  amoeba: ['softOrb', 'slimeStretch', 'bigBubble', 'softOrb'],
+  moss: ['leaf', 'stone', 'lavenderSprig', 'leaf'],
   grass: ['bird', 'leaf', 'bird', 'stone'],
-  cotton: ['creamCloud', 'softOrb', 'abstractMote', 'creamCloud'],
-  cloud: ['creamCloud', 'softOrb', 'bigBubble', 'abstractMote'],
-  paper: ['abstractMote', 'stone', 'abstractMote', 'spoon'],
-  plasticBottle: ['bottle', 'bigBubble', 'abstractMote', 'bottle'],
-  velvet: ['softOrb', 'creamCloud', 'abstractMote', 'softOrb'],
+  cotton: ['cottonPuff', 'softOrb', 'creamCloud', 'cottonPuff'],
+  cloud: ['creamCloud', 'softOrb', 'bigBubble', 'cottonPuff'],
+  paper: ['origami', 'abstractMote', 'origami', 'spoon'],
+  plasticBottle: ['bottle', 'bigBubble', 'bottle', 'softOrb'],
+  velvet: ['ribbon', 'softOrb', 'creamCloud', 'ribbon'],
   blossom: ['flowerBouquet', 'hibiscus', 'leaf', 'flowerBouquet'],
-  marimba: ['marimbaBar', 'windChime', 'abstractMote', 'softOrb'],
+  marimba: ['marimbaBar', 'windChime', 'softOrb', 'marimbaBar'],
   crystal: ['crystal', 'lightRing', 'snowflake', 'softOrb'],
-  ceramic: ['pottery', 'spoon', 'stone', 'abstractMote'],
-  clay: ['pottery', 'stone', 'abstractMote', 'leaf'],
-  silk: ['towel', 'softOrb', 'flowerBouquet', 'lightRing'],
-  kitten: ['softOrb', 'creamCloud', 'abstractMote', 'softOrb'],
+  ceramic: ['pottery', 'spoon', 'stone', 'pottery'],
+  clay: ['pottery', 'stone', 'leaf', 'pottery'],
+  silk: ['ribbon', 'softOrb', 'flowerBouquet', 'lightRing'],
+  kitten: ['yarnBall', 'pawPrint', 'softOrb', 'yarnBall'],
 };
 
 const OVERLAY: Record<MaterialId, OverlayKind> = {
@@ -257,37 +295,75 @@ const OVERLAY: Record<MaterialId, OverlayKind> = {
   jelly: 'caustics',
   mochi: 'sugarVeil',
   marshmallow: 'sugarVeil',
-  chocolate: 'sugarVeil',
-  sponge: 'mottle',
+  chocolate: 'mottle',
+  sponge: 'speckleField',
   glycerin: 'caustics',
   citrus: 'mottle',
   clearSlime: 'caustics',
   whipped: 'sugarVeil',
-  honeycomb: 'mottle',
+  honeycomb: 'hexVeil',
   soapBubble: 'caustics',
   bathFoam: 'caustics',
   lavenderSoap: 'caustics',
   creamSoap: 'mottle',
-  keyboard: 'mottle',
-  bubbleWrap: 'mottle',
-  kinetic: 'mottle',
+  keyboard: 'dotMatrix',
+  bubbleWrap: 'bubbleGrid',
+  kinetic: 'sandDrift',
   iceSoap: 'frostEdge',
   butterSlime: 'goldBloom',
   amoeba: 'caustics',
-  moss: 'mottle',
-  grass: 'mottle',
+  moss: 'speckleField',
+  grass: 'speckleField',
   cotton: 'sugarVeil',
   cloud: 'sugarVeil',
-  paper: 'mottle',
-  plasticBottle: 'caustics',
+  paper: 'foldLines',
+  plasticBottle: 'refraction',
   velvet: 'goldBloom',
   blossom: 'mottle',
-  marimba: 'mottle',
+  marimba: 'staffLines',
   crystal: 'caustics',
   ceramic: 'mottle',
-  clay: 'mottle',
+  clay: 'speckleField',
   silk: 'goldBloom',
   kitten: 'sugarVeil',
+};
+
+const HORIZON: Record<MaterialId, HorizonKind> = {
+  butter: 'meltHills',
+  jelly: 'jellyBlocks',
+  mochi: 'meltHills',
+  marshmallow: 'cloudLayers',
+  chocolate: 'meltHills',
+  sponge: 'foamArches',
+  glycerin: 'bubbleHorizon',
+  citrus: 'leafHills',
+  clearSlime: 'jellyBlocks',
+  whipped: 'cloudLayers',
+  honeycomb: 'meltHills',
+  soapBubble: 'bubbleHorizon',
+  bathFoam: 'foamArches',
+  lavenderSoap: 'foamArches',
+  creamSoap: 'foamArches',
+  keyboard: 'marimbaSkyline',
+  bubbleWrap: 'bubbleHorizon',
+  kinetic: 'sandDunes',
+  iceSoap: 'crystalPeaks',
+  butterSlime: 'cloudLayers',
+  amoeba: 'jellyBlocks',
+  moss: 'leafHills',
+  grass: 'leafHills',
+  cotton: 'cloudLayers',
+  cloud: 'cloudLayers',
+  paper: 'neutral',
+  plasticBottle: 'bubbleHorizon',
+  velvet: 'cloudLayers',
+  blossom: 'leafHills',
+  marimba: 'marimbaSkyline',
+  crystal: 'crystalPeaks',
+  ceramic: 'neutral',
+  clay: 'sandDunes',
+  silk: 'cloudLayers',
+  kitten: 'cloudLayers',
 };
 
 const BLOBS: Record<MaterialId, BlobKind[]> = {
@@ -546,6 +622,7 @@ export interface ThemedPhaseZone {
   blobKinds: BlobKind[];
   scenery: DecorKind[];
   overlay: OverlayKind;
+  horizon: HorizonKind;
   particleBudget: number;
 }
 
@@ -569,6 +646,7 @@ export function buildThemedZonesForOrder(order: readonly MaterialId[]): ThemedPh
       blobKinds: BLOBS[id],
       scenery: DECOR[id],
       overlay: OVERLAY[id],
+      horizon: HORIZON[id],
       particleBudget: w.particleBudget,
     };
   });

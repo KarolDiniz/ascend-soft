@@ -286,6 +286,15 @@ export class AmbientParticles {
     if (kind === 'windChime') return 'sparkleIdle';
     if (kind === 'marimbaBar') return 'sparkleIdle';
     if (kind === 'pottery') return 'sprinkle';
+    if (kind === 'honeyDrip' || kind === 'whippedSpiral') return 'sprinkle';
+    if (kind === 'keyCap') return 'sparkleIdle';
+    if (kind === 'bubbleCell') return 'bubbleFloat';
+    if (kind === 'sandDune') return 'sugarDust';
+    if (kind === 'yarnBall' || kind === 'pawPrint' || kind === 'cottonPuff') return 'petal';
+    if (kind === 'ribbon' || kind === 'lavenderSprig') return 'petal';
+    if (kind === 'origami') return 'sugarDust';
+    if (kind === 'slimeStretch') return 'bubbleFloat';
+    if (kind === 'steamWisp') return 'steam';
     return null;
   }
 

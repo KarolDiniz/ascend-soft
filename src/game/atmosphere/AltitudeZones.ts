@@ -8,6 +8,7 @@ import {
   type AmbientType,
   type BlobKind,
   type DecorKind,
+  type HorizonKind,
   type OverlayKind,
   type ThemedPhaseZone,
   type ZonePalette,
@@ -16,7 +17,7 @@ import {
 /** Each themed phase zone id = its platform material. */
 export type ZoneId = MaterialId;
 
-export type { AmbientPreset, AmbientType, BlobKind, DecorKind, OverlayKind, ZonePalette };
+export type { AmbientPreset, AmbientType, BlobKind, DecorKind, HorizonKind, OverlayKind, ZonePalette };
 
 export type AltitudeZone = ThemedPhaseZone;
 

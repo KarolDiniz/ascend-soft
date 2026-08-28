@@ -1,6 +1,6 @@
 import type { Atmosphere } from './atmosphere/Atmosphere';
 import { materialMood } from './ThemedPhases';
-import type { OverlayKind } from './atmosphere/AltitudeZones';
+import type { BlobKind, OverlayKind } from './atmosphere/AltitudeZones';
 
 /**
  * Sky gradient, themed blobs, vignette/grain, and cinematic biome overlays.
@@ -50,6 +50,8 @@ export class Background {
       ctx.fillRect(0, y0, w, Math.max(1, y1 - y0));
     }
 
+    this.drawMoodSkyWash(ctx, w, h, atm, pal, breath);
+
     this.drawThemedBlobs(ctx, w, h, atm, breath);
 
     // Soft atmospheric depth haze (pre-light)
@@ -68,6 +70,59 @@ export class Background {
     }
   }
 
+  private drawMoodSkyWash(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    atm: Atmosphere | undefined,
+    pal: ReturnType<Atmosphere['getPalette']> | undefined,
+    breath: number,
+  ): void {
+    if (!atm || !pal) return;
+    const mood = materialMood(atm.primaryId);
+    const accent = pal.accent;
+    ctx.save();
+    let g: CanvasGradient | null = null;
+    switch (mood) {
+      case 'food': {
+        g = ctx.createLinearGradient(0, h * 0.55, 0, h);
+        g.addColorStop(0, this.withAlpha(accent, 0));
+        g.addColorStop(0.5, this.withAlpha('#fff5e0', 0.06 + breath * 0.02));
+        g.addColorStop(1, this.withAlpha(accent, 0.1));
+        break;
+      }
+      case 'soap': {
+        g = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.75);
+        g.addColorStop(0, this.withAlpha('#e8f8ff', 0.04));
+        g.addColorStop(0.5, this.withAlpha(accent, 0.07 + breath * 0.02));
+        g.addColorStop(1, this.withAlpha('#e8f8ff', 0.05));
+        break;
+      }
+      case 'frost': {
+        g = ctx.createLinearGradient(0, 0, 0, h * 0.35);
+        g.addColorStop(0, this.withAlpha('#ffffff', 0.14 + breath * 0.03));
+        g.addColorStop(1, this.withAlpha('#ffffff', 0));
+        break;
+      }
+      case 'ethereal': {
+        const cx = w * 0.5;
+        const cy = h * 0.42;
+        g = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 0.55);
+        g.addColorStop(0, this.withAlpha(accent, 0.1 + breath * 0.03));
+        g.addColorStop(0.6, this.withAlpha('#fffaf0', 0.04));
+        g.addColorStop(1, this.withAlpha(accent, 0));
+        break;
+      }
+      default:
+        break;
+    }
+    if (g) {
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.restore();
+  }
+
   private drawThemedBlobs(
     ctx: CanvasRenderingContext2D,
     w: number,
@@ -81,8 +136,10 @@ export class Background {
       'rgba(255,220,200,0.2)',
     ];
     const accent = atm?.getAccent() ?? '#f3e2a8';
+    const kinds = atm?.getBlobKinds() ?? (['orb', 'flake', 'scoop'] as BlobKind[]);
     for (let i = 0; i < 7; i++) {
       const col = colors[i % colors.length];
+      const kind = kinds[i % kinds.length] ?? 'orb';
       const phase = this.time * (0.15 + i * 0.04) + i * 1.7;
       const bx = ((i * 0.19 + Math.sin(phase) * 0.08 + 0.1) % 1) * w;
       const by = ((i * 0.13 + Math.cos(phase * 0.7) * 0.06 + 0.08) % 1) * h;
@@ -92,9 +149,10 @@ export class Background {
       g.addColorStop(0.55, this.withAlpha(accent, 0.08));
       g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(bx, by, r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.save();
+      ctx.translate(bx, by);
+      this.drawBlobShape(ctx, kind, r, phase, col);
+      ctx.restore();
     }
 
     const glowY = h * (0.55 + breath * 0.05);
@@ -104,6 +162,58 @@ export class Background {
     hg.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = hg;
     ctx.fillRect(0, glowY - h * 0.2, w, h * 0.35);
+  }
+
+  private drawBlobShape(
+    ctx: CanvasRenderingContext2D,
+    kind: BlobKind,
+    r: number,
+    phase: number,
+    _col: string,
+  ): void {
+    ctx.beginPath();
+    switch (kind) {
+      case 'slice': {
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, r, -0.6, 0.6);
+        ctx.closePath();
+        break;
+      }
+      case 'petal': {
+        ctx.ellipse(0, 0, r * 0.55, r * 0.85, phase * 0.15, 0, Math.PI * 2);
+        break;
+      }
+      case 'scoop': {
+        ctx.ellipse(0, r * 0.08, r * 0.75, r * 0.55, 0, 0, Math.PI * 2);
+        break;
+      }
+      case 'bubble': {
+        ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+        break;
+      }
+      case 'crystal': {
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r * 0.5, r * 0.15);
+        ctx.lineTo(0, r);
+        ctx.lineTo(-r * 0.5, r * 0.15);
+        ctx.closePath();
+        break;
+      }
+      case 'flake': {
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + phase * 0.1;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
+        }
+        ctx.lineWidth = r * 0.08;
+        ctx.strokeStyle = ctx.fillStyle as string;
+        ctx.stroke();
+        return;
+      }
+      default:
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+    }
+    ctx.fill();
   }
 
   drawCenterDepthGradient(
@@ -313,7 +423,124 @@ export class Background {
         ctx.fillRect(0, 0, w, h);
         break;
       }
+      case 'hexVeil': {
+        const hexR = 14;
+        const rowH = hexR * 1.65;
+        ctx.strokeStyle = this.withAlpha(accent, 0.14);
+        ctx.lineWidth = 1;
+        for (let row = 0; row < Math.ceil(h / rowH) + 1; row++) {
+          for (let col = 0; col < Math.ceil(w / (hexR * 1.8)) + 1; col++) {
+            const cx = col * hexR * 1.8 + (row % 2) * hexR * 0.9 + Math.sin(this.time * 0.2 + row) * 3;
+            const cy = row * rowH + ((this.time * 8 + col * 17) % (h + 40)) - 20;
+            this.strokeHex(ctx, cx, cy, hexR);
+          }
+        }
+        break;
+      }
+      case 'dotMatrix': {
+        ctx.fillStyle = this.withAlpha(accent, 0.12);
+        const gap = 22;
+        for (let y = 0; y < h; y += gap) {
+          for (let x = 0; x < w; x += gap) {
+            const pulse = Math.sin(this.time * 1.5 + x * 0.02 + y * 0.015);
+            if (pulse > 0.2) ctx.fillRect(x, y, 2, 2);
+          }
+        }
+        break;
+      }
+      case 'bubbleGrid': {
+        ctx.strokeStyle = this.withAlpha(accent, 0.16);
+        ctx.lineWidth = 1;
+        const br = 10;
+        const spacing = br * 2.4;
+        for (let y = -br; y < h + br; y += spacing) {
+          for (let x = -br; x < w + br; x += spacing) {
+            const ox = (y / spacing) % 2 === 0 ? 0 : spacing * 0.5;
+            ctx.beginPath();
+            ctx.arc(x + ox, y, br, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        break;
+      }
+      case 'sandDrift': {
+        ctx.fillStyle = this.withAlpha(accent, 0.1);
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          const baseY = h * (0.2 + i * 0.16);
+          for (let x = 0; x <= w; x += 14) {
+            const yy = baseY + Math.sin(x * 0.015 + this.time * 0.4 + i) * 8;
+            if (x === 0) ctx.moveTo(x, yy);
+            else ctx.lineTo(x, yy);
+          }
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      }
+      case 'foldLines': {
+        ctx.strokeStyle = this.withAlpha(accent, 0.14);
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 8; i++) {
+          const angle = 0.35 + i * 0.08;
+          ctx.beginPath();
+          ctx.moveTo(-20, h * (i / 8) + Math.sin(this.time * 0.3 + i) * 12);
+          ctx.lineTo(w + 20, h * (i / 8) + w * Math.tan(angle) * 0.05);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'staffLines': {
+        ctx.strokeStyle = this.withAlpha(accent, 0.13);
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+          const y = h * (0.22 + i * 0.1) + Math.sin(this.time * 0.5 + i) * 3;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'speckleField': {
+        ctx.fillStyle = this.withAlpha(accent, 0.11);
+        for (let i = 0; i < 60; i++) {
+          const x = ((i * 53 + this.time * 6) % (w + 30)) - 15;
+          const y = ((i * 97 + Math.sin(this.time * 0.25 + i) * 20) % h);
+          ctx.fillRect(x, y, 1.5, 1.5);
+        }
+        break;
+      }
+      case 'refraction': {
+        ctx.strokeStyle = this.withAlpha(accent, 0.15);
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 7; i++) {
+          const x = w * (0.08 + i * 0.13) + Math.sin(this.time * 0.35 + i) * 8;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          for (let y = 0; y <= h; y += 18) {
+            ctx.lineTo(x + Math.sin(y * 0.025 + this.time + i) * 6, y);
+          }
+          ctx.stroke();
+        }
+        break;
+      }
     }
+  }
+
+  private strokeHex(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number): void {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
   }
 
   private drawGrain(ctx: CanvasRenderingContext2D, w: number, h: number): void {
