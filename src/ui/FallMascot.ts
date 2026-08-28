@@ -12,7 +12,6 @@ import {
 } from '../game/playerPixelArt';
 import { getPlayerAppearance } from '../game/playerAppearance';
 import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
-import { drawPlayerHairIfAny } from '../game/playerHair';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -150,7 +149,6 @@ export class FallMascot {
       earWiggle: -Math.max(0, sob) * 0.9,
       colors,
     });
-    drawPlayerHairIfAny(ctx, bw, bh, appearance, this.animT);
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
         drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', this.animT, 1);

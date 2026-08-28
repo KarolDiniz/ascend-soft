@@ -20,7 +20,10 @@ export type AccessoryId =
   | 'pirateHat'
   | 'bunnyEars';
 
-export type HairStyleId = 'none' | 'pigtails' | 'mohawk' | 'mullet';
+export interface PlayerAppearance {
+  bodyColor: BodyColorId;
+  accessory: AccessoryId;
+}
 
 export interface PlayerBodyColors {
   bodyTop: string;
@@ -30,12 +33,6 @@ export interface PlayerBodyColors {
   bodyHi: string;
   bodyShade: string;
   trail: string;
-}
-
-export interface PlayerAppearance {
-  bodyColor: BodyColorId;
-  hairStyle: HairStyleId;
-  accessory: AccessoryId;
 }
 
 export interface BodyColorOption {
@@ -49,14 +46,8 @@ export interface AccessoryOption {
   label: string;
 }
 
-export interface HairStyleOption {
-  id: HairStyleId;
-  label: string;
-}
-
 export const DEFAULT_APPEARANCE: PlayerAppearance = {
   bodyColor: 'sky',
-  hairStyle: 'pigtails',
   accessory: 'none',
 };
 
@@ -163,13 +154,6 @@ export const ACCESSORY_OPTIONS: AccessoryOption[] = [
   { id: 'pirateHat', label: 'Chapéu pirata' },
 ];
 
-export const HAIR_STYLE_OPTIONS: HairStyleOption[] = [
-  { id: 'none', label: 'Nenhum' },
-  { id: 'pigtails', label: 'Maria-chiquinha' },
-  { id: 'mohawk', label: 'Moicano' },
-  { id: 'mullet', label: 'Mullet' },
-];
-
 let cachedAppearance: PlayerAppearance = { ...DEFAULT_APPEARANCE };
 
 export function resolveBodyColors(app: PlayerAppearance): PlayerBodyColors {
@@ -217,10 +201,7 @@ function sanitizeAppearance(p: Partial<PlayerAppearance>): PlayerAppearance {
   const accessory = ACCESSORY_OPTIONS.some((o) => o.id === rawAccessory)
     ? rawAccessory!
     : DEFAULT_APPEARANCE.accessory;
-  const hairStyle = HAIR_STYLE_OPTIONS.some((o) => o.id === p.hairStyle)
-    ? p.hairStyle!
-    : DEFAULT_APPEARANCE.hairStyle;
-  return { bodyColor, hairStyle, accessory };
+  return { bodyColor, accessory };
 }
 
 // Inicializa cache na importação

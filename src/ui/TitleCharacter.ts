@@ -3,16 +3,13 @@ import type { Game } from '../game/Game';
 import {
   ACCESSORY_OPTIONS,
   BODY_COLOR_OPTIONS,
-  HAIR_STYLE_OPTIONS,
   loadPlayerAppearance,
   savePlayerAppearance,
   type AccessoryId,
   type BodyColorId,
-  type HairStyleId,
   type PlayerAppearance,
 } from '../game/playerAppearance';
 import { drawAccessoryIcon } from '../game/playerAccessories';
-import { drawHairIcon } from '../game/playerHair';
 import { enablePixelMode } from '../theme/pixel';
 import { CharacterPreview } from './CharacterPreview';
 
@@ -23,7 +20,6 @@ export class TitleCharacter {
   private btnClose: HTMLButtonElement;
   private backdrop: HTMLButtonElement;
   private colorGrid: HTMLElement;
-  private hairGrid: HTMLElement;
   private accGrid: HTMLElement;
   private preview: CharacterPreview;
   private appearance: PlayerAppearance;
@@ -39,13 +35,11 @@ export class TitleCharacter {
     this.btnClose = document.getElementById('btn-character-close') as HTMLButtonElement;
     this.backdrop = document.getElementById('title-character-backdrop') as HTMLButtonElement;
     this.colorGrid = document.getElementById('char-color-grid')!;
-    this.hairGrid = document.getElementById('char-hair-grid')!;
     this.accGrid = document.getElementById('char-acc-grid')!;
     this.preview = new CharacterPreview();
 
     this.appearance = loadPlayerAppearance();
     this.buildColorGrid();
-    this.buildHairGrid();
     this.buildAccessoryGrid();
     this.syncSelection();
 
@@ -87,37 +81,6 @@ export class TitleCharacter {
     this.colorGrid.replaceChildren(frag);
   }
 
-  private buildHairGrid(): void {
-    const frag = document.createDocumentFragment();
-    for (const opt of HAIR_STYLE_OPTIONS) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'char-acc-btn';
-      btn.dataset.hair = opt.id;
-      btn.setAttribute('aria-label', opt.label);
-
-      const canvas = document.createElement('canvas');
-      canvas.className = 'char-acc-icon';
-      canvas.width = 44;
-      canvas.height = 44;
-      canvas.setAttribute('aria-hidden', 'true');
-      const ctx = canvas.getContext('2d')!;
-      enablePixelMode(ctx);
-      drawHairIcon(ctx, opt.id, 44, { ...this.appearance, hairStyle: opt.id });
-
-      const label = document.createElement('span');
-      label.className = 'char-acc-label';
-      label.textContent = opt.label;
-
-      btn.append(canvas, label);
-      btn.addEventListener('click', () => {
-        void this.audio.unlock().then(() => this.pickHair(opt.id));
-      });
-      frag.appendChild(btn);
-    }
-    this.hairGrid.replaceChildren(frag);
-  }
-
   private buildAccessoryGrid(): void {
     const frag = document.createDocumentFragment();
     for (const opt of ACCESSORY_OPTIONS) {
@@ -155,12 +118,6 @@ export class TitleCharacter {
     this.applyChange(0);
   }
 
-  private pickHair(id: HairStyleId): void {
-    if (this.appearance.hairStyle === id) return;
-    this.appearance = { ...this.appearance, hairStyle: id };
-    this.applyChange(2);
-  }
-
   private pickAccessory(id: AccessoryId): void {
     if (this.appearance.accessory === id) return;
     this.appearance = { ...this.appearance, accessory: id };
@@ -181,9 +138,6 @@ export class TitleCharacter {
   private syncSelection(): void {
     for (const btn of this.colorGrid.querySelectorAll<HTMLButtonElement>('.char-swatch')) {
       btn.classList.toggle('is-selected', btn.dataset.color === this.appearance.bodyColor);
-    }
-    for (const btn of this.hairGrid.querySelectorAll<HTMLButtonElement>('.char-acc-btn')) {
-      btn.classList.toggle('is-selected', btn.dataset.hair === this.appearance.hairStyle);
     }
     for (const btn of this.accGrid.querySelectorAll<HTMLButtonElement>('.char-acc-btn')) {
       btn.classList.toggle('is-selected', btn.dataset.acc === this.appearance.accessory);

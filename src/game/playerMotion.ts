@@ -9,6 +9,9 @@ export interface PlayerMotion {
   lean: number;
   /** Orelhinhas / cabelo reagem ao passo */
   earWiggle: number;
+  /** Pulinho dos itens na cabeça — negativo = sobe em relação ao corpo */
+  accessoryHop: number;
+  accessoryHopVel: number;
   rising: boolean;
   falling: boolean;
   moving: boolean;
@@ -23,6 +26,8 @@ export function createPlayerMotion(): PlayerMotion {
     speedNorm: 0,
     lean: 0,
     earWiggle: 0,
+    accessoryHop: 0,
+    accessoryHopVel: 0,
     rising: false,
     falling: false,
     moving: false,
@@ -68,4 +73,24 @@ export function stepPlayerMotion(
     ? Math.sign(vx || 1) * speedNorm * 3.2
     : Math.sign(vx || 1) * Math.min(4.5, speedNorm * 2.8 + Math.min(2.2, Math.abs(vy) / 180));
   m.lean += (leanTarget - m.lean) * Math.min(1, 14 * dt);
+
+  // Itens na cabeça: impulso para cima no pulo, gravidade puxa de volta ao corpo
+  const hopGravity = 58;
+  m.accessoryHopVel += hopGravity * dt;
+  m.accessoryHop += m.accessoryHopVel * dt;
+
+  if (m.accessoryHop >= 0) {
+    m.accessoryHop = 0;
+    if (m.accessoryHopVel > 3) {
+      m.accessoryHopVel *= -0.22;
+    } else {
+      m.accessoryHopVel = 0;
+    }
+  }
+}
+
+/** Impulso ao saltar — só se o item estiver encostado na cabeça */
+export function impulseAccessoryHop(m: PlayerMotion, upStrength: number): void {
+  if (m.accessoryHop < 0) return;
+  m.accessoryHopVel = -upStrength;
 }

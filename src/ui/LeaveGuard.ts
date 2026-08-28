@@ -10,7 +10,6 @@ import {
 } from '../game/playerPixelArt';
 import { getPlayerAppearance } from '../game/playerAppearance';
 import { accessoryLayers, drawPlayerAccessory } from '../game/playerAccessories';
-import { drawPlayerHairIfAny } from '../game/playerHair';
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { enablePixelMode, fillPx, px } from '../theme/pixel';
 
@@ -206,7 +205,6 @@ export class LeaveGuard {
       earWiggle: earDroop,
       colors,
     });
-    drawPlayerHairIfAny(ctx, bw, bh, appearance, t);
     for (const layer of accessoryLayers(accessory)) {
       if (layer === 'underFace') {
         drawPlayerAccessory(ctx, bw, bh, accessory, 'underFace', t, 1);

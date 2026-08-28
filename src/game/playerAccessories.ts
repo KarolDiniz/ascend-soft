@@ -33,13 +33,13 @@ export function drawPlayerAccessory(
   animT = 0,
   facing = 1,
   itemScale = 1,
+  headHopY = 0,
 ): void {
   if (accessory === 'none') return;
 
-  if (itemScale !== 1) {
-    ctx.save();
-    ctx.scale(itemScale, itemScale);
-  }
+  ctx.save();
+  if (headHopY !== 0) ctx.translate(0, headHopY);
+  if (itemScale !== 1) ctx.scale(itemScale, itemScale);
 
   const under = layer === 'underFace';
 
@@ -84,9 +84,7 @@ export function drawPlayerAccessory(
       break;
   }
 
-  if (itemScale !== 1) {
-    ctx.restore();
-  }
+  ctx.restore();
 }
 
 /** Laço vermelho — sprite 22×18 extraído da referência */
