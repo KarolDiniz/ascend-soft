@@ -236,12 +236,15 @@ function decorBobaBubble(a: ExtraDrawArgs): void {
   fillPx(ctx, cx + w * 0.28, by - u, u * 1.5, u * 1.5, rgba(PASTEL.white, 0.4));
 }
 
-/** Pena — pluma flutuando */
+/** Pena — fluff minúsculo flutuando */
 function decorFeatherDrift(a: ExtraDrawArgs): void {
   const { ctx, cx, sy, w, u, time, mat } = a;
-  const fx = cx + Math.sin(time * 1.2) * w * 0.25;
-  const fy = sy - u * (3 + Math.sin(time * 2.5) * 1.5);
-  fillPx(ctx, fx, fy, u * 2, u, rgba(mat.fill, 0.55));
+  if (Math.sin(time * 1.8) < 0.2) return;
+  const fx = cx + Math.sin(time * 1.2) * w * 0.28;
+  const fy = sy - u * (2.5 + Math.sin(time * 2.8) * 1.8);
+  fillPx(ctx, fx, fy, u, u, rgba(mat.fill, 0.5));
+  fillPx(ctx, fx + u, fy - u * 0.5, u, u, rgba(PASTEL.lilac, 0.4));
+  fillPx(ctx, fx - u * 0.5, fy + u * 0.3, u, u, rgba('#FFFFFF', 0.45));
 }
 
 /** Rolha — pó de cortiça */

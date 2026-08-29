@@ -914,24 +914,91 @@ export function drawBoba(a: ExtraDrawArgs): void {
   fillPx(ctx, x, sy + h - u, w, u, rgba(mat.particle, 0.85));
 }
 
-/** Pena — pluma levitando sobre base macia */
+/** Pena — pluma assimétrica com veio, barbas e brilho iridescente */
 export function drawFeather(a: ExtraDrawArgs): void {
-  const { ctx, cx, sy, w, h, mat, u, time, wobble } = a;
-  const drift = Math.sin(time * 1.4 + wobble) * u * 1.2;
-  const lift = Math.sin(time * 2.1 + wobble * 0.5) * u * 0.5;
-  fillPx(ctx, cx - w * 0.42, sy + h - u * 2, w * 0.84, u * 2, rgba(mat.particle, 0.35));
-  fillPx(ctx, cx - u, sy + u + lift + drift * 0.3, u * 2, h - u * 4, rgba(mat.stroke, 0.32));
-  for (let i = 0; i < 8; i++) {
-    const t = i / 7;
-    const fw = w * (0.62 - t * 0.22);
-    const fy = sy + u + t * (h - u * 5) + drift + lift;
-    fillPx(ctx, cx - fw / 2, fy, fw, u, mat.fill);
-    fillPx(ctx, cx - fw / 2 + u, fy, fw - u * 2, u, rgba('#FFFFFF', 0.18 - t * 0.04));
-    if (i % 2 === 0) {
-      fillPx(ctx, cx + fw * 0.22, fy - u * 0.3, u, u, rgba(PASTEL.lilac, 0.35));
+  const { ctx, cx, sy, w, h, mat, u, time, wobble, overlay, seed } = a;
+  const press = overlay?.pressAmount ?? 0;
+  const sway = Math.sin(time * 1.35 + wobble) * u * 0.85;
+  const flutter = Math.sin(time * 2.3 + wobble * 0.6) * u * 0.35;
+  const baseY = sy + h - u * 2.5 + press * u * 0.5;
+  const featherLen = h * (0.78 - press * 0.05);
+  const rows = Math.max(10, Math.floor(featherLen / u));
+
+  // Almofada macia de apoio
+  fillPx(ctx, cx - w * 0.46, sy + h - u * 2, w * 0.92, u * 2, rgba(mat.particle, 0.42));
+  fillPx(ctx, cx - w * 0.34, sy + h - u, w * 0.68, u, rgba(mat.stroke, 0.3));
+  fillPx(ctx, cx - w * 0.2, sy + h - u * 1.5, w * 0.4, u, rgba('#FFFFFF', 0.12));
+
+  for (let r = 0; r < rows; r++) {
+    const t = r / Math.max(1, rows - 1);
+    const y = baseY - t * featherLen + flutter * t;
+    const curve = t * t * w * 0.2 + sway * t;
+    const shaftX = cx - w * 0.04 + curve;
+
+    // Perfil: cálamo estreito → vão largo → ponta fina
+    const vaneT = Math.sin(t * Math.PI);
+    const calamusMul = t < 0.14 ? 0.28 + t * 4.5 : 1;
+    const halfW = w * 0.4 * vaneT * calamusMul * (1 - press * 0.07);
+    if (halfW < u * 0.4) {
+      fillPx(ctx, shaftX - u * 0.5, y, u, u, rgba(mat.stroke, 0.45));
+      continue;
+    }
+
+    const lCount = Math.max(1, Math.floor(halfW / u));
+    const rCount = Math.max(1, Math.floor((halfW * 0.62) / u));
+
+    // Barbas esquerda ( lado longo — pena de vôo )
+    for (let b = 1; b <= lCount; b++) {
+      const fade = 1 - (b - 1) / lCount;
+      const bx = shaftX - b * u;
+      if (seeded(seed, r * 5 + b) < 0.12 && b > 2) continue;
+      let color = mat.fill;
+      if (b <= 2) color = rgba(mat.stroke, 0.22);
+      else if (b % 4 === 0) color = rgba(PASTEL.lilac, 0.32 * fade);
+      else if (r % 3 === 0 && b % 2 === 0) color = rgba('#FFFFFF', 0.2 * fade);
+      fillPx(ctx, bx, y, u, u, color);
+    }
+
+    // Veio (rachis)
+    fillPx(ctx, shaftX - u * 0.5, y, u, u, rgba(mat.stroke, 0.5 - t * 0.18));
+    if (t > 0.15 && t < 0.8) {
+      fillPx(ctx, shaftX - u * 0.5, y, u, u, rgba(PASTEL.caramelDeep, 0.12));
+    }
+
+    // Barbas direita ( lado curto )
+    for (let b = 1; b <= rCount; b++) {
+      const fade = 1 - (b - 1) / rCount;
+      fillPx(
+        ctx,
+        shaftX + b * u,
+        y,
+        u,
+        u,
+        b === 1 ? rgba('#FFFFFF', 0.28) : rgba(mat.particle, 0.55 + fade * 0.35),
+      );
+    }
+
+    // Faixa de brilho iridescente no vão
+    if (t > 0.22 && t < 0.68 && r % 2 === 0) {
+      fillPx(ctx, shaftX - u * 2.2, y, u, u, rgba(PASTEL.lilac, 0.2));
+      fillPx(ctx, shaftX - u * 3.5, y, u, u, rgba('#FFFFFF', 0.14));
     }
   }
-  fillPx(ctx, cx - u * 1.5, sy + h - u, u * 3, u, rgba(mat.stroke, 0.4));
+
+  // Penugem na base (cálamo)
+  for (let i = 0; i < 5; i++) {
+    const fx = cx - w * 0.14 + i * u * 1.1 + sway * 0.3;
+    fillPx(ctx, fx, baseY + u * 0.5, u * 1.4, u, rgba(mat.particle, 0.45 + (i % 2) * 0.12));
+  }
+
+  // Ponta delicada
+  const tipX = cx + w * 0.16 + sway * 1.2 + flutter;
+  const tipY = baseY - featherLen - u * 0.5;
+  fillPx(ctx, tipX, tipY, u * 1.5, u, rgba(PASTEL.lilac, 0.5));
+  fillPx(ctx, tipX - u * 0.5, tipY - u, u, u, rgba('#FFFFFF', 0.7));
+  fillPx(ctx, tipX + u, tipY + u * 0.3, u, u, rgba(mat.fill, 0.65));
+
+  fillPx(ctx, cx - w / 2, sy + h - u, w, u, rgba(mat.stroke, 0.38));
 }
 
 /** Pandeiro — disco dourado com platinelas */
