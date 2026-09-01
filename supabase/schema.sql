@@ -5,10 +5,10 @@ create table if not exists public.scores (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null,
   display_name text not null check (char_length(display_name) between 2 and 16),
-  height integer not null check (height >= 0 and height <= 500000),
+  height integer not null check (height >= 0 and height <= 2147483647),
   breaths integer not null default 0 check (breaths >= 0 and breaths <= 100000),
   collectibles integer not null default 0 check (collectibles >= 0 and collectibles <= 5000),
-  run_ms integer not null default 0 check (run_ms >= 0 and run_ms <= 7200000),
+  run_ms integer not null default 0 check (run_ms >= 0 and run_ms <= 86400000),
   created_at timestamptz not null default now()
 );
 
@@ -53,10 +53,10 @@ create policy "scores_public_insert"
     char_length(display_name) between 2 and 16
     and display_name ~ '^[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç0-9 ]+$'
     and display_name ~ '[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç]'
-    and height between 3 and 500000
+    and height between 3 and 2147483647
     and breaths between 0 and 100000
     and collectibles between 0 and 5000
-    and run_ms between 1000 and 7200000
+    and run_ms between 1000 and 86400000
   );
 
 create or replace function public.scores_rate_limit()
@@ -274,8 +274,8 @@ begin
   if new.height < 3 then
     raise exception 'score_implausible' using errcode = 'P0001';
   end if;
-  -- 0.8 u/ms = 800 u/s (acima do pico sticky ~554 u/s)
-  if (new.height::bigint * 1000) > (new.run_ms::bigint * 800) then
+  -- 2.5 u/ms = 2500 u/s (trampolim ~1800 u/s; sticky ~554)
+  if (new.height::bigint * 1000) > (new.run_ms::bigint * 2500) then
     raise exception 'score_implausible' using errcode = 'P0001';
   end if;
   if new.breaths > greatest(12, new.height / 16) then
@@ -296,3 +296,13 @@ create trigger scores_plausibility_trg
 revoke all on public.name_blocklist from public, anon, authenticated;
 grant execute on function public.normalize_player_name(text) to anon, authenticated;
 grant execute on function public.name_is_available(text, uuid) to anon, authenticated;
+
+-- Tabela já existente: CREATE IF NOT EXISTS não altera CHECK. Rode o arquivo inteiro.
+alter table public.scores drop constraint if exists scores_height_check;
+alter table public.scores add constraint scores_height_check
+  check (height >= 0 and height <= 2147483647);
+
+alter table public.scores drop constraint if exists scores_run_ms_check;
+alter table public.scores add constraint scores_run_ms_check
+  check (run_ms >= 0 and run_ms <= 86400000);
+

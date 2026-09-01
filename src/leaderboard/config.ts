@@ -30,8 +30,8 @@ export const LEADERBOARD_NEARBY = 4;
 export const LEADERBOARD_REFRESH_MS = 90_000;
 export const LEADERBOARD_LIVE_DEBOUNCE_MS = 160;
 export const MIN_SUBMIT_HEIGHT = 3;
-/** Teto folgado vs pico sticky (~554 u/s). Bloqueia height absurdo em 1s. */
-export const MAX_HEIGHT_UNITS_PER_MS = 0.8;
+/** Teto vs pico do trampolim (~1800 u/s). Bloqueia height absurdo em 1s. */
+export const MAX_HEIGHT_UNITS_PER_MS = 2.5;
 
 export function scoreLooksPlausible(
   height: number,
