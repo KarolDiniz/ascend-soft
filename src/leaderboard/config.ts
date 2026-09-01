@@ -26,7 +26,7 @@ export function isSupabaseConfigured(): boolean {
 export const LEADERBOARD_PAGE_SIZE = 1000;
 export const LEADERBOARD_MAX_ROWS = 10_000;
 /** Rivais visíveis na janela da partida (acima, ou abaixo se você for o 1º). */
-export const LEADERBOARD_NEARBY = 3;
+export const LEADERBOARD_NEARBY = 4;
 export const LEADERBOARD_REFRESH_MS = 90_000;
 export const LEADERBOARD_LIVE_DEBOUNCE_MS = 160;
 export const MIN_SUBMIT_HEIGHT = 3;

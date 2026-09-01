@@ -57,7 +57,7 @@ O `schema.sql` também rejeita scores implausíveis (altura vs tempo, breaths/co
 ## Performance
 
 - Tela inicial: 1 fetch da lista + **Realtime** (INSERT em `scores`) + refresh de segurança a cada 90 s.
-- Partida: **zero polling**. A janela (você + 3 rivais) usa a altura ao vivo contra o snapshot; rivais novos entram pelo mesmo Realtime.
+- Partida: **zero polling**. A janela (você + 4 rivais) usa a altura ao vivo contra o snapshot; rivais novos entram pelo mesmo Realtime.
 - **1 request** ao cair (submit do score).
 
 Se o selo do ranking na capa não virar **ao vivo**, rode de novo o `schema.sql` (ele registra `scores` na publication `supabase_realtime`). No painel: **Database → Publications** e confirme que `scores` está habilitada.

@@ -24,8 +24,8 @@ function aheadCount(others: LeaderboardEntry[], me: LeaderboardEntry): number {
 }
 
 /**
- * Janela da partida: você + 3 imediatamente acima.
- * Se você é o 1º, você + 3 imediatamente abaixo.
+ * Janela da partida: você + 4 imediatamente acima.
+ * Se você é o 1º, você + 4 imediatamente abaixo.
  * `others` precisa estar ordenado (altura desc, nome asc) e sem o jogador local.
  */
 export function playingWindow(

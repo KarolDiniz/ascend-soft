@@ -1969,7 +1969,7 @@ html.has-mobile-pad .material-toast {
 
 .global-leaderboard.is-title-mode .leaderboard-list {
   flex: 0 0 auto;
-  max-height: calc(4 * var(--lb-row));
+  max-height: calc(5 * var(--lb-row));
   overflow-y: scroll;
   overflow-x: hidden;
   overscroll-behavior: contain;
