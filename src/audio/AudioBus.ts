@@ -588,12 +588,18 @@ export class AudioBus {
   }
 
   playBreath(): void {
-    if (!this.voiceEnabled) return;
-    this.withCtx((ctx, sfx) => {
-      const t = ctx.currentTime;
-      this.creatureVocal(ctx, sfx, t, 0.09, 920, 580, 0.04, { boing: true, chime: true });
-      this.creatureVocal(ctx, sfx, t + 0.07, 0.065, 680, 640, 0.028, { blip: true, shimmer: true });
+    this.withLandCtx((ctx, landBus) => {
+      const t = ctx.currentTime + 0.07;
+      const dest = ctx.createGain();
+      dest.gain.value = 1.85;
+      dest.connect(landBus);
+      const p = 0.98 + Math.random() * 0.05;
+      this.softNoise(ctx, dest, 0.18, 1100 * p, 0.16, t, 'bandpass', 0.7);
+      this.tone(ctx, dest, 'sine', 659 * p, 784 * p, 0.22, 0.2, t);
+      this.tone(ctx, dest, 'triangle', 784 * p, 988 * p, 0.2, 0.14, t + 0.05);
+      this.tone(ctx, dest, 'sine', 1175 * p, 1319 * p, 0.16, 0.1, t + 0.1);
     });
+    this.duckAmbient(220, 0.28);
   }
 
   playCollect(): void {

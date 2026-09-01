@@ -1,18 +1,39 @@
 import { PASTEL, rgba } from '../theme/pastelPalette';
 import { PIXEL, fillPx, px, snapPt } from '../theme/pixel';
+import type { Platform } from './Platform';
+
+/** Hover above the ledge — chest height when standing, always jumpable. */
+const FLOAT_ABOVE = 26;
+const MAGNET_R = 130;
+const COLLECT_R2 = 42 * 42;
+const MIN_HEIGHT = 90;
+/** Place a breath every N platforms along the climb. */
+const GAP_PLATFORMS = 4;
 
 export class BreathOrb {
-  x: number;
-  y: number;
-  r = 8;
   collected = false;
+  r = 10;
+  private platform: Platform;
+  private offsetX: number;
   private phase: number;
   private trail: { x: number; y: number; life: number }[] = [];
 
-  constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+  constructor(platform: Platform, offsetX: number) {
+    this.platform = platform;
+    this.offsetX = offsetX;
     this.phase = Math.random() * Math.PI * 2;
+  }
+
+  get x(): number {
+    return this.platform.x + this.offsetX;
+  }
+
+  get y(): number {
+    return this.platform.surfaceY + FLOAT_ABOVE;
+  }
+
+  get alive(): boolean {
+    return this.platform.alive && this.platform.opacity > 0.22;
   }
 
   update(dt: number, playerX: number, playerY: number): void {
@@ -20,10 +41,9 @@ export class BreathOrb {
     const dx = playerX - this.x;
     const dy = playerY - this.y;
     const dist = Math.hypot(dx, dy);
-    if (dist < 70 && dist > 1) {
-      const pull = (1 - dist / 70) * 90 * dt;
-      this.x += (dx / dist) * pull;
-      this.y += (dy / dist) * pull;
+    if (dist < MAGNET_R && dist > 1) {
+      const pull = (1 - dist / MAGNET_R) * 150 * dt;
+      this.offsetX += (dx / dist) * pull;
     }
     this.trail.push({ x: this.x, y: this.y, life: 0.35 });
     for (let i = this.trail.length - 1; i >= 0; i--) {
@@ -31,6 +51,12 @@ export class BreathOrb {
       if (this.trail[i].life <= 0) this.trail.splice(i, 1);
     }
     if (this.trail.length > 6) this.trail.splice(0, this.trail.length - 6);
+  }
+
+  overlaps(playerX: number, playerY: number): boolean {
+    const dx = playerX - this.x;
+    const dy = playerY - this.y;
+    return dx * dx + dy * dy < COLLECT_R2;
   }
 
   draw(
@@ -55,11 +81,9 @@ export class BreathOrb {
 
     ctx.save();
     ctx.globalAlpha = 0.9;
-    // Diamond / plus sparkle orb
     fillPx(ctx, s.x - r / 2, s.y - u, r, u * 2, PASTEL.peach);
     fillPx(ctx, s.x - u, s.y - r / 2, u * 2, r, PASTEL.butter);
     fillPx(ctx, s.x - u, s.y - u, u * 2, u * 2, PASTEL.white);
-    // Twinkle corners
     if (Math.sin(time * 5 + this.phase) > 0.5) {
       fillPx(ctx, s.x + r / 2 + u, s.y - u, u, u, rgba(PASTEL.coral, 0.8));
       fillPx(ctx, s.x - r / 2 - u * 2, s.y, u, u, rgba(PASTEL.coral, 0.7));
@@ -70,19 +94,35 @@ export class BreathOrb {
 
 export class BreathSpawner {
   orbs: BreathOrb[] = [];
-  private nextAt = 200;
+  private seeded = new Set<number>();
+  private since = 999;
 
   reset(): void {
     this.orbs = [];
-    this.nextAt = 120 + Math.random() * 80;
+    this.seeded.clear();
+    this.since = 999;
   }
 
-  update(platformsY: number, playerX: number): void {
-    while (this.nextAt < platformsY) {
-      const x = playerX + (Math.random() - 0.5) * 140;
-      this.orbs.push(new BreathOrb(x, this.nextAt + 20));
-      this.nextAt += 150 + Math.random() * 160;
+  update(platforms: readonly Platform[], cameraY: number, viewH: number): void {
+    this.sync(platforms);
+    const killY = cameraY - viewH * 0.95;
+    this.orbs = this.orbs.filter((o) => !o.collected && o.alive && o.y > killY);
+  }
+
+  private sync(platforms: readonly Platform[]): void {
+    for (let i = 0; i < platforms.length; i++) {
+      const p = platforms[i]!;
+      if (this.seeded.has(p.seed)) continue;
+      this.seeded.add(p.seed);
+      this.since += 1;
+
+      if (p.y < MIN_HEIGHT || !p.alive || p.fading) continue;
+      if (this.since < GAP_PLATFORMS) continue;
+
+      this.since = 0;
+      const maxOff = Math.max(4, p.w * 0.22);
+      const offsetX = (Math.random() * 2 - 1) * maxOff;
+      this.orbs.push(new BreathOrb(p, offsetX));
     }
-    this.orbs = this.orbs.filter((o) => !o.collected && o.y > platformsY - 600);
   }
 }

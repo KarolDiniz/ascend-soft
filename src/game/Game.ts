@@ -723,20 +723,15 @@ export class Game {
     }
 
     const plats = this.spawner.platforms;
-    const topPlatY = plats.length ? plats[plats.length - 1].y : this.player.y;
-    this.breaths.update(topPlatY, this.player.x);
+    this.breaths.update(plats, this.camera.y, this.H);
     for (const o of this.breaths.orbs) {
       o.update(dt, this.player.x, this.player.y);
-      if (!o.collected) {
-        const dx = this.player.x - o.x;
-        const dy = this.player.y - o.y;
-        if (dx * dx + dy * dy < 24 * 24) {
-          o.collected = true;
-          this.breathCount += 1;
-          this.audio.playBreath();
-          this.particles.burst(o.x, o.y, '#e8a090', 8, 'foam', true, this.atmosphere.getAccent());
-          this.particles.inhale(o.x, o.y, this.atmosphere.getAccent());
-        }
+      if (!o.collected && o.overlaps(this.player.x, this.player.y)) {
+        o.collected = true;
+        this.breathCount += 1;
+        this.audio.playBreath();
+        this.particles.burst(o.x, o.y, '#e8a090', 8, 'foam', true, this.atmosphere.getAccent());
+        this.particles.inhale(o.x, o.y, this.atmosphere.getAccent());
       }
     }
 
