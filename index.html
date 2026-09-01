@@ -96,6 +96,20 @@
               </div>
             </div>
           </div>
+          <div class="coach-pad" aria-label="Setas à esquerda para andar, botão à direita para pular">
+            <div class="coach-pad-row">
+              <div class="coach-pad-cluster">
+                <span class="coach-pad-preview coach-pad-preview--dir">◀</span>
+                <span class="coach-pad-preview coach-pad-preview--dir">▶</span>
+              </div>
+              <span class="coach-pad-preview coach-pad-preview--jump">pulo</span>
+            </div>
+            <p class="coach-label">setas e pulo</p>
+          </div>
+          <div class="coach-tilt" aria-label="Incline o celular para os lados. O personagem pula sozinho.">
+            <div class="coach-tilt-phone" aria-hidden="true"></div>
+            <p class="coach-label">incline · pulo sozinho</p>
+          </div>
           <div class="coach-keys" aria-label="A e D ou setas para andar, espaço para pular">
             <div class="coach-keys-card">
               <div class="coach-keys-row">
@@ -204,6 +218,23 @@
                     <option value="first" selected>1ª vez por partida</option>
                     <option value="always">Sempre</option>
                     <option value="never">Nunca</option>
+                  </select>
+                </label>
+                <label class="setting-row setting-row--select setting-row--stack">
+                  <span class="setting-label">
+                    <span class="setting-title">Controles no celular</span>
+                    <span id="mobile-controls-hint" class="setting-hint"
+                      >toque: esquerda · centro pular · direita</span
+                    >
+                  </span>
+                  <select
+                    id="mobile-controls"
+                    class="setting-select setting-select--grow"
+                    aria-label="Controles no celular"
+                  >
+                    <option value="zones" selected>Toque na tela</option>
+                    <option value="pad">Setas + pulo</option>
+                    <option value="tilt">Inclinar o celular</option>
                   </select>
                 </label>
               </div>
@@ -432,6 +463,24 @@
             </div>
           </div>
         </section>
+
+        <div id="mobile-pad" class="mobile-pad hidden" aria-hidden="true">
+          <div class="mobile-pad-move">
+            <button type="button" id="pad-left" class="pad-btn pad-btn--dir" aria-label="Esquerda" tabindex="-1">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 5 L8 12 L15 19" />
+              </svg>
+            </button>
+            <button type="button" id="pad-right" class="pad-btn pad-btn--dir" aria-label="Direita" tabindex="-1">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5 L16 12 L9 19" />
+              </svg>
+            </button>
+          </div>
+          <button type="button" id="pad-jump" class="pad-btn pad-btn--jump" aria-label="Pular" tabindex="-1">
+            pulo
+          </button>
+        </div>
 
         <div id="leave-guard" class="leave-guard hidden" role="dialog" aria-modal="true" aria-labelledby="leave-guard-title" aria-hidden="true">
           <button

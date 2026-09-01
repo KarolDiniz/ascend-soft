@@ -76,7 +76,8 @@ body {
 
 .ui .btn,
 .ui input,
-.ui .leaderboard-toggle {
+.ui .leaderboard-toggle,
+.ui .pad-btn {
   pointer-events: auto;
 }
 
@@ -189,6 +190,14 @@ body {
   to {
     opacity: 1;
   }
+}
+
+html.has-mobile-pad {
+  --mobile-pad-h: 124px;
+}
+
+html.has-mobile-pad .material-toast {
+  bottom: calc(var(--mobile-pad-h) + 10px + var(--safe-bottom));
 }
 
 .material-toast {
@@ -1120,6 +1129,21 @@ body {
 .setting-select:focus {
   outline: 2px solid var(--coral);
   outline-offset: 1px;
+}
+
+.setting-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.setting-select--grow {
+  width: 100%;
+  min-width: 0;
+}
+
+.setting-hint.is-warn {
+  color: #c45c5c;
 }
 
 .reduce-motion .title-floaters,
@@ -2385,6 +2409,14 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
     bottom: calc(14px + var(--safe-bottom));
   }
 
+  html.has-mobile-pad {
+    --mobile-pad-h: 112px;
+  }
+
+  html.has-mobile-pad .material-toast {
+    bottom: calc(var(--mobile-pad-h) + 8px + var(--safe-bottom));
+  }
+
   .toast-speaker {
     width: 68px;
     height: 82px;
@@ -2475,7 +2507,17 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 .controls-coach.is-touch .coach-keys,
-.controls-coach.is-keys .coach-touch {
+.controls-coach.is-touch .coach-pad,
+.controls-coach.is-touch .coach-tilt,
+.controls-coach.is-pad .coach-keys,
+.controls-coach.is-pad .coach-touch,
+.controls-coach.is-pad .coach-tilt,
+.controls-coach.is-tilt .coach-keys,
+.controls-coach.is-tilt .coach-touch,
+.controls-coach.is-tilt .coach-pad,
+.controls-coach.is-keys .coach-touch,
+.controls-coach.is-keys .coach-pad,
+.controls-coach.is-keys .coach-tilt {
   display: none;
 }
 
@@ -2612,7 +2654,9 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   animation: coach-skip-blink 1.4s steps(2) infinite;
 }
 
-.controls-coach.is-touch .coach-skip {
+.controls-coach.is-touch .coach-skip,
+.controls-coach.is-pad .coach-skip,
+.controls-coach.is-tilt .coach-skip {
   display: none;
 }
 
@@ -2694,5 +2738,205 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 
   .coach-tap {
     opacity: 0.85;
+  }
+}
+
+/* —— Pad virtual (celular) —— */
+.mobile-pad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 10px 14px calc(12px + var(--safe-bottom));
+  pointer-events: none;
+  gap: 16px;
+}
+
+.mobile-pad.hidden {
+  display: none !important;
+}
+
+#app.is-title #mobile-pad,
+#fall-screen:not(.hidden) ~ #mobile-pad {
+  display: none !important;
+}
+
+.mobile-pad-move {
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.pad-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--ink);
+  background: #fffcf8;
+  color: var(--ink);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+  border-radius: 0;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+  image-rendering: pixelated;
+}
+
+.pad-btn:focus {
+  outline: none;
+}
+
+.pad-btn:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+.pad-btn--dir {
+  width: 58px;
+  height: 58px;
+  background: var(--butter);
+}
+
+.pad-btn--dir svg {
+  width: 26px;
+  height: 26px;
+}
+
+.pad-btn--dir svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.pad-btn--jump {
+  width: 76px;
+  height: 76px;
+  background: var(--coral);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  padding: 0 6px;
+}
+
+.pad-btn.is-held {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.22);
+  filter: brightness(0.96);
+}
+
+.reduce-motion .pad-btn.is-held {
+  transform: none;
+}
+
+.controls-coach.is-pad {
+  justify-content: flex-end;
+  padding-bottom: calc(var(--mobile-pad-h, 124px) + 24px + var(--safe-bottom));
+}
+
+.coach-pad,
+.coach-tilt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  animation: coach-in 0.35s steps(5) both;
+}
+
+.coach-pad-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: min(92vw, 360px);
+  padding: 0.7rem 0.85rem 0.75rem;
+  background: rgba(255, 252, 248, 0.86);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+}
+
+.coach-pad-cluster {
+  display: flex;
+  gap: 8px;
+}
+
+.coach-pad-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.22);
+  font-family: 'Press Start 2P', monospace;
+  color: var(--ink);
+}
+
+.coach-pad-preview--dir {
+  width: 44px;
+  height: 44px;
+  background: var(--butter);
+  font-size: 0.7rem;
+}
+
+.coach-pad-preview--jump {
+  width: 58px;
+  height: 58px;
+  background: var(--coral);
+  font-size: 0.42rem;
+}
+
+.coach-tilt-phone {
+  width: 52px;
+  height: 78px;
+  border: 3px solid var(--ink);
+  background: var(--sky);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+  transform-origin: 50% 80%;
+  animation: coach-tilt-wobble 1.8s steps(6) infinite;
+}
+
+.reduce-motion .coach-tilt-phone {
+  animation: none;
+}
+
+@keyframes coach-tilt-wobble {
+  0%,
+  100% {
+    transform: rotate(-16deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-tilt-phone {
+    animation: none;
+  }
+}
+
+@media (max-height: 560px) {
+  html.has-mobile-pad {
+    --mobile-pad-h: 100px;
+  }
+
+  .pad-btn--dir {
+    width: 50px;
+    height: 50px;
+  }
+
+  .pad-btn--jump {
+    width: 64px;
+    height: 64px;
+    font-size: 0.44rem;
   }
 }

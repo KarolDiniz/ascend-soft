@@ -99,12 +99,14 @@ async function unlockAndPlay(): Promise<void> {
 
   await audio.unlock();
   audio.setVolume(titleSettings.getVolume() / 100);
+  await game.prepareMobileInput();
   hud.leaveTitle(() => game.beginIntro());
 }
 
 async function unlockAndRetry(): Promise<void> {
   if (!hud.isFallVisible()) return;
   await audio.unlock();
+  await game.prepareMobileInput();
   game.retry();
 }
 

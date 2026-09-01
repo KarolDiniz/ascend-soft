@@ -27,6 +27,7 @@ import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from '.
 import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 import { PASTEL } from '../theme/pastelPalette';
+import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
 const SEEN_KEY = 'ascend-soft-seen-materials';
@@ -66,6 +67,7 @@ export class Game {
   private hud: Hud;
 
   private input = new Input();
+  private mobilePad = new MobilePad(this.input);
   private camera = new Camera();
   private player = new Player();
   private spawner = new PlatformSpawner();
@@ -208,6 +210,27 @@ export class Game {
     this.audio.setVoiceEnabled(settings.voiceEnabled);
     this.audio.setLandIntensity(settings.landIntensity);
     this.hud.setMuteLabel(settings.muted || settings.volume === 0);
+    this.input.setMobileMode(settings.mobileControls);
+    document.documentElement.dataset.mobileControls = settings.mobileControls;
+    this.syncMobileControls();
+  }
+
+  /** Pede o sensor de movimento (iOS exige gesto do usuário). */
+  requestTiltPermission(): Promise<boolean> {
+    if (this.userSettings.mobileControls !== 'tilt') return Promise.resolve(true);
+    return this.input.startTilt();
+  }
+
+  async prepareMobileInput(): Promise<void> {
+    if (this.userSettings.mobileControls === 'tilt') {
+      await this.input.startTilt();
+    }
+  }
+
+  private syncMobileControls(): void {
+    const active = this.state === 'intro' || this.state === 'playing';
+    this.input.setGameplayActive(active);
+    this.mobilePad.sync(active, this.userSettings.mobileControls);
   }
 
   setLightMode(enabled: boolean): void {
@@ -275,6 +298,7 @@ export class Game {
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
     this.hud.showTitle(this.best);
+    this.syncMobileControls();
     this.onCatalogRefresh?.();
   }
 
@@ -311,6 +335,7 @@ export class Game {
     const pal = this.atmosphere.getPalette();
     this.hud.setAmbientColors(pal.top, pal.mid);
     this.hud.preparePlaying(this.best);
+    this.syncMobileControls();
   }
 
   beginPlay(): void {
@@ -325,6 +350,7 @@ export class Game {
     this.state = 'playing';
     this.hud.showPlaying(this.best);
     this.startPlayingAmbience();
+    this.syncMobileControls();
   }
 
   private finishIntro(): void {
@@ -1328,6 +1354,7 @@ export class Game {
     }
     this.state = 'falling';
     this.input.clearJump();
+    this.syncMobileControls();
     this.fallTimer = 0;
     this.perfectStreak = 0;
     this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());

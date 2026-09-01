@@ -1,5 +1,7 @@
+import { loadSettings } from '../game/GameSettings';
+import { isTouchUi } from '../game/Input';
+
 const STORAGE_KEY = 'ascend-soft-saw-controls';
-const TOUCH_QUERY = '(pointer: coarse), (hover: none)';
 
 function alreadySeen(): boolean {
   try {
@@ -17,13 +19,9 @@ function markSeen(): void {
   }
 }
 
-function isTouchUi(): boolean {
-  return window.matchMedia(TOUCH_QUERY).matches;
-}
-
 /**
  * Overlay de primeira partida — não bloqueia o jogo.
- * Mobile: três zonas da tela. PC: teclas.
+ * Mobile: zonas, setas ou inclinação. PC: teclas.
  */
 export class ControlsCoach {
   private root: HTMLElement;
@@ -40,7 +38,10 @@ export class ControlsCoach {
     this.shown = true;
 
     const touch = isTouchUi();
-    this.root.classList.toggle('is-touch', touch);
+    const mode = loadSettings().mobileControls;
+    this.root.classList.toggle('is-touch', touch && mode === 'zones');
+    this.root.classList.toggle('is-pad', touch && mode === 'pad');
+    this.root.classList.toggle('is-tilt', touch && mode === 'tilt');
     this.root.classList.toggle('is-keys', !touch);
     this.root.classList.remove('hidden', 'is-out');
     this.root.hidden = false;

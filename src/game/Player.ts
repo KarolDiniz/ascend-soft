@@ -125,12 +125,12 @@ export class Player {
 
   update(dt: number, input: Input): JumpResult {
     let jumped: JumpResult = false;
-    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    if (dir !== 0) this.facing = dir;
+    const axis = input.moveAxis;
+    if (Math.abs(axis) > 0.08) this.facing = Math.sign(axis);
 
-    if (dir !== 0) {
+    if (Math.abs(axis) > 0.04) {
       const sticky = this.groundedPlatform?.behavior === 'sticky';
-      this.vx += dir * this.moveAccel * dt * (sticky ? 0.72 : 1);
+      this.vx += axis * this.moveAccel * dt * (sticky ? 0.72 : 1);
     } else {
       const sticky = this.groundedPlatform?.behavior === 'sticky';
       const fr = this.onGround ? this.friction * (sticky ? 1.55 : 1) : this.airFriction;
@@ -142,8 +142,11 @@ export class Player {
     if (this.onGround) this.coyote = 0.11;
     else this.coyote = Math.max(0, this.coyote - dt);
 
-    if (input.consumeJump()) {
-      if (this.onGround || this.coyote > 0) {
+    const groundedJump = this.onGround || this.coyote > 0;
+    const tapJump = input.consumeJump();
+    const autoGroundJump = input.autoJump && groundedJump && this.vy <= 40;
+    if (tapJump || autoGroundJump) {
+      if (groundedJump) {
         const leaving = this.groundedPlatform;
         const boost = this.jumpBoost;
         this.vy = this.jumpVel * boost;
@@ -156,7 +159,7 @@ export class Player {
         jumped = 'ground';
         impulseAccessoryHop(this.motion, this.vy);
         if (leaving) leaving.notePlayerOff(true);
-      } else if (this.airJumpsLeft > 0) {
+      } else if (tapJump && this.airJumpsLeft > 0) {
         this.vy = this.jumpVel * PHYS.airJumpMul;
         this.onGround = false;
         this.coyote = 0;

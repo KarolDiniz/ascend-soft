@@ -5,6 +5,7 @@ import {
   saveSettings,
   type BannerMode,
   type LandIntensity,
+  type MobileControlMode,
   type UserSettings,
 } from '../game/GameSettings';
 import type { Hud } from './Hud';
@@ -21,6 +22,8 @@ export class TitleSettings {
   private voiceEnabled: HTMLInputElement;
   private landIntensity: HTMLSelectElement;
   private bannerMode: HTMLSelectElement;
+  private mobileControls: HTMLSelectElement;
+  private mobileControlsHint: HTMLElement;
   private reduceMotion: HTMLInputElement;
   private showPlayingRank: HTMLInputElement;
   private settings: UserSettings;
@@ -41,6 +44,8 @@ export class TitleSettings {
     this.voiceEnabled = document.getElementById('voice-enabled') as HTMLInputElement;
     this.landIntensity = document.getElementById('land-intensity') as HTMLSelectElement;
     this.bannerMode = document.getElementById('banner-mode') as HTMLSelectElement;
+    this.mobileControls = document.getElementById('mobile-controls') as HTMLSelectElement;
+    this.mobileControlsHint = document.getElementById('mobile-controls-hint')!;
     this.reduceMotion = document.getElementById('reduce-motion') as HTMLInputElement;
     this.showPlayingRank = document.getElementById('show-playing-rank') as HTMLInputElement;
 
@@ -81,6 +86,16 @@ export class TitleSettings {
 
     this.bannerMode.addEventListener('change', () => {
       this.patch({ bannerMode: this.bannerMode.value as BannerMode });
+    });
+
+    this.mobileControls.addEventListener('change', () => {
+      const mode = this.mobileControls.value as MobileControlMode;
+      this.patch({ mobileControls: mode });
+      if (mode === 'tilt') {
+        void this.game.requestTiltPermission().then((ok) => this.setTiltHint(ok));
+      } else {
+        this.setTiltHint(true);
+      }
     });
 
     this.reduceMotion.addEventListener('change', () => {
@@ -133,12 +148,33 @@ export class TitleSettings {
     this.voiceEnabled.checked = s.voiceEnabled;
     this.landIntensity.value = s.landIntensity;
     this.bannerMode.value = s.bannerMode;
+    this.mobileControls.value = s.mobileControls;
     this.reduceMotion.checked = s.reduceMotion;
     this.showPlayingRank.checked = s.showPlayingRank;
     this.volume.value = String(s.volume);
     this.hud.setMuteLabel(s.muted || s.volume === 0);
     document.documentElement.classList.toggle('reduce-motion', s.reduceMotion);
     document.documentElement.classList.toggle('hide-playing-rank', !s.showPlayingRank);
+    this.setTiltHint(true);
+  }
+
+  private setTiltHint(permissionOk: boolean): void {
+    const mode = this.settings.mobileControls;
+    this.mobileControlsHint.classList.remove('is-warn');
+    if (mode === 'pad') {
+      this.mobileControlsHint.textContent = 'setas à esquerda · pulo à direita';
+      return;
+    }
+    if (mode === 'tilt') {
+      if (!permissionOk) {
+        this.mobileControlsHint.classList.add('is-warn');
+        this.mobileControlsHint.textContent = 'permita o sensor de movimento no navegador';
+        return;
+      }
+      this.mobileControlsHint.textContent = 'pulo sozinho · incline o celular para os lados';
+      return;
+    }
+    this.mobileControlsHint.textContent = 'toque: esquerda · centro pular · direita';
   }
 
   private openPanel(): void {

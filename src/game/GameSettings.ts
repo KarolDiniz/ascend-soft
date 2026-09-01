@@ -3,6 +3,7 @@ export const SETTINGS_KEY = 'ascend-soft-settings';
 
 export type BannerMode = 'first' | 'always' | 'never';
 export type LandIntensity = 'low' | 'medium' | 'high';
+export type MobileControlMode = 'zones' | 'pad' | 'tilt';
 
 export interface UserSettings {
   lightMode: boolean;
@@ -13,6 +14,7 @@ export interface UserSettings {
   bannerMode: BannerMode;
   reduceMotion: boolean;
   showPlayingRank: boolean;
+  mobileControls: MobileControlMode;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   bannerMode: 'first',
   reduceMotion: false,
   showPlayingRank: true,
+  mobileControls: 'zones',
 };
 
 export function loadSettings(): UserSettings {
@@ -63,6 +66,9 @@ function sanitize(p: Partial<UserSettings>): Partial<UserSettings> {
   }
   if (typeof p.reduceMotion === 'boolean') out.reduceMotion = p.reduceMotion;
   if (typeof p.showPlayingRank === 'boolean') out.showPlayingRank = p.showPlayingRank;
+  if (p.mobileControls === 'zones' || p.mobileControls === 'pad' || p.mobileControls === 'tilt') {
+    out.mobileControls = p.mobileControls;
+  }
   return out;
 }
 
