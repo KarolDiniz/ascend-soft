@@ -23,7 +23,8 @@ const globalLeaderboard = new GlobalLeaderboard();
 game.onCatalogRefresh = () => titleCatalog.refresh();
 
 hud.onTitleShow = () => globalLeaderboard.onTitleShow();
-hud.onTitleHide = () => globalLeaderboard.onTitleHide();
+hud.onPlayingShow = () => globalLeaderboard.onPlayingShow();
+hud.onFallShow = () => globalLeaderboard.onFallShow();
 
 const nameInput = document.getElementById('player-name') as HTMLInputElement;
 nameInput.value = leaderboardService.getDisplayName();

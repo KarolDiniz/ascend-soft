@@ -422,42 +422,65 @@ body {
 
 .title-screen {
   justify-content: center;
+  align-items: center;
   padding: calc(20px + var(--safe-top)) 18px calc(24px + var(--safe-bottom));
 }
 
-@media (min-width: 820px) {
-  .title-screen {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 1.5rem;
-    padding-right: calc(240px + 18px);
-  }
-
-  .title-stack {
-    flex-shrink: 0;
-  }
-
-  .global-leaderboard {
-    display: flex !important;
-  }
-
-  .leaderboard-toggle {
-    display: none !important;
-  }
-}
-
-.title-settings-btn {
-  position: absolute;
-  top: calc(12px + var(--safe-top));
-  right: calc(12px + var(--safe-right, 0px));
-  z-index: 4;
+.title-center {
+  position: relative;
+  z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
+  gap: 0.85rem;
+  width: min(92vw, 360px);
+  max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 32px);
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.title-center::-webkit-scrollbar {
+  display: none;
+}
+
+.title-layout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* —— Toolbar central (itens · ajustes · vestir) —— */
+.title-toolbar {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 1.1rem;
+  animation: soft-fade 0.5s steps(5) both;
+  animation-delay: 0.32s;
+}
+
+.title-tool-btn {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: 5.5rem;
+  height: auto;
+  min-height: 52px;
+  padding: 0.45rem 0.35rem 0.4rem;
   border: 3px solid var(--ink);
   background: rgba(255, 252, 248, 0.92);
   color: var(--ink);
@@ -469,49 +492,50 @@ body {
     background 0.12s ease;
 }
 
-.title-settings-btn:hover {
+.title-tool-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.34rem;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-transform: lowercase;
+  color: var(--ink-soft);
+}
+
+.title-tool-btn:hover {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.28);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.title-tool-btn:active,
+.title-tool-btn.is-open {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 rgba(90, 97, 108, 0.28);
+  background: var(--butter);
+}
+
+.title-settings-btn,
+.title-catalog-btn,
+.title-character-btn {
+  position: static;
+  width: auto;
+  height: auto;
+}
+
+.title-settings-btn:hover,
+.title-catalog-btn:hover,
+.title-character-btn:hover {
   transform: translateY(1px);
   box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.28);
   background: rgba(255, 255, 255, 0.98);
 }
 
 .title-settings-btn:active,
-.title-settings-btn.is-open {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 rgba(90, 97, 108, 0.28);
-  background: var(--butter);
-}
-
-.title-catalog-btn {
-  position: absolute;
-  top: calc(12px + var(--safe-top));
-  left: calc(12px + var(--safe-left, 0px));
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 3px solid var(--ink);
-  background: rgba(255, 252, 248, 0.92);
-  color: var(--ink);
-  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.28);
-  cursor: pointer;
-  transition:
-    transform 0.08s steps(2),
-    box-shadow 0.08s steps(2),
-    background 0.12s ease;
-}
-
-.title-catalog-btn:hover {
-  transform: translateY(1px);
-  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.28);
-  background: rgba(255, 255, 255, 0.98);
-}
-
+.title-settings-btn.is-open,
 .title-catalog-btn:active,
-.title-catalog-btn.is-open {
+.title-catalog-btn.is-open,
+.title-character-btn:active,
+.title-character-btn.is-open {
   transform: translateY(3px);
   box-shadow: 0 0 0 rgba(90, 97, 108, 0.28);
   background: var(--butter);
@@ -706,40 +730,6 @@ body {
 }
 
 /* —— Editor de personagem —— */
-.title-character-btn {
-  position: absolute;
-  bottom: calc(16px + var(--safe-bottom));
-  left: calc(12px + var(--safe-left, 0px));
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 3px solid var(--ink);
-  background: rgba(255, 252, 248, 0.92);
-  color: var(--ink);
-  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.28);
-  cursor: pointer;
-  transition:
-    transform 0.08s steps(2),
-    box-shadow 0.08s steps(2),
-    background 0.12s ease;
-}
-
-.title-character-btn:hover {
-  transform: translateY(1px);
-  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.28);
-  background: rgba(255, 255, 255, 0.98);
-}
-
-.title-character-btn:active,
-.title-character-btn.is-open {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 rgba(90, 97, 108, 0.28);
-  background: var(--butter);
-}
 
 .character-icon-svg {
   width: 22px;
@@ -1273,10 +1263,23 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.35rem;
-  width: min(92vw, 340px);
+  gap: 1rem;
+  width: 100%;
   animation: stack-float 5.5s steps(10) infinite;
   filter: drop-shadow(0 8px 18px rgba(90, 97, 108, 0.18));
+}
+
+@media (min-width: 900px) {
+  #app.is-title .title-stack {
+    animation: none;
+    filter: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .title-center {
+    max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 24px);
+  }
 }
 
 .title-hero {
@@ -1284,6 +1287,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
   max-width: 22rem;
   animation: panel-pop 0.5s steps(7) both;
 }
@@ -1404,30 +1408,98 @@ body {
 }
 
 .global-leaderboard {
-  position: fixed;
-  top: calc(14px + var(--safe-top));
-  right: calc(12px + var(--safe-right, 0px));
   z-index: 3;
   display: none;
   flex-direction: column;
-  width: min(42vw, 220px);
-  max-height: min(72vh, 520px);
-  padding: 0.75rem 0.65rem 0.7rem;
+  pointer-events: auto;
+  contain: layout style;
   background: rgba(255, 252, 248, 0.94);
   border: 3px solid var(--ink);
   box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.24);
-  pointer-events: auto;
   animation: panel-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Tela inicial — mesma coluna central, abaixo do painel Subir */
+.global-leaderboard.is-title-mode {
+  position: relative;
+  width: 100%;
+  max-height: min(32vh, 240px);
+  padding: 0.75rem 0.65rem 0.7rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  .title-center {
+    width: min(92vw, 380px);
+  }
+
+  .global-leaderboard.is-title-mode {
+    max-height: min(36vh, 280px);
+  }
+}
+
+.global-leaderboard.is-playing-mode {
+  position: fixed;
+  top: calc(68px + var(--safe-top));
+  right: calc(10px + var(--safe-right, 0px));
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: min(44vw, 168px);
+  max-height: min(36vh, 220px);
+  padding: 0.55rem 0.5rem 0.5rem;
+  background: rgba(255, 252, 248, 0.88);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.global-leaderboard.is-playing-mode .leaderboard-head {
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.global-leaderboard.is-playing-mode .leaderboard-title {
+  font-size: 0.42rem;
+}
+
+.global-leaderboard.is-playing-mode .leaderboard-status {
+  display: none;
+}
+
+.global-leaderboard.is-playing-mode .leaderboard-row {
+  padding: 0.2rem 0.1rem;
+  font-size: 0.72rem;
+}
+
+.global-leaderboard.is-playing-mode .leaderboard-you {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  font-size: 0.38rem;
+}
+
+@media (max-width: 899px) {
+  .global-leaderboard.is-playing-mode:not(.is-open) {
+    display: none !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .global-leaderboard.is-playing-mode {
+    display: flex !important;
+  }
+
+  #app:not(.is-title) .hud {
+    right: calc(178px + var(--safe-right, 0px));
+  }
 }
 
 .global-leaderboard.is-open {
   display: flex;
 }
 
-@media (min-width: 820px) {
-  .global-leaderboard:not(.hidden) {
-    display: flex;
-  }
+.global-leaderboard.is-title-mode:not(.hidden) {
+  display: flex;
 }
 
 .global-leaderboard.hidden {
@@ -1448,6 +1520,16 @@ body {
   box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.28);
   cursor: pointer;
   pointer-events: auto;
+}
+
+.leaderboard-toggle.hidden {
+  display: none !important;
+}
+
+@media (min-width: 900px) {
+  .leaderboard-toggle {
+    display: none !important;
+  }
 }
 
 .leaderboard-head {

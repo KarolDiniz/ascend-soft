@@ -56,6 +56,16 @@
           <div class="toast-progress" aria-hidden="true"></div>
         </div>
 
+        <button
+          id="btn-leaderboard-toggle"
+          class="leaderboard-toggle hidden"
+          type="button"
+          aria-expanded="false"
+          aria-controls="global-leaderboard"
+        >
+          ranking
+        </button>
+
         <section id="title-screen" class="overlay title-screen">
           <div class="title-veil" aria-hidden="true"></div>
           <div class="title-floaters" aria-hidden="true">
@@ -65,63 +75,6 @@
             <span class="floater floater--d"></span>
             <span class="floater floater--e"></span>
           </div>
-
-          <button
-            id="btn-catalog"
-            class="title-catalog-btn"
-            type="button"
-            aria-label="Catálogo de colecionáveis"
-            aria-expanded="false"
-            aria-controls="title-catalog"
-          >
-            <svg class="catalog-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <rect x="2" y="2" width="5" height="5" fill="currentColor" />
-              <rect x="9" y="2" width="5" height="5" fill="currentColor" />
-              <rect x="2" y="9" width="5" height="5" fill="currentColor" />
-              <rect x="9" y="9" width="5" height="5" fill="currentColor" />
-            </svg>
-            <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
-          </button>
-
-          <button
-            id="btn-settings"
-            class="title-settings-btn"
-            type="button"
-            aria-label="Configurações"
-            aria-expanded="false"
-            aria-controls="title-settings"
-          >
-            <svg class="settings-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <rect x="6" y="1" width="4" height="2" fill="currentColor" />
-              <rect x="6" y="13" width="4" height="2" fill="currentColor" />
-              <rect x="1" y="6" width="2" height="4" fill="currentColor" />
-              <rect x="13" y="6" width="2" height="4" fill="currentColor" />
-              <rect x="3" y="3" width="2" height="2" fill="currentColor" />
-              <rect x="11" y="3" width="2" height="2" fill="currentColor" />
-              <rect x="3" y="11" width="2" height="2" fill="currentColor" />
-              <rect x="11" y="11" width="2" height="2" fill="currentColor" />
-              <rect x="5" y="5" width="6" height="6" fill="currentColor" />
-              <rect x="6" y="6" width="4" height="4" fill="#f7f1ea" />
-            </svg>
-          </button>
-
-          <button
-            id="btn-character"
-            class="title-character-btn"
-            type="button"
-            aria-label="Vestir personagem"
-            aria-expanded="false"
-            aria-controls="title-character"
-          >
-            <svg class="character-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <rect x="4" y="2" width="8" height="2" fill="currentColor" />
-              <rect x="3" y="4" width="10" height="7" fill="currentColor" />
-              <rect x="5" y="6" width="2" height="2" fill="#f7f1ea" />
-              <rect x="9" y="6" width="2" height="2" fill="#f7f1ea" />
-              <rect x="6" y="9" width="4" height="1" fill="#f7f1ea" />
-              <rect x="5" y="11" width="6" height="2" fill="currentColor" />
-            </svg>
-          </button>
 
           <div id="title-settings" class="title-settings hidden" aria-hidden="true">
             <button
@@ -273,53 +226,109 @@
             </div>
           </div>
 
-          <div class="title-stack">
-            <div class="title-hero">
-              <p class="eyebrow">torre sensorial</p>
-              <h1 class="brand">Ascend<br />Soft</h1>
-              <p class="tagline">Pouse. Ouça. Suba de novo.</p>
-              <p id="title-best" class="title-best hidden" aria-live="polite"></p>
+          <div class="title-center">
+            <div class="title-layout">
+              <div class="title-stack">
+              <div class="title-hero">
+                <p class="eyebrow">torre sensorial</p>
+                <h1 class="brand">Ascend<br />Soft</h1>
+                <p class="tagline">Pouse. Ouça. Suba de novo.</p>
+                <p id="title-best" class="title-best hidden" aria-live="polite"></p>
+
+                <nav class="title-toolbar" aria-label="Opções do jogo">
+                  <button
+                    id="btn-catalog"
+                    class="title-tool-btn title-catalog-btn"
+                    type="button"
+                    aria-label="Catálogo de colecionáveis"
+                    aria-expanded="false"
+                    aria-controls="title-catalog"
+                  >
+                    <svg class="catalog-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <rect x="2" y="2" width="5" height="5" fill="currentColor" />
+                      <rect x="9" y="2" width="5" height="5" fill="currentColor" />
+                      <rect x="2" y="9" width="5" height="5" fill="currentColor" />
+                      <rect x="9" y="9" width="5" height="5" fill="currentColor" />
+                    </svg>
+                    <span class="title-tool-label">itens</span>
+                    <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
+                  </button>
+
+                  <button
+                    id="btn-settings"
+                    class="title-tool-btn title-settings-btn"
+                    type="button"
+                    aria-label="Configurações"
+                    aria-expanded="false"
+                    aria-controls="title-settings"
+                  >
+                    <svg class="settings-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <rect x="6" y="1" width="4" height="2" fill="currentColor" />
+                      <rect x="6" y="13" width="4" height="2" fill="currentColor" />
+                      <rect x="1" y="6" width="2" height="4" fill="currentColor" />
+                      <rect x="13" y="6" width="2" height="4" fill="currentColor" />
+                      <rect x="3" y="3" width="2" height="2" fill="currentColor" />
+                      <rect x="11" y="3" width="2" height="2" fill="currentColor" />
+                      <rect x="3" y="11" width="2" height="2" fill="currentColor" />
+                      <rect x="11" y="11" width="2" height="2" fill="currentColor" />
+                      <rect x="5" y="5" width="6" height="6" fill="currentColor" />
+                      <rect x="6" y="6" width="4" height="4" fill="#f7f1ea" />
+                    </svg>
+                    <span class="title-tool-label">ajustes</span>
+                  </button>
+
+                  <button
+                    id="btn-character"
+                    class="title-tool-btn title-character-btn"
+                    type="button"
+                    aria-label="Vestir personagem"
+                    aria-expanded="false"
+                    aria-controls="title-character"
+                  >
+                    <svg class="character-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <rect x="4" y="2" width="8" height="2" fill="currentColor" />
+                      <rect x="3" y="4" width="10" height="7" fill="currentColor" />
+                      <rect x="5" y="6" width="2" height="2" fill="#f7f1ea" />
+                      <rect x="9" y="6" width="2" height="2" fill="#f7f1ea" />
+                      <rect x="6" y="9" width="4" height="1" fill="#f7f1ea" />
+                      <rect x="5" y="11" width="6" height="2" fill="currentColor" />
+                    </svg>
+                    <span class="title-tool-label">vestir</span>
+                  </button>
+                </nav>
+              </div>
+
+              <div class="title-panel title-panel--play">
+                <label class="player-name-field" for="player-name">
+                  <span class="player-name-label">seu nome</span>
+                  <input
+                    id="player-name"
+                    class="player-name-input"
+                    type="text"
+                    maxlength="16"
+                    autocomplete="nickname"
+                    spellcheck="false"
+                    placeholder="Blob1234"
+                  />
+                </label>
+                <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
+                  Subir
+                </button>
+                <p class="press-blink" aria-hidden="true">aperte subir</p>
+                <p class="hint">← → mover · espaço pular</p>
+              </div>
+            </div>
             </div>
 
-            <div class="title-panel">
-              <label class="player-name-field" for="player-name">
-                <span class="player-name-label">seu nome</span>
-                <input
-                  id="player-name"
-                  class="player-name-input"
-                  type="text"
-                  maxlength="16"
-                  autocomplete="nickname"
-                  spellcheck="false"
-                  placeholder="Blob1234"
-                />
-              </label>
-              <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
-                Subir
-              </button>
-              <p class="press-blink" aria-hidden="true">aperte subir</p>
-              <p class="hint">← → mover · espaço pular</p>
-            </div>
+            <aside id="global-leaderboard" class="global-leaderboard hidden" aria-label="Ranking global">
+              <div class="leaderboard-head">
+                <h2 class="leaderboard-title">Ranking</h2>
+                <span id="leaderboard-status" class="leaderboard-status">…</span>
+              </div>
+              <ol id="leaderboard-list" class="leaderboard-list"></ol>
+              <p id="leaderboard-you" class="leaderboard-you hidden">jogue para entrar</p>
+            </aside>
           </div>
-
-          <button
-            id="btn-leaderboard-toggle"
-            class="leaderboard-toggle"
-            type="button"
-            aria-expanded="false"
-            aria-controls="global-leaderboard"
-          >
-            ranking
-          </button>
-
-          <aside id="global-leaderboard" class="global-leaderboard hidden" aria-label="Ranking global">
-            <div class="leaderboard-head">
-              <h2 class="leaderboard-title">Ranking</h2>
-              <span id="leaderboard-status" class="leaderboard-status">…</span>
-            </div>
-            <ol id="leaderboard-list" class="leaderboard-list"></ol>
-            <p id="leaderboard-you" class="leaderboard-you hidden">jogue para entrar</p>
-          </aside>
         </section>
 
         <section id="fall-screen" class="overlay fall-screen hidden">

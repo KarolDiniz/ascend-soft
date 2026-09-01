@@ -64,6 +64,17 @@ export class LeaderboardService {
     this.stopPolling();
   }
 
+  /** Partida ativa: mantém snapshot em cache, sem polling. */
+  onPlayingShow(): void {
+    this.titleVisible = false;
+    this.stopPolling();
+  }
+
+  onPlayingHide(): void {
+    this.titleVisible = false;
+    this.stopPolling();
+  }
+
   private startPolling(): void {
     this.stopPolling();
     this.refreshTimer = window.setInterval(() => {

@@ -69,8 +69,10 @@ export class Hud {
 
   /** Callback quando a tela inicial aparece */
   onTitleShow: (() => void) | null = null;
-  /** Callback quando a tela inicial some */
-  onTitleHide: (() => void) | null = null;
+  /** Callback quando a partida começa (HUD visível) */
+  onPlayingShow: (() => void) | null = null;
+  /** Callback quando overlay de queda aparece */
+  onFallShow: (() => void) | null = null;
 
   showTitle(best: number): void {
     window.clearTimeout(this.leaveTimer);
@@ -92,7 +94,6 @@ export class Hud {
     if (this.titleScreen.classList.contains('is-leaving')) return;
 
     onStart();
-    this.onTitleHide?.();
     this.titleScreen.classList.add('is-leaving');
     window.clearTimeout(this.leaveTimer);
     const leaveMs = document.documentElement.classList.contains('reduce-motion')
@@ -120,6 +121,7 @@ export class Hud {
     this.breathsEl.textContent = '0';
     this.streakEl.textContent = '';
     this.streakEl.classList.add('hidden');
+    this.onPlayingShow?.();
     window.setTimeout(() => this.root.classList.remove('is-entering'), 650);
   }
 
@@ -154,6 +156,7 @@ export class Hud {
     this.breathsEl.textContent = '0';
     this.streakEl.textContent = '';
     this.streakEl.classList.add('hidden');
+    this.onPlayingShow?.();
   }
 
   showFall(summary: FallSummary): void {
@@ -185,6 +188,7 @@ export class Hud {
 
     this.fallScreen.classList.remove('hidden');
     this.fallScreen.classList.add('is-entering');
+    this.onFallShow?.();
     window.setTimeout(() => this.fallScreen.classList.remove('is-entering'), 500);
     this.fallMascot.start(summary.height);
     window.setTimeout(() => this.fallTears.start(), 120);
