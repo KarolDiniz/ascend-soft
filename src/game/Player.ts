@@ -64,6 +64,7 @@ export class Player {
   lookOffset = 0;
   groundedPlatform: Platform | null = null;
   private launchLockT = 0;
+  private shoveT = 0;
   trampolineWindup = false;
   /** Sem rastro de pixels — modo leve. */
   liteFx = false;
@@ -127,6 +128,7 @@ export class Player {
     this.lookOffset = 0;
     this.jumpBoost = 1;
     this.launchLockT = 0;
+    this.shoveT = 0;
     this.trampolineWindup = false;
   }
 
@@ -135,9 +137,13 @@ export class Player {
     const axis = input.moveAxis;
     if (Math.abs(axis) > 0.08) this.facing = Math.sign(axis);
 
+    if (this.shoveT > 0) this.shoveT = Math.max(0, this.shoveT - dt);
+
     if (this.trampolineWindup) {
       this.vx = 0;
       input.consumeJump();
+    } else if (this.shoveT > 0) {
+      if (Math.abs(axis) > 0.04) this.vx += axis * this.moveAccel * dt * 0.35;
     } else if (Math.abs(axis) > 0.04) {
       const sticky = this.groundedPlatform?.behavior === 'sticky';
       this.vx += axis * this.moveAccel * dt * (sticky ? 0.72 : 1);
@@ -147,7 +153,8 @@ export class Player {
       if (Math.abs(this.vx) <= fr * dt) this.vx = 0;
       else this.vx -= Math.sign(this.vx) * fr * dt;
     }
-    this.vx = Math.max(-this.maxSpeed, Math.min(this.maxSpeed, this.vx));
+    const speedCap = this.shoveT > 0 ? this.maxSpeed * 1.55 : this.maxSpeed;
+    this.vx = Math.max(-speedCap, Math.min(speedCap, this.vx));
 
     if (this.onGround) this.coyote = 0.11;
     else this.coyote = Math.max(0, this.coyote - dt);
@@ -183,7 +190,7 @@ export class Player {
       }
     }
 
-    if (!input.jumpHeld && this.vy > 90 && this.launchLockT <= 0) {
+    if (!input.jumpHeld && this.vy > 90 && this.launchLockT <= 0 && this.shoveT <= 0) {
       this.vy *= 0.9;
     }
 
@@ -366,6 +373,27 @@ export class Player {
     this.coyote = Math.max(this.coyote, 0.14);
     this.onGround = false;
     this.groundedPlatform = null;
+  }
+
+  /** Empurrão externo (gnomo fiscal). Desgruda da plataforma e ignora fricção por um instante. */
+  shove(dir: number, speed: number, lift: number): void {
+    const leaving = this.groundedPlatform;
+    const sign = dir < 0 ? -1 : 1;
+    this.trampolineWindup = false;
+    this.launchLockT = 0;
+    this.onGround = false;
+    this.coyote = 0;
+    this.groundedPlatform = null;
+    this.vx = sign * speed;
+    this.vy = lift;
+    this.facing = sign;
+    this.squash = 0.7;
+    this.stretch = 1.32;
+    this.landFace = 'ooh';
+    this.landFaceT = 0.38;
+    this.shoveT = 0.22;
+    impulseAccessoryHop(this.motion, this.vy);
+    leaving?.notePlayerOff(false);
   }
 
   applyLandSquash(intensity: number): void {

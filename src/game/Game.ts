@@ -32,6 +32,7 @@ import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
 import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleDailyCard } from './returnLoop';
+import { FiscalGnome } from './mobs/fiscalGnome';
 import { addSeenMaterial, loadSeenMaterials } from './seenMaterials';
 
 export type GameState = 'title' | 'intro' | 'playing' | 'falling';
@@ -81,6 +82,7 @@ export class Game {
   private softScenery = new SoftPass(0.38);
   private shards = new ShardField();
   private breaths = new BreathSpawner();
+  private gnome = new FiscalGnome();
   private collectibles = new CollectibleManager();
   private collected = loadCollected();
   private runCollectibles = 0;
@@ -402,6 +404,7 @@ export class Game {
     this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
+    this.gnome.reset();
     this.collectibles.reset(this.collected);
     this.runCollectibles = 0;
     this.runNewFindNames = [];
@@ -788,6 +791,25 @@ export class Game {
           this.audio.playSoftVanish();
         }
         this.handlePlatformEvent(p, ev);
+      }
+    }
+
+    const gnomeEv = this.gnome.update(
+      dt,
+      this.player,
+      true,
+      this.W * 0.5,
+      this.debug,
+      this.userSettings.reduceMotion,
+    );
+    if (gnomeEv === 'strike') {
+      this.audio.playFiscalGnomeLaugh();
+      this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
+      if (!this.perfProfile().lightMode) {
+        this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
+      }
+      if (!this.userSettings.reduceMotion) {
+        this.screenPunch = Math.max(this.screenPunch, 0.28);
       }
     }
 
@@ -1410,6 +1432,7 @@ export class Game {
     if (this.player.groundedPlatform) {
       this.player.groundedPlatform.notePlayerOff(false);
     }
+    this.gnome.reset();
     this.state = 'falling';
     this.input.clearJump();
     this.syncMobileControls();
@@ -1657,6 +1680,7 @@ export class Game {
 
     if (playVisuals) {
       this.player.draw(ctx, this.toScreen, { titleBoost: inIntro && introBlend < 0.45 });
+      this.gnome.draw(ctx, this.toScreen, this.time);
     }
 
     if (!p.skipLightFx && playVisuals && (!inIntro || introBlend > 0.25)) {
@@ -1735,7 +1759,7 @@ export class Game {
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(
-      `zone=${this.atmosphere.getDebugLabel()} gp=${this.particles.activeCount} amb=${this.ambient.activeCount} scn=${this.scenery.activeCount} h=${this.height} fps~${this.fpsEma.toFixed(0)}`,
+      `zone=${this.atmosphere.getDebugLabel()} gp=${this.particles.activeCount} amb=${this.ambient.activeCount} scn=${this.scenery.activeCount} h=${this.height} fps~${this.fpsEma.toFixed(0)} ${this.gnome.debugLine()}`,
       10,
       this.H - 12,
     );

@@ -727,6 +727,18 @@ export class AudioBus {
     });
   }
 
+  /** Gnomo fiscal — risadinha curta no empurrão */
+  playFiscalGnomeLaugh(): void {
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(110, 0.28);
+      const t = ctx.currentTime;
+      this.noiseBurst(ctx, sfx, 0.05, 1400, 0.035, t, 'bandpass');
+      this.creatureVocal(ctx, sfx, t, 0.09, 920, 1240, 0.07, { squeak: true, wobble: true, pop: true });
+      this.creatureVocal(ctx, sfx, t + 0.1, 0.11, 1080, 760, 0.062, { squeak: true, boing: true });
+      this.tone(ctx, sfx, 'triangle', 1480, 980, 0.07, 0.028, t + 0.08);
+    });
+  }
+
   playCrumbleLoop(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
