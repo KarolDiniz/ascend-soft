@@ -350,6 +350,14 @@ body {
   max-width: 30ch;
 }
 
+.toast-quote::before {
+  content: '\201C';
+}
+
+.toast-quote::after {
+  content: '\201D';
+}
+
 .toast-progress {
   height: 5px;
   background: rgba(90, 97, 108, 0.1);
