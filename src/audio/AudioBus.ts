@@ -17,9 +17,9 @@ export class AudioBus {
   private music: GainNode | null = null;
   private ambientGainBase = 0.42;
   /** Volume relativo da música generativa (abaixo das plataformas) */
-  private readonly musicGain = 0.34;
-  /** Ganho da voz da criaturinha (banner, pulo, queda, respiração) — abaixo do pouso */
-  private readonly creatureVolBoost = 1.2;
+  private readonly musicGain = 0.3;
+  /** Ganho da voz da criaturinha (banner, pulo, queda) — abaixo do pouso */
+  private readonly creatureVolBoost = 1.05;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
@@ -123,8 +123,8 @@ export class AudioBus {
     const now = this.ctx.currentTime;
     const m = this.muted ? 0 : this.volume;
     this.master.gain.setTargetAtTime(m, now, 0.05);
-    this.sfx.gain.setTargetAtTime(0.72, now, 0.05);
-    this.land.gain.setTargetAtTime(1, now, 0.05);
+    this.sfx.gain.setTargetAtTime(0.62, now, 0.05);
+    this.land.gain.setTargetAtTime(1.12, now, 0.05);
     this.ambient.gain.setTargetAtTime(this.ambientGainBase, now, 0.08);
   }
 
@@ -314,7 +314,7 @@ export class AudioBus {
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1, marimbaBar?: number): void {
     this.withLandCtx((ctx, landBus) => {
       void this.landSamples.load(ctx);
-      this.duckAmbient(120, 0.22);
+      this.duckAmbient(130, 0.16);
       const land = ctx.createGain();
       land.gain.value = this.landBusGain * this.landIntensityMul * this.landFamilyTrim(material);
       land.connect(landBus);
@@ -553,26 +553,35 @@ export class AudioBus {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
       if (this.voiceEnabled) {
-        this.creatureVocal(ctx, sfx, t, 0.2, 620, 1480, 0.052, { wobble: true, boing: true });
-        this.creatureVocal(ctx, sfx, t + 0.19, 0.11, 960, 420, 0.044, { squeak: true, pop: true });
+        this.creatureVocal(ctx, sfx, t, 0.22, 620, 1480, 0.085, { wobble: true, boing: true });
+        this.creatureVocal(ctx, sfx, t + 0.2, 0.13, 960, 420, 0.07, { squeak: true, pop: true });
       }
 
-      const noise = this.noiseBuffer(ctx, 0.55);
+      const dest = ctx.createGain();
+      dest.gain.value = 1.55;
+      dest.connect(sfx);
+
+      const noise = this.noiseBuffer(ctx, 0.72);
       const src = ctx.createBufferSource();
       src.buffer = noise;
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(520, t);
-      filter.frequency.exponentialRampToValueAtTime(130, t + 0.55);
+      filter.frequency.setValueAtTime(780, t);
+      filter.frequency.exponentialRampToValueAtTime(110, t + 0.7);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.068, t + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.58);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.11, t + 0.28);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.72);
       src.connect(filter);
       filter.connect(g);
-      g.connect(sfx);
+      g.connect(dest);
       src.start(t);
-      src.stop(t + 0.6);
+      src.stop(t + 0.75);
+
+      this.tone(ctx, dest, 'sine', 280, 70, 0.55, 0.1, t);
+      this.tone(ctx, dest, 'triangle', 190, 55, 0.48, 0.06, t + 0.04);
+      this.softNoise(ctx, dest, 0.35, 420, 0.08, t + 0.08, 'lowpass');
     });
   }
 
@@ -588,18 +597,18 @@ export class AudioBus {
   }
 
   playBreath(): void {
-    this.withLandCtx((ctx, landBus) => {
+    this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime + 0.07;
       const dest = ctx.createGain();
-      dest.gain.value = 1.15;
-      dest.connect(landBus);
+      dest.gain.value = 1.05;
+      dest.connect(sfx);
       const p = 0.98 + Math.random() * 0.05;
-      this.softNoise(ctx, dest, 0.18, 1100 * p, 0.16, t, 'bandpass', 0.7);
-      this.tone(ctx, dest, 'sine', 659 * p, 784 * p, 0.22, 0.2, t);
-      this.tone(ctx, dest, 'triangle', 784 * p, 988 * p, 0.2, 0.14, t + 0.05);
-      this.tone(ctx, dest, 'sine', 1175 * p, 1319 * p, 0.16, 0.1, t + 0.1);
+      this.softNoise(ctx, dest, 0.18, 1100 * p, 0.12, t, 'bandpass', 0.7);
+      this.tone(ctx, dest, 'sine', 659 * p, 784 * p, 0.22, 0.14, t);
+      this.tone(ctx, dest, 'triangle', 784 * p, 988 * p, 0.2, 0.1, t + 0.05);
+      this.tone(ctx, dest, 'sine', 1175 * p, 1319 * p, 0.16, 0.07, t + 0.1);
     });
-    this.duckAmbient(220, 0.28);
+    this.duckAmbient(160, 0.32);
   }
 
   playCollect(): void {
@@ -614,7 +623,7 @@ export class AudioBus {
         osc.frequency.setValueAtTime(f, t + i * 0.07);
         const st = t + i * 0.07;
         g.gain.setValueAtTime(0.0001, st);
-        g.gain.exponentialRampToValueAtTime(0.16 - i * 0.012, st + 0.018);
+        g.gain.exponentialRampToValueAtTime(0.1 - i * 0.01, st + 0.018);
         g.gain.exponentialRampToValueAtTime(0.0001, st + 0.22);
         osc.connect(g);
         g.connect(sfx);
@@ -628,7 +637,7 @@ export class AudioBus {
       shimmer.frequency.setValueAtTime(1568, t + 0.28);
       shimmer.frequency.exponentialRampToValueAtTime(2093, t + 0.48);
       sg.gain.setValueAtTime(0.0001, t + 0.28);
-      sg.gain.exponentialRampToValueAtTime(0.1, t + 0.32);
+      sg.gain.exponentialRampToValueAtTime(0.06, t + 0.32);
       sg.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
       shimmer.connect(sg);
       sg.connect(sfx);
@@ -661,7 +670,7 @@ export class AudioBus {
         osc.frequency.value = f;
         const st = t + i * 0.08;
         g.gain.setValueAtTime(0.0001, st);
-        g.gain.exponentialRampToValueAtTime(0.09, st + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.055, st + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
         osc.connect(g);
         g.connect(sfx);
@@ -1119,10 +1128,10 @@ export class AudioBus {
 
   // —— Material one-shots ——
 
-  /** Ganho extra nos SFX de pouso — plataformas dominam o mix, sem clipar */
-  private readonly landVolBoost = 2.4;
-  /** Bus por impacto — acima de murmúrio, música e outros SFX */
-  private readonly landBusGain = 1.15;
+  /** Ganho extra nos SFX de pouso — o som mais alto do jogo */
+  private readonly landVolBoost = 3.1;
+  /** Bus por impacto — acima de murmúrio, música, respiro e outros SFX */
+  private readonly landBusGain = 1.7;
 
   /** Trim relativo à gelatina (1.0). Click e macio mais baixos para não furar o fone. */
   private landFamilyTrim(material: MaterialId): number {
