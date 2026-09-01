@@ -2516,16 +2516,10 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 .controls-coach.is-touch .coach-keys,
-.controls-coach.is-touch .coach-pad,
 .controls-coach.is-touch .coach-tilt,
-.controls-coach.is-pad .coach-keys,
-.controls-coach.is-pad .coach-touch,
-.controls-coach.is-pad .coach-tilt,
 .controls-coach.is-tilt .coach-keys,
 .controls-coach.is-tilt .coach-touch,
-.controls-coach.is-tilt .coach-pad,
 .controls-coach.is-keys .coach-touch,
-.controls-coach.is-keys .coach-pad,
 .controls-coach.is-keys .coach-tilt {
   display: none;
 }
@@ -2664,7 +2658,6 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 .controls-coach.is-touch .coach-skip,
-.controls-coach.is-pad .coach-skip,
 .controls-coach.is-tilt .coach-skip {
   display: none;
 }
@@ -2924,72 +2917,12 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   transform: none;
 }
 
-.controls-coach.is-pad {
-  justify-content: flex-end;
-  padding-bottom: calc(var(--mobile-pad-h, 124px) + 24px + var(--safe-bottom));
-}
-
-.coach-pad,
 .coach-tilt {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.55rem;
   animation: coach-in 0.35s steps(5) both;
-}
-
-.coach-pad-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  width: min(92vw, 360px);
-  padding: 0.7rem 0.55rem 0.85rem;
-  background: rgba(255, 252, 248, 0.86);
-  border: 3px solid var(--ink);
-  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
-}
-
-.coach-pad-cluster {
-  display: flex;
-  gap: 14px;
-}
-
-.coach-pad-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid var(--ink);
-  box-shadow:
-    3px 3px 0 #2a343c,
-    inset 0 0 0 2px rgba(255, 252, 248, 0.55);
-  color: var(--ink);
-}
-
-.coach-pad-preview svg {
-  width: 46%;
-  height: 46%;
-  display: block;
-  shape-rendering: crispEdges;
-}
-
-.coach-pad-preview svg path {
-  fill: currentColor;
-}
-
-.coach-pad-preview--dir {
-  width: 52px;
-  height: 52px;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 248, 0.55) 0 4px, transparent 4px),
-    var(--butter);
-}
-
-.coach-pad-preview--jump {
-  width: 52px;
-  height: 52px;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 248, 0.5) 0 4px, transparent 4px),
-    var(--coral);
 }
 
 .coach-tilt-phone {

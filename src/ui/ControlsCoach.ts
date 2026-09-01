@@ -21,7 +21,8 @@ function markSeen(): void {
 
 /**
  * Overlay de primeira partida — não bloqueia o jogo.
- * Mobile: zonas, setas ou inclinação. PC: teclas.
+ * Mobile: zonas ou inclinação. PC: teclas.
+ * Modo setas (pad) não mostra tutorial — os botões já estão na tela.
  */
 export class ControlsCoach {
   private root: HTMLElement;
@@ -35,12 +36,14 @@ export class ControlsCoach {
 
   showIfNeeded(): void {
     if (this.shown || alreadySeen()) return;
-    this.shown = true;
 
     const touch = isTouchUi();
     const mode = loadSettings().mobileControls;
+    if (touch && mode === 'pad') return;
+
+    this.shown = true;
+
     this.root.classList.toggle('is-touch', touch && mode === 'zones');
-    this.root.classList.toggle('is-pad', touch && mode === 'pad');
     this.root.classList.toggle('is-tilt', touch && mode === 'tilt');
     this.root.classList.toggle('is-keys', !touch);
     this.root.classList.remove('hidden', 'is-out');
