@@ -10,6 +10,7 @@ import { LeaveGuard } from './ui/LeaveGuard';
 import { TitleCatalog } from './ui/TitleCatalog';
 import { TitleCharacter } from './ui/TitleCharacter';
 import { TitleSettings } from './ui/TitleSettings';
+import { ControlsCoach } from './ui/ControlsCoach';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
@@ -20,6 +21,7 @@ const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const leaveGuard = new LeaveGuard(audio);
 const globalLeaderboard = new GlobalLeaderboard();
+const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
 
 hud.onTitleShow = () => {
@@ -29,9 +31,13 @@ hud.onTitleShow = () => {
 hud.onPlayingShow = () => {
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onPlayingShow();
+  controlsCoach.showIfNeeded();
 };
 game.onLiveBest = (best) => globalLeaderboard.setLiveBest(best);
-hud.onFallShow = () => globalLeaderboard.onFallShow();
+hud.onFallShow = () => {
+  controlsCoach.hide();
+  globalLeaderboard.onFallShow();
+};
 
 const nameInput = document.getElementById('player-name') as HTMLInputElement;
 nameInput.value = leaderboardService.getDisplayName();

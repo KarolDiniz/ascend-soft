@@ -2427,3 +2427,248 @@ body {
     padding: 0.9rem 0.85rem;
   }
 }
+
+/* —— Coach de controles (primeira partida) —— */
+.controls-coach {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 16px;
+}
+
+.controls-coach.hidden {
+  display: none !important;
+}
+
+.controls-coach.is-out {
+  animation: coach-out 0.28s steps(4) both;
+}
+
+.controls-coach.is-touch .coach-keys,
+.controls-coach.is-keys .coach-touch {
+  display: none;
+}
+
+.coach-zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  width: min(92vw, 360px);
+  min-height: 132px;
+  background: rgba(255, 252, 248, 0.86);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+  animation: coach-in 0.35s steps(5) both;
+}
+
+.coach-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1rem 0.4rem 0.85rem;
+  border-right: 2px dashed rgba(90, 97, 108, 0.22);
+}
+
+.coach-zone:last-child {
+  border-right: none;
+}
+
+.coach-zone--jump {
+  background: rgba(235, 212, 160, 0.28);
+}
+
+.coach-tap {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--butter);
+  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.22);
+  opacity: 0.35;
+  animation: coach-tap 2.55s steps(6) infinite;
+}
+
+.coach-zone--left .coach-tap {
+  animation-delay: 0s;
+}
+
+.coach-zone--jump .coach-tap {
+  background: var(--coral);
+  animation-delay: 0.85s;
+}
+
+.coach-zone--right .coach-tap {
+  animation-delay: 1.7s;
+}
+
+.coach-label,
+.coach-keys-caption,
+.coach-skip {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--ink);
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.7);
+}
+
+.coach-label {
+  font-size: 0.42rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.15rem;
+}
+
+.coach-keys {
+  display: flex;
+  justify-content: center;
+  animation: coach-in 0.35s steps(5) both;
+}
+
+.coach-keys-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 1.1rem 0.75rem;
+  background: rgba(255, 252, 248, 0.82);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+}
+
+.coach-keys-row {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.coach-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  height: 2.2rem;
+  padding: 0 0.45rem;
+  border: 3px solid var(--ink);
+  background: var(--butter);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: var(--ink);
+  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.24);
+  animation: coach-key-press 2.4s steps(4) infinite;
+}
+
+.coach-key--d {
+  animation-delay: 0.7s;
+}
+
+.coach-key--space {
+  min-width: 6.2rem;
+  margin-top: 0.15rem;
+  background: var(--coral);
+  animation-delay: 1.4s;
+}
+
+.coach-keys-caption {
+  font-size: 0.38rem;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.coach-skip {
+  position: static;
+  margin: 0;
+  text-align: center;
+  font-size: 0.36rem;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  animation: coach-skip-blink 1.4s steps(2) infinite;
+}
+
+.controls-coach.is-touch .coach-skip {
+  display: none;
+}
+
+@keyframes coach-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes coach-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes coach-tap {
+  0%,
+  8% {
+    transform: translateY(0) scale(1);
+    opacity: 0.32;
+  }
+  16% {
+    transform: translateY(7px) scale(0.82);
+    opacity: 1;
+  }
+  28% {
+    transform: translateY(0) scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.32;
+  }
+}
+
+@keyframes coach-key-press {
+  0%,
+  12% {
+    transform: translate(0, 0);
+    box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.24);
+  }
+  18% {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 rgba(90, 97, 108, 0.24);
+  }
+  32%,
+  100% {
+    transform: translate(0, 0);
+    box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.24);
+  }
+}
+
+@keyframes coach-skip-blink {
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.reduce-motion .coach-tap,
+.reduce-motion .coach-key,
+.reduce-motion .coach-skip {
+  animation: none;
+}
+
+.reduce-motion .coach-tap {
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-tap,
+  .coach-key,
+  .coach-skip {
+    animation: none;
+  }
+
+  .coach-tap {
+    opacity: 0.85;
+  }
+}

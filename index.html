@@ -62,6 +62,43 @@
           ranking
         </button>
 
+        <div
+          id="controls-coach"
+          class="controls-coach hidden"
+          hidden
+          aria-live="polite"
+          role="status"
+        >
+          <div class="coach-touch" aria-label="Toque esquerda para ir à esquerda, centro para pular, direita para ir à direita">
+            <div class="coach-zones">
+              <div class="coach-zone coach-zone--left">
+                <span class="coach-tap" aria-hidden="true"></span>
+                <span class="coach-label">esquerda</span>
+              </div>
+              <div class="coach-zone coach-zone--jump">
+                <span class="coach-tap" aria-hidden="true"></span>
+                <span class="coach-label">pulo</span>
+              </div>
+              <div class="coach-zone coach-zone--right">
+                <span class="coach-tap" aria-hidden="true"></span>
+                <span class="coach-label">direita</span>
+              </div>
+            </div>
+          </div>
+          <div class="coach-keys" aria-label="A e D ou setas para andar, espaço para pular">
+            <div class="coach-keys-card">
+              <div class="coach-keys-row">
+                <kbd class="coach-key coach-key--a">A</kbd>
+                <kbd class="coach-key coach-key--d">D</kbd>
+              </div>
+              <p class="coach-keys-caption">andar</p>
+              <kbd class="coach-key coach-key--space">espaço</kbd>
+              <p class="coach-keys-caption">pular</p>
+            </div>
+          </div>
+          <p class="coach-skip">já pode jogar</p>
+        </div>
+
         <section id="title-screen" class="overlay title-screen">
           <div class="title-veil" aria-hidden="true"></div>
           <div class="title-floaters" aria-hidden="true">
