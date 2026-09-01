@@ -7,7 +7,6 @@ import { nameRejectMessage } from './leaderboard/namePolicy';
 import { leaderboardService } from './leaderboard/LeaderboardService';
 import { GlobalLeaderboard } from './ui/GlobalLeaderboard';
 import { Hud } from './ui/Hud';
-import { LeaveGuard } from './ui/LeaveGuard';
 import { TitleCatalog } from './ui/TitleCatalog';
 import { TitleCharacter } from './ui/TitleCharacter';
 import { TitleSettings } from './ui/TitleSettings';
@@ -20,7 +19,6 @@ const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
-const leaveGuard = new LeaveGuard(audio);
 const globalLeaderboard = new GlobalLeaderboard();
 const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
@@ -46,8 +44,8 @@ const nameHint = document.getElementById('player-name-hint') as HTMLSpanElement;
 const NAME_HINT_DEFAULT = 'letras com acento · único';
 nameInput.value = leaderboardService.getDisplayName();
 
-function setNameHint(message?: string): void {
-  const error = Boolean(message);
+function setNameHint(message?: string, isError = true): void {
+  const error = Boolean(message) && isError;
   nameHint.textContent = message || NAME_HINT_DEFAULT;
   nameHint.classList.toggle('is-error', error);
   nameInput.classList.toggle('player-name-input--invalid', error);
@@ -63,6 +61,7 @@ nameInput.addEventListener('input', () => {
     void leaderboardService.evaluateName(typed).then((result) => {
       if (nameInput.value !== typed) return;
       if (!result.ok) setNameHint(nameRejectMessage(result.reason));
+      else if (result.unverified) setNameHint('sem conexão — unicidade na hora de enviar', false);
     });
   }, 380);
 });
@@ -151,7 +150,7 @@ game.initTitle();
 game.start();
 
 window.addEventListener('beforeunload', (e) => {
-  leaveGuard.promptLeave();
+  if (!game.shouldWarnBeforeLeave()) return;
   e.preventDefault();
   e.returnValue = '';
 });

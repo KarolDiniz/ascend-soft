@@ -1,4 +1,4 @@
-import { LEADERBOARD_REFRESH_MS, MIN_SUBMIT_HEIGHT } from './config';
+import { LEADERBOARD_REFRESH_MS, MIN_SUBMIT_HEIGHT, scoreLooksPlausible } from './config';
 import { LeaderboardClient } from './LeaderboardClient';
 import { checkDisplayName, namesCollide, type NameRejectReason } from './namePolicy';
 import { getDisplayName, getPlayerId, saveDisplayName } from './playerIdentity';
@@ -55,7 +55,10 @@ export class LeaderboardService {
   /** Só valida (ofensa + unicidade). Não grava. */
   async evaluateName(
     raw: string,
-  ): Promise<{ ok: true; name: string } | { ok: false; name: string; reason: NameRejectReason }> {
+  ): Promise<
+    | { ok: true; name: string; unverified?: boolean }
+    | { ok: false; name: string; reason: NameRejectReason }
+  > {
     const local = checkDisplayName(raw);
     if (!local.ok) {
       return { ok: false, name: local.name, reason: local.reason ?? 'too_short' };
@@ -68,12 +71,12 @@ export class LeaderboardService {
       return { ok: false, name: local.name, reason: 'taken' };
     }
 
-    const free = await this.client.isNameAvailable(local.name, getPlayerId());
-    if (!free) {
+    const avail = await this.client.isNameAvailable(local.name, getPlayerId());
+    if (avail === 'taken') {
       return { ok: false, name: local.name, reason: 'taken' };
     }
 
-    return { ok: true, name: local.name };
+    return { ok: true, name: local.name, unverified: avail === 'unknown' };
   }
 
   /** Valida ofensa + unicidade antes de jogar. Só grava o nome se passar. */
@@ -154,13 +157,23 @@ export class LeaderboardService {
       return { ok: false, globalRank: null, mode: this.client.isGlobal() ? 'global' : 'local' };
     }
 
+    const safeMs = Math.max(1000, runMs);
+    if (!scoreLooksPlausible(height, breaths, collectibles, safeMs)) {
+      return {
+        ok: false,
+        globalRank: null,
+        mode: this.client.isGlobal() ? 'global' : 'local',
+        error: 'rejected',
+      };
+    }
+
     const payload: ScoreSubmitPayload = {
       playerId: getPlayerId(),
       displayName: getDisplayName(),
       height,
       breaths,
       collectibles,
-      runMs: Math.max(1000, runMs),
+      runMs: safeMs,
     };
 
     const result = await this.client.submit(payload);

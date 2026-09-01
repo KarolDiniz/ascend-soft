@@ -23,11 +23,12 @@ npm run preview
 ## Controles
 
 - **Desktop:** A/D ou setas · Espaço / W / ↑ para pular
-- **Mobile:** laterais = mover · centro = pular
+- **Mobile (ajustes):** setas e pulo (padrão) · zonas de toque · inclinar (pulo sozinho)
+- **Áudio:** use fones — o jogo é ASMR de pouso
 
 ## Destaques
 
 - Gaps limitados pela física real do pulo (sem plataformas impossíveis)
-- 12 materiais ASMR (comidas, sabonetes, slime) com visual + som próprios
+- 47 materiais com visual + som próprios
 - Perfect land, combos, toast de material, recorde com confetti
-- Áudio sintético Web Audio com ducking do ambient
+- Áudio híbrido: samples de pouso + síntese Web Audio com ducking do ambient

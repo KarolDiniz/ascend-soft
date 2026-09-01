@@ -1820,6 +1820,11 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   display: none !important;
 }
 
+.fall-rank--error {
+  color: var(--ink-soft);
+  font-size: 0.38rem;
+}
+
 .btn {
   appearance: none;
   border: 3px solid var(--ink);

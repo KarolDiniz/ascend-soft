@@ -53,7 +53,7 @@ create policy "scores_public_insert"
     char_length(display_name) between 2 and 16
     and display_name ~ '^[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç0-9 ]+$'
     and display_name ~ '[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç]'
-    and height between 0 and 500000
+    and height between 3 and 500000
     and breaths between 0 and 100000
     and collectibles between 0 and 5000
     and run_ms between 1000 and 7200000
@@ -252,6 +252,35 @@ drop trigger if exists scores_name_guard_trg on public.scores;
 create trigger scores_name_guard_trg
   before insert on public.scores
   for each row execute function public.scores_name_guard();
+
+create or replace function public.scores_plausibility_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.height < 3 then
+    raise exception 'score_implausible' using errcode = 'P0001';
+  end if;
+  -- 0.8 u/ms = 800 u/s (acima do pico sticky ~554 u/s)
+  if (new.height::bigint * 1000) > (new.run_ms::bigint * 800) then
+    raise exception 'score_implausible' using errcode = 'P0001';
+  end if;
+  if new.breaths > greatest(12, new.height / 16) then
+    raise exception 'score_implausible' using errcode = 'P0001';
+  end if;
+  if new.collectibles > greatest(8, new.height / 12) then
+    raise exception 'score_implausible' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists scores_plausibility_trg on public.scores;
+create trigger scores_plausibility_trg
+  before insert on public.scores
+  for each row execute function public.scores_plausibility_guard();
 
 revoke all on public.name_blocklist from public, anon, authenticated;
 grant execute on function public.normalize_player_name(text) to anon, authenticated;

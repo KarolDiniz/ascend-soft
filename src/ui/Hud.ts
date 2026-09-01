@@ -1,6 +1,6 @@
 import { FallMascot } from './FallMascot';
 import { FallTearsOverlay } from './FallTearsOverlay';
-import { getFallCopy, getFallGapLabel, type FallSummary } from './fallCopy';
+import { getFallCopy, getFallGapLabel, getFallSubmitMessage, type FallSummary } from './fallCopy';
 import { ToastSpeaker } from './ToastSpeaker';
 import { PHASE_TOAST_MS } from './toastConfig';
 import type { AudioBus } from '../audio/AudioBus';
@@ -163,13 +163,7 @@ export class Hud {
       this.fallGap.classList.add('hidden');
     }
 
-    if (summary.globalRank != null && summary.globalRank > 0) {
-      const scope = summary.globalMode === 'local' ? 'local' : 'global';
-      this.fallRank.textContent = `#${summary.globalRank} no ranking ${scope}`;
-      this.fallRank.classList.remove('hidden');
-    } else {
-      this.fallRank.classList.add('hidden');
-    }
+    this.applyFallRank(summary);
 
     this.fallScreen.classList.remove('hidden');
     this.fallScreen.classList.add('is-entering');
@@ -183,6 +177,29 @@ export class Hud {
     if (voiceOn && !muted) {
       window.setTimeout(() => this.audio?.playFallWhimper(), 180);
     }
+  }
+
+  /** Atualiza rank/erro depois que o submit termina — não reinicia a tela de queda. */
+  patchFallRank(summary: FallSummary): void {
+    if (this.fallScreen.classList.contains('hidden')) return;
+    this.applyFallRank(summary);
+  }
+
+  private applyFallRank(summary: FallSummary): void {
+    if (summary.globalRank != null && summary.globalRank > 0) {
+      const scope = summary.globalMode === 'local' ? 'local' : 'global';
+      this.fallRank.textContent = `#${summary.globalRank} no ranking ${scope}`;
+      this.fallRank.classList.remove('hidden', 'fall-rank--error');
+      return;
+    }
+    if (summary.submitError) {
+      this.fallRank.textContent = getFallSubmitMessage(summary.submitError);
+      this.fallRank.classList.add('fall-rank--error');
+      this.fallRank.classList.remove('hidden');
+      return;
+    }
+    this.fallRank.classList.add('hidden');
+    this.fallRank.classList.remove('fall-rank--error');
   }
 
   update(height: number, _best: number, breaths: number, streak = 0): void {

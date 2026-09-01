@@ -806,3 +806,11 @@ export function phaseDifficultyScale(height: number): number {
   if (ch < PHASE_HEIGHT * 1.15) return 0.5;
   return Math.min(1, height / 3200);
 }
+
+/** Moving/fade after the gap cap — does not change REACH / jump height. */
+export function phaseHazardScale(height: number): number {
+  const base = phaseDifficultyScale(height);
+  if (height <= 3200) return base;
+  const extra = Math.min(0.35, (height - 3200) / 9000);
+  return Math.min(1.35, base + extra);
+}

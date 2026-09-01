@@ -52,6 +52,8 @@ Adicione as mesmas variáveis de ambiente no painel do host (**obrigatório no b
 
 Rebuild / Redeploy depois de salvar. Sem essas vars, o ranking cai para modo **local** (só neste navegador).
 
+O `schema.sql` também rejeita scores implausíveis (altura vs tempo, breaths/colecionáveis vs altura) e exige `height >= 3`. Rode o arquivo de novo no SQL Editor após puxar esta versão.
+
 ## Performance
 
 - Rede **somente** na tela inicial (fetch + refresh a cada 90 s).

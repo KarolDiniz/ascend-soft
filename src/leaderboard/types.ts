@@ -20,7 +20,7 @@ export interface SubmitResult {
   ok: boolean;
   globalRank: number | null;
   mode: 'global' | 'local';
-  error?: 'blocked' | 'taken' | 'invalid' | 'network';
+  error?: 'blocked' | 'taken' | 'invalid' | 'network' | 'rejected';
 }
 
 export interface LeaderboardSnapshot {

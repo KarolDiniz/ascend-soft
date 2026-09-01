@@ -151,14 +151,15 @@ export class LeaderboardClient {
     return { rank, best };
   }
 
-  async isNameAvailable(name: string, playerId: string): Promise<boolean> {
+  async isNameAvailable(name: string, playerId: string): Promise<'free' | 'taken' | 'unknown'> {
     const local = checkDisplayName(name);
-    if (!local.ok) return false;
+    if (!local.ok) return 'taken';
 
     if (!this.isGlobal()) {
-      return !loadLocalScores().some(
+      const taken = loadLocalScores().some(
         (row) => namesCollide(row.display_name, local.name) && row.player_id !== playerId,
       );
+      return taken ? 'taken' : 'free';
     }
 
     const base = supabaseUrl().replace(/\/$/, '');
@@ -170,10 +171,11 @@ export class LeaderboardClient {
       });
       if (rpc.ok) {
         const value = await rpc.json();
-        return value === true;
+        if (value === true) return 'free';
+        if (value === false) return 'taken';
       }
     } catch {
-      /* cai no fallback */
+      /* cai no REST; se ambos falharem → unknown */
     }
 
     try {
@@ -181,11 +183,14 @@ export class LeaderboardClient {
         `${base}/rest/v1/scores?select=player_id,display_name` +
         `&display_name=ilike.${encodeURIComponent(local.name)}&limit=40`;
       const res = await fetch(url, { headers: supabaseHeaders() });
-      if (!res.ok) return true;
+      if (!res.ok) return 'unknown';
       const rows = (await res.json()) as { player_id: string; display_name: string }[];
-      return !rows.some((row) => namesCollide(row.display_name, local.name) && row.player_id !== playerId);
+      const taken = rows.some(
+        (row) => namesCollide(row.display_name, local.name) && row.player_id !== playerId,
+      );
+      return taken ? 'taken' : 'free';
     } catch {
-      return true;
+      return 'unknown';
     }
   }
 
@@ -247,6 +252,7 @@ export class LeaderboardClient {
       if (/name_blocked/i.test(body)) error = 'blocked';
       else if (/name_invalid/i.test(body)) error = 'invalid';
       else if (/name_taken/i.test(body)) error = 'taken';
+      else if (/score_implausible|rate_limit_exceeded/i.test(body)) error = 'rejected';
       return { ok: false, globalRank: null, mode: 'global', error };
     }
 

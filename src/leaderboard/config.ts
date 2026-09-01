@@ -26,3 +26,19 @@ export function isSupabaseConfigured(): boolean {
 export const LEADERBOARD_TOP_LIMIT = 20;
 export const LEADERBOARD_REFRESH_MS = 90_000;
 export const MIN_SUBMIT_HEIGHT = 3;
+/** Teto folgado vs pico sticky (~554 u/s). Bloqueia height absurdo em 1s. */
+export const MAX_HEIGHT_UNITS_PER_MS = 0.8;
+
+export function scoreLooksPlausible(
+  height: number,
+  breaths: number,
+  collectibles: number,
+  runMs: number,
+): boolean {
+  if (height < MIN_SUBMIT_HEIGHT || runMs < 1000) return false;
+  if (height > runMs * MAX_HEIGHT_UNITS_PER_MS) return false;
+  const breathCap = Math.max(12, Math.floor(height / 16));
+  const lootCap = Math.max(8, Math.floor(height / 12));
+  if (breaths > breathCap || collectibles > lootCap) return false;
+  return true;
+}

@@ -1,6 +1,6 @@
 import type { MaterialId } from '../audio/materials';
 import { pickPhaseMaterial } from './PhaseRunOrder';
-import { phaseDifficultyScale } from './ThemedPhases';
+import { phaseDifficultyScale, phaseHazardScale } from './ThemedPhases';
 import { getBehaviorDef } from './platform/behaviors';
 import { estimateLedgeWidth, rollLedgeWidth } from './platform/ledgeSizes';
 import { Platform } from './Platform';
@@ -125,6 +125,7 @@ export class PlatformSpawner {
   private spawnNext(): void {
     const height = this.highestY;
     const difficulty = phaseDifficultyScale(height);
+    const hazard = phaseHazardScale(height);
     const last = this.platforms[this.platforms.length - 1];
 
     const gapYMin = REACH.minGapY;
@@ -220,12 +221,12 @@ export class PlatformSpawner {
       behavior.canMove &&
       height > 70 &&
       difficulty > 0.08 &&
-      this.rand() < 0.34 + difficulty * 0.26;
+      this.rand() < 0.34 + hazard * 0.26;
     let moveAmp = 14 + this.rand() * 12;
     let moveSpeed = REACH.moveSpeedMin + this.rand() * (REACH.moveSpeedMax - REACH.moveSpeedMin);
     if (moving) {
       moveAmp = Math.min(moveAmp, REACH.moveAmpMax);
-      moveSpeed += difficulty * 0.3;
+      moveSpeed += hazard * 0.3;
       const worstDx = Math.abs(x - last.x) + moveAmp;
       if (worstDx > finalMaxX * 0.95) {
         moveAmp = Math.max(0, finalMaxX * 0.9 - Math.abs(x - last.x));
@@ -241,7 +242,7 @@ export class PlatformSpawner {
       difficulty > 0.5 &&
       !moving &&
       !this.lastWasFading &&
-      this.rand() < 0.07 + difficulty * 0.04
+      this.rand() < 0.07 + hazard * 0.04
     ) {
       fading = true;
     }

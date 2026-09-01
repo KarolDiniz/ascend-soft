@@ -29,6 +29,14 @@ export const DEFAULT_SETTINGS: UserSettings = {
   mobileControls: 'pad',
 };
 
+function osPrefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
 export function loadSettings(): UserSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -37,9 +45,13 @@ export function loadSettings(): UserSettings {
       return { ...DEFAULT_SETTINGS, ...sanitize(parsed) };
     }
     const legacyLight = localStorage.getItem(LIGHT_MODE_KEY) === '1';
-    return { ...DEFAULT_SETTINGS, lightMode: legacyLight };
+    return {
+      ...DEFAULT_SETTINGS,
+      lightMode: legacyLight,
+      reduceMotion: osPrefersReducedMotion(),
+    };
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_SETTINGS, reduceMotion: osPrefersReducedMotion() };
   }
 }
 

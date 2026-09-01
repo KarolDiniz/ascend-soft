@@ -7,6 +7,7 @@ export interface FallSummary {
   runBestBroken: boolean;
   globalRank?: number | null;
   globalMode?: 'global' | 'local';
+  submitError?: 'blocked' | 'taken' | 'invalid' | 'network' | 'rejected';
 }
 
 export interface FallCopy {
@@ -86,4 +87,14 @@ export function getFallGapLabel(s: FallSummary): string | null {
   const gap = s.best - s.height;
   if (gap <= 0) return 'recorde!';
   return `−${gap} do recorde`;
+}
+
+export function getFallSubmitMessage(
+  error: NonNullable<FallSummary['submitError']>,
+): string {
+  if (error === 'taken') return 'esse nome já está no ranking';
+  if (error === 'blocked') return 'esse nome não é permitido';
+  if (error === 'invalid') return 'nome inválido para o ranking';
+  if (error === 'rejected') return 'esta subida não entrou no ranking';
+  return 'ranking offline nesta queda';
 }

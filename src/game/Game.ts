@@ -83,8 +83,6 @@ export class Game {
   private collected = loadCollected();
   private runCollectibles = 0;
   private background = new Background();
-  private mixStreak = 0;
-  private lastReaction = '';
   private fpsEma = 60;
 
   state: GameState = 'title';
@@ -111,6 +109,7 @@ export class Game {
   private startBest = 0;
   private fallRevealTimer = 0;
   private fallSummaryPending: FallSummary | null = null;
+  private fallHudRevealed = false;
   private runStartedAt = 0;
   private userSettings: UserSettings = loadSettings();
   private lightMode = this.userSettings.lightMode;
@@ -192,6 +191,11 @@ export class Game {
 
   isReduceMotion(): boolean {
     return this.userSettings.reduceMotion;
+  }
+
+  /** Aviso nativo de aba — só com partida em curso. Overlay custom não funciona em beforeunload. */
+  shouldWarnBeforeLeave(): boolean {
+    return this.state === 'intro' || this.state === 'playing';
   }
 
   applyUserSettings(settings: UserSettings): void {
@@ -311,6 +315,7 @@ export class Game {
     this.audio.stopSoftMurmur();
     this.fallRevealTimer = 0;
     this.fallSummaryPending = null;
+    this.fallHudRevealed = false;
     this.initTitle();
   }
 
@@ -370,6 +375,7 @@ export class Game {
   retry(): void {
     this.fallRevealTimer = 0;
     this.fallSummaryPending = null;
+    this.fallHudRevealed = false;
     this.beginPlay();
   }
 
@@ -394,8 +400,6 @@ export class Game {
     this.height = 0;
     this.breathCount = 0;
     this.perfectStreak = 0;
-    this.mixStreak = 0;
-    this.lastReaction = '';
     this.fallTimer = 0;
     this.time = 0;
     this.floaters.length = 0;
@@ -405,6 +409,7 @@ export class Game {
     this.shownPhaseToasts.clear();
     this.fallRevealTimer = 0;
     this.fallSummaryPending = null;
+    this.fallHudRevealed = false;
   }
 
   /** Exibe banner de reflexão conforme preferência do jogador */
@@ -563,9 +568,9 @@ export class Game {
 
       if (this.fallRevealTimer > 0) {
         this.fallRevealTimer -= dt;
-        if (this.fallRevealTimer <= 0 && this.fallSummaryPending) {
+        if (this.fallRevealTimer <= 0 && this.fallSummaryPending && !this.fallHudRevealed) {
           this.hud.showFall(this.fallSummaryPending);
-          this.fallSummaryPending = null;
+          this.fallHudRevealed = true;
         }
       }
       return;
@@ -1261,15 +1266,6 @@ export class Game {
     if (!text) return;
     this.addFloater(x, y, text, color);
     this.particles.floaterOrbit(x, y + 10, color);
-    if (this.lastReaction && this.lastReaction !== text) {
-      this.mixStreak += 1;
-      if (this.mixStreak >= 3) {
-        this.mixStreak = 0;
-      }
-    } else {
-      this.mixStreak = Math.max(1, this.mixStreak);
-    }
-    this.lastReaction = text;
   }
 
   private handleCollectible(id: import('./collectibles/definitions').CollectibleId): void {
@@ -1383,12 +1379,23 @@ export class Game {
         pending.collectibles,
         runMs,
       );
-      if (this.fallSummaryPending === pending && result.ok) {
+      if (this.fallSummaryPending !== pending) return;
+      if (result.ok) {
         pending.globalRank = result.globalRank;
         pending.globalMode = result.mode;
+        pending.submitError = undefined;
+      } else if (result.error) {
+        pending.submitError = result.error;
+      }
+      if (this.fallHudRevealed && this.state === 'falling') {
+        this.hud.patchFallRank(pending);
       }
     } catch {
-      /* ranking opcional — não bloqueia a queda */
+      if (this.fallSummaryPending !== pending) return;
+      pending.submitError = 'network';
+      if (this.fallHudRevealed && this.state === 'falling') {
+        this.hud.patchFallRank(pending);
+      }
     }
   }
 
