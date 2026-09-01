@@ -5,8 +5,8 @@ import { drawFiscalGnome } from './fiscalGnomeVisual';
 export const GNOME = {
   dwellS: 5,
   debugDwellS: 3,
-  approachS: 1.22,
-  fleeS: 0.82,
+  approachS: 2.35,
+  fleeS: 1.35,
   strikeRadius: 38,
   pushSpeed: 390,
   pushLift: 228,
@@ -198,7 +198,7 @@ export class FiscalGnome {
     this.x = nx;
     this.y = ny;
     this.facing = this.pushDir;
-    this.flap += dt * (18 + e * 10);
+    this.flap += dt * (11 + e * 6);
     this.bankTowardVelocity(dt);
     this.squash = lerp(this.squash, 1.02, Math.min(1, 8 * dt));
     this.stretch = lerp(this.stretch, 0.98, Math.min(1, 8 * dt));
@@ -212,8 +212,8 @@ export class FiscalGnome {
     player.shove(this.pushDir, GNOME.pushSpeed, GNOME.pushLift);
     this.x = player.x - this.pushDir * 12;
     this.y = player.y + 6;
-    this.vx = this.pushDir * 260;
-    this.vy = 70;
+    this.vx = this.pushDir * 150;
+    this.vy = 42;
     this.squash = 1.08;
     this.stretch = 0.94;
     this.fleeT = 0;
@@ -225,11 +225,11 @@ export class FiscalGnome {
 
   private tickFlee(dt: number, viewHalfW: number, reduceMotion: boolean): void {
     this.fleeT += dt;
-    this.vx += this.pushDir * 90 * dt;
-    this.vy += 55 * dt;
+    this.vx += this.pushDir * 42 * dt;
+    this.vy += 28 * dt;
     this.x += this.vx * dt;
-    this.y += this.vy * dt + (reduceMotion ? 0 : Math.sin(this.fleeT * 11) * 22 * dt);
-    this.flap += dt * 22;
+    this.y += this.vy * dt + (reduceMotion ? 0 : Math.sin(this.fleeT * 8) * 16 * dt);
+    this.flap += dt * 13;
     this.bankTowardVelocity(dt);
     this.squash = lerp(this.squash, 0.96, Math.min(1, 6 * dt));
     this.stretch = lerp(this.stretch, 1.04, Math.min(1, 6 * dt));
