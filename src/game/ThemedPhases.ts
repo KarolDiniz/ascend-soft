@@ -55,7 +55,7 @@ export const PHASE_ORDER: MaterialId[] = [
 ];
 
 /** Altitude span per themed phase (player.y). */
-export const PHASE_HEIGHT = 200;
+export const PHASE_HEIGHT = 700;
 
 /** Smooth blend window at each phase boundary — long for ultra-fluid crossfade. */
 export const PHASE_BLEND = 70;
