@@ -517,7 +517,6 @@ body {
 .title-settings-btn,
 .title-catalog-btn,
 .title-character-btn {
-  position: static;
   width: auto;
   height: auto;
 }
