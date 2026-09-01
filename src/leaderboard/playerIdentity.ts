@@ -1,3 +1,5 @@
+import { checkDisplayName, sanitizeDisplayName } from './namePolicy';
+
 const PLAYER_ID_KEY = 'ascend-soft-player-id';
 const PLAYER_NAME_KEY = 'ascend-soft-player-name';
 
@@ -19,19 +21,10 @@ function defaultNameFromId(id: string): string {
   return `Blob${n}`;
 }
 
-/** Remove caracteres inválidos e limita tamanho (2–16). */
-export function sanitizeDisplayName(raw: string): string {
-  const cleaned = raw
-    .trim()
-    .replace(/[<>&"']/g, '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 16);
-  return cleaned;
-}
+export { sanitizeDisplayName };
 
 export function isValidDisplayName(name: string): boolean {
-  const n = sanitizeDisplayName(name);
-  return n.length >= 2 && n.length <= 16;
+  return checkDisplayName(name).ok;
 }
 
 export function getPlayerId(): string {
@@ -50,7 +43,7 @@ export function getPlayerId(): string {
 export function getDisplayName(): string {
   try {
     const saved = localStorage.getItem(PLAYER_NAME_KEY);
-    if (saved && isValidDisplayName(saved)) return sanitizeDisplayName(saved);
+    if (saved && checkDisplayName(saved).ok) return sanitizeDisplayName(saved);
   } catch {
     /* ignore */
   }
@@ -60,11 +53,26 @@ export function getDisplayName(): string {
 }
 
 export function saveDisplayName(raw: string): string {
-  const name = sanitizeDisplayName(raw);
+  const check = checkDisplayName(raw);
+  if (check.ok) {
+    try {
+      localStorage.setItem(PLAYER_NAME_KEY, check.name);
+    } catch {
+      /* ignore */
+    }
+    return check.name;
+  }
   try {
-    if (name.length >= 2) localStorage.setItem(PLAYER_NAME_KEY, name);
+    const saved = localStorage.getItem(PLAYER_NAME_KEY);
+    if (saved && checkDisplayName(saved).ok) return sanitizeDisplayName(saved);
   } catch {
     /* ignore */
   }
-  return name;
+  const fallback = defaultNameFromId(getPlayerId());
+  try {
+    localStorage.setItem(PLAYER_NAME_KEY, fallback);
+  } catch {
+    /* ignore */
+  }
+  return fallback;
 }

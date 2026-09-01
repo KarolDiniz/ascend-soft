@@ -2,7 +2,7 @@ import { AudioBus } from './audio/AudioBus';
 import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
-import { isValidDisplayName } from './leaderboard/playerIdentity';
+import { nameRejectMessage } from './leaderboard/namePolicy';
 import { leaderboardService } from './leaderboard/LeaderboardService';
 import { GlobalLeaderboard } from './ui/GlobalLeaderboard';
 import { Hud } from './ui/Hud';
@@ -41,11 +41,35 @@ hud.onFallShow = () => {
 };
 
 const nameInput = document.getElementById('player-name') as HTMLInputElement;
+const nameHint = document.getElementById('player-name-hint') as HTMLSpanElement;
+const NAME_HINT_DEFAULT = 'letras com acento · único';
 nameInput.value = leaderboardService.getDisplayName();
-nameInput.addEventListener('input', () => nameInput.classList.remove('player-name-input--invalid'));
+
+function setNameHint(message?: string): void {
+  const error = Boolean(message);
+  nameHint.textContent = message || NAME_HINT_DEFAULT;
+  nameHint.classList.toggle('is-error', error);
+  nameInput.classList.toggle('player-name-input--invalid', error);
+  nameInput.setAttribute('aria-invalid', error ? 'true' : 'false');
+}
+
+let nameCheckTimer = 0;
+nameInput.addEventListener('input', () => {
+  setNameHint();
+  window.clearTimeout(nameCheckTimer);
+  const typed = nameInput.value;
+  nameCheckTimer = window.setTimeout(() => {
+    void leaderboardService.evaluateName(typed).then((result) => {
+      if (nameInput.value !== typed) return;
+      if (!result.ok) setNameHint(nameRejectMessage(result.reason));
+    });
+  }, 380);
+});
 nameInput.addEventListener('change', () => {
-  leaderboardService.setDisplayName(nameInput.value);
-  nameInput.value = leaderboardService.getDisplayName();
+  void leaderboardService.assertPlayableName(nameInput.value).then((result) => {
+    if (result.ok) nameInput.value = result.name;
+    else setNameHint(nameRejectMessage(result.reason));
+  });
 });
 
 void spriteAtlas.init().then(() => {
@@ -64,13 +88,14 @@ async function unlockAndPlay(): Promise<void> {
     return;
   }
 
-  const name = leaderboardService.setDisplayName(nameInput.value);
-  if (!isValidDisplayName(name)) {
-    nameInput.classList.add('player-name-input--invalid');
+  const result = await leaderboardService.assertPlayableName(nameInput.value);
+  if (!result.ok) {
+    setNameHint(nameRejectMessage(result.reason));
     nameInput.focus();
     return;
   }
-  nameInput.value = name;
+  nameInput.value = result.name;
+  setNameHint();
 
   await audio.unlock();
   audio.setVolume(titleSettings.getVolume() / 100);

@@ -4,6 +4,7 @@ import {
   supabaseAnonKey,
   supabaseUrl,
 } from './config';
+import { checkDisplayName, namesCollide } from './namePolicy';
 import type { LeaderboardEntry, ScoreSubmitPayload, SubmitResult } from './types';
 
 const LOCAL_SCORES_KEY = 'ascend-soft-local-scores';
@@ -150,12 +151,66 @@ export class LeaderboardClient {
     return { rank, best };
   }
 
+  async isNameAvailable(name: string, playerId: string): Promise<boolean> {
+    const local = checkDisplayName(name);
+    if (!local.ok) return false;
+
+    if (!this.isGlobal()) {
+      return !loadLocalScores().some(
+        (row) => namesCollide(row.display_name, local.name) && row.player_id !== playerId,
+      );
+    }
+
+    const base = supabaseUrl().replace(/\/$/, '');
+    try {
+      const rpc = await fetch(`${base}/rest/v1/rpc/name_is_available`, {
+        method: 'POST',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({ p_name: local.name, p_player_id: playerId }),
+      });
+      if (rpc.ok) {
+        const value = await rpc.json();
+        return value === true;
+      }
+    } catch {
+      /* cai no fallback */
+    }
+
+    try {
+      const url =
+        `${base}/rest/v1/scores?select=player_id,display_name` +
+        `&display_name=ilike.${encodeURIComponent(local.name)}&limit=40`;
+      const res = await fetch(url, { headers: supabaseHeaders() });
+      if (!res.ok) return true;
+      const rows = (await res.json()) as { player_id: string; display_name: string }[];
+      return !rows.some((row) => namesCollide(row.display_name, local.name) && row.player_id !== playerId);
+    } catch {
+      return true;
+    }
+  }
+
   async submit(payload: ScoreSubmitPayload): Promise<SubmitResult> {
+    const local = checkDisplayName(payload.displayName);
+    if (!local.ok) {
+      return {
+        ok: false,
+        globalRank: null,
+        mode: this.isGlobal() ? 'global' : 'local',
+    error: local.reason === 'blocked' ? 'blocked' : 'invalid',
+      };
+    }
+
     if (!this.isGlobal()) {
       const rows = loadLocalScores();
+      const taken = rows.some(
+        (row) => namesCollide(row.display_name, local.name) && row.player_id !== payload.playerId,
+      );
+      if (taken) {
+        return { ok: false, globalRank: null, mode: 'local', error: 'taken' };
+      }
       rows.push({
         player_id: payload.playerId,
-        display_name: payload.displayName,
+        display_name: local.name,
         height: payload.height,
         breaths: payload.breaths,
         collectibles: payload.collectibles,
@@ -178,7 +233,7 @@ export class LeaderboardClient {
       },
       body: JSON.stringify({
         player_id: payload.playerId,
-        display_name: payload.displayName,
+        display_name: local.name,
         height: payload.height,
         breaths: payload.breaths,
         collectibles: payload.collectibles,
@@ -187,7 +242,12 @@ export class LeaderboardClient {
     });
 
     if (!res.ok) {
-      return { ok: false, globalRank: null, mode: 'global' };
+      const body = await res.text().catch(() => '');
+      let error: SubmitResult['error'] = 'network';
+      if (/name_blocked/i.test(body)) error = 'blocked';
+      else if (/name_invalid/i.test(body)) error = 'invalid';
+      else if (/name_taken/i.test(body)) error = 'taken';
+      return { ok: false, globalRank: null, mode: 'global', error };
     }
 
     const rank = await this.rankForHeight(payload.height);

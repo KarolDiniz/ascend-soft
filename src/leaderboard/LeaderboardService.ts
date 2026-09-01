@@ -1,5 +1,6 @@
 import { LEADERBOARD_REFRESH_MS, MIN_SUBMIT_HEIGHT } from './config';
 import { LeaderboardClient } from './LeaderboardClient';
+import { checkDisplayName, namesCollide, type NameRejectReason } from './namePolicy';
 import { getDisplayName, getPlayerId, saveDisplayName } from './playerIdentity';
 import type { LeaderboardSnapshot, ScoreSubmitPayload, SubmitResult } from './types';
 
@@ -42,11 +43,46 @@ export class LeaderboardService {
   }
 
   setDisplayName(raw: string): string {
-    return saveDisplayName(raw);
+    const check = checkDisplayName(raw);
+    if (!check.ok) return getDisplayName();
+    return saveDisplayName(check.name);
   }
 
   getDisplayName(): string {
     return getDisplayName();
+  }
+
+  /** Só valida (ofensa + unicidade). Não grava. */
+  async evaluateName(
+    raw: string,
+  ): Promise<{ ok: true; name: string } | { ok: false; name: string; reason: NameRejectReason }> {
+    const local = checkDisplayName(raw);
+    if (!local.ok) {
+      return { ok: false, name: local.name, reason: local.reason ?? 'too_short' };
+    }
+
+    const takenInSnapshot = this.snapshot.entries.some(
+      (e) => e.playerId !== getPlayerId() && namesCollide(e.displayName, local.name),
+    );
+    if (takenInSnapshot) {
+      return { ok: false, name: local.name, reason: 'taken' };
+    }
+
+    const free = await this.client.isNameAvailable(local.name, getPlayerId());
+    if (!free) {
+      return { ok: false, name: local.name, reason: 'taken' };
+    }
+
+    return { ok: true, name: local.name };
+  }
+
+  /** Valida ofensa + unicidade antes de jogar. Só grava o nome se passar. */
+  async assertPlayableName(
+    raw: string,
+  ): Promise<{ ok: true; name: string } | { ok: false; name: string; reason: NameRejectReason }> {
+    const result = await this.evaluateName(raw);
+    if (result.ok) saveDisplayName(result.name);
+    return result;
   }
 
   getPlayerId(): string {

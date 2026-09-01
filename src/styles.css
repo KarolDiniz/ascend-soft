@@ -1427,6 +1427,19 @@ body {
   animation: badge-wiggle 0.4s steps(4);
 }
 
+.player-name-hint {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-align: center;
+  min-height: 1.1em;
+}
+
+.player-name-hint.is-error {
+  color: #b45c56;
+}
+
 .global-leaderboard {
   z-index: 3;
   display: none;

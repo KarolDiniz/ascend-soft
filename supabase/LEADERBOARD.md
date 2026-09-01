@@ -33,6 +33,8 @@ cp .env.example .env
 
 Edite `.env` com suas credenciais.
 
+Depois rode de novo o `supabase/schema.sql` no SQL Editor (dá para executar o arquivo inteiro). Ele agora também trava **nomes ofensivos** e **nomes repetidos** no ranking.
+
 ### 5. Rodar
 
 ```bash
