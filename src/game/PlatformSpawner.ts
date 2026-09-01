@@ -3,6 +3,7 @@ import { pickPhaseMaterial } from './PhaseRunOrder';
 import { phaseDifficultyScale, phaseHazardScale } from './ThemedPhases';
 import { getBehaviorDef } from './platform/behaviors';
 import { estimateLedgeWidth, rollLedgeWidth } from './platform/ledgeSizes';
+import { TRAMPOLINE } from './platform/trampoline';
 import { Platform } from './Platform';
 import { PHYS, REACH } from './physics';
 
@@ -60,6 +61,8 @@ export class PlatformSpawner {
   private worldHalfW = 180;
   private lastWasFading = false;
   private lastDir = 1;
+  private lastPath: Platform | null = null;
+  private spawnsSinceTrampoline = 0;
 
   constructor(seed = Date.now()) {
     this.rand = mulberry32(seed);
@@ -71,6 +74,8 @@ export class PlatformSpawner {
     this.highestY = 0;
     this.lastWasFading = false;
     this.lastDir = 1;
+    this.lastPath = null;
+    this.spawnsSinceTrampoline = 0;
 
     const starters: { x: number; y: number; w: number; material: MaterialId; seed: number; moving?: boolean; moveAmp?: number; moveSpeed?: number }[] = [
       { x: 0, y: 0, w: 72, material: starterMaterial, seed: 101 },
@@ -110,6 +115,7 @@ export class PlatformSpawner {
       );
     }
     this.highestY = 112;
+    this.lastPath = this.platforms[this.platforms.length - 1] ?? null;
   }
 
   update(playerY: number, cameraY: number, viewH: number): void {
@@ -120,13 +126,17 @@ export class PlatformSpawner {
 
     const killBelow = Math.min(cameraY - viewH * 0.7, playerY - 480);
     this.platforms = this.platforms.filter((p) => p.alive && p.y > killBelow - 40);
+    if (this.lastPath && !this.platforms.includes(this.lastPath)) {
+      this.lastPath = this.highestPathPlatform();
+    }
   }
 
   private spawnNext(): void {
     const height = this.highestY;
     const difficulty = phaseDifficultyScale(height);
     const hazard = phaseHazardScale(height);
-    const last = this.platforms[this.platforms.length - 1];
+    const last = this.lastPath ?? this.platforms[this.platforms.length - 1];
+    if (!last) return;
 
     const gapYMin = REACH.minGapY;
     const gapYMax = Math.min(
@@ -247,21 +257,79 @@ export class PlatformSpawner {
       fading = true;
     }
 
+    const pathPlat = new Platform({
+      x,
+      y,
+      w,
+      material,
+      moving,
+      fading,
+      moveAmp: moving ? moveAmp : 0,
+      moveSpeed: moving ? moveSpeed : undefined,
+      seed: height * 31.7 + this.platforms.length * 997 + material.charCodeAt(0),
+    });
+    this.platforms.push(pathPlat);
+    this.lastPath = pathPlat;
+    this.highestY = y;
+    this.lastWasFading = fading;
+    this.trySpawnTrampoline(pathPlat);
+  }
+
+  private highestPathPlatform(): Platform | null {
+    let best: Platform | null = null;
+    for (const p of this.platforms) {
+      if (p.isTrampoline || !p.alive) continue;
+      if (!best || p.y > best.y) best = p;
+    }
+    return best;
+  }
+
+  private trySpawnTrampoline(path: Platform): void {
+    this.spawnsSinceTrampoline += 1;
+    if (path.y < TRAMPOLINE.minY) return;
+    if (this.spawnsSinceTrampoline < TRAMPOLINE.minSpacing) return;
+    if (this.rand() > TRAMPOLINE.chance) return;
+
+    const w = TRAMPOLINE.width;
+    const gap =
+      TRAMPOLINE.sideGapMin + this.rand() * (TRAMPOLINE.sideGapMax - TRAMPOLINE.sideGapMin);
+    const offset = path.w / 2 + w / 2 + gap;
+    const margin = w / 2 + 8;
+    const maxX = this.worldHalfW - margin;
+    const outer = path.x >= 0 ? 1 : -1;
+    const candidates = [path.x + outer * offset, path.x - outer * offset];
+    let x: number | null = null;
+    for (const cand of candidates) {
+      if (cand >= -maxX && cand <= maxX) {
+        x = cand;
+        break;
+      }
+    }
+    if (x == null) return;
+
+    const y = path.y + TRAMPOLINE.yOffset;
+    const dy = Math.abs(y - path.y);
+    const maxJumpX = maxReachableCenterGap(path.w, w, Math.max(dy, 8));
+    if (Math.abs(x - path.x) > maxJumpX) return;
+
+    for (const p of this.platforms.slice(-6)) {
+      if (p === path) continue;
+      const closeY = Math.abs(p.y - y) < 36;
+      const closeX = Math.abs(p.x - x) < p.w / 2 + w / 2 + 14;
+      if (closeY && closeX) return;
+    }
+
     this.platforms.push(
       new Platform({
         x,
         y,
         w,
-        material,
-        moving,
-        fading,
-        moveAmp: moving ? moveAmp : 0,
-        moveSpeed: moving ? moveSpeed : undefined,
-        seed: height * 31.7 + this.platforms.length * 997 + material.charCodeAt(0),
+        material: path.material,
+        trampoline: true,
+        seed: path.seed + 7919,
       }),
     );
-    this.highestY = y;
-    this.lastWasFading = fading;
+    this.spawnsSinceTrampoline = 0;
   }
 
   private pickX(fromX: number, minGapX: number, maxGapX: number, w: number): number {

@@ -3,6 +3,7 @@ import type { Platform } from './Platform';
 import type { MaterialId } from '../audio/materials';
 import { isSoapBarMaterial } from './platform/soapColors';
 import { PHYS } from './physics';
+import { TRAMPOLINE } from './platform/trampoline';
 import { PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
 import { PIXEL, enablePixelMode, fillPx, px, snapPt } from '../theme/pixel';
 import {
@@ -62,6 +63,8 @@ export class Player {
   /** Olhar lateral suave (tela inicial) */
   lookOffset = 0;
   groundedPlatform: Platform | null = null;
+  private launchLockT = 0;
+  trampolineWindup = false;
 
   /** Impulso de alegria — editor de personagem / feedback */
   nudgeHappy(): void {
@@ -121,6 +124,8 @@ export class Player {
     this.mouthOpen = false;
     this.lookOffset = 0;
     this.jumpBoost = 1;
+    this.launchLockT = 0;
+    this.trampolineWindup = false;
   }
 
   update(dt: number, input: Input): JumpResult {
@@ -128,7 +133,10 @@ export class Player {
     const axis = input.moveAxis;
     if (Math.abs(axis) > 0.08) this.facing = Math.sign(axis);
 
-    if (Math.abs(axis) > 0.04) {
+    if (this.trampolineWindup) {
+      this.vx = 0;
+      input.consumeJump();
+    } else if (Math.abs(axis) > 0.04) {
       const sticky = this.groundedPlatform?.behavior === 'sticky';
       this.vx += axis * this.moveAccel * dt * (sticky ? 0.72 : 1);
     } else {
@@ -142,9 +150,10 @@ export class Player {
     if (this.onGround) this.coyote = 0.11;
     else this.coyote = Math.max(0, this.coyote - dt);
 
-    const groundedJump = this.onGround || this.coyote > 0;
-    const tapJump = input.consumeJump();
-    const autoGroundJump = input.autoJump && groundedJump && this.vy <= 40;
+    const groundedJump = !this.trampolineWindup && (this.onGround || this.coyote > 0);
+    const tapJump = this.trampolineWindup ? false : input.consumeJump();
+    const autoGroundJump =
+      !this.trampolineWindup && input.autoJump && groundedJump && this.vy <= 40;
     if (tapJump || autoGroundJump) {
       if (groundedJump) {
         const leaving = this.groundedPlatform;
@@ -172,21 +181,30 @@ export class Player {
       }
     }
 
-    if (!input.jumpHeld && this.vy > 90) {
+    if (!input.jumpHeld && this.vy > 90 && this.launchLockT <= 0) {
       this.vy *= 0.9;
     }
+
+    if (this.launchLockT > 0) this.launchLockT = Math.max(0, this.launchLockT - dt);
 
     this.vy -= this.gravity * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
     // Springy squash — fluid in state, snapped only at draw
-    const targetStretch = this.onGround
-      ? 1
-      : 1 + Math.min(0.28, Math.abs(this.vy) / 1000);
-    const targetSquash = this.onGround ? 1 : 1 / targetStretch;
-    this.stretch += (targetStretch - this.stretch) * Math.min(1, 16 * dt);
-    this.squash += (targetSquash - this.squash) * Math.min(1, 16 * dt);
+    const targetStretch = this.trampolineWindup
+      ? 0.52
+      : this.onGround
+        ? 1
+        : 1 + Math.min(0.28, Math.abs(this.vy) / 1000);
+    const targetSquash = this.trampolineWindup
+      ? 1.72
+      : this.onGround
+        ? 1
+        : 1 / targetStretch;
+    const squashLerp = this.trampolineWindup ? 9 : 16;
+    this.stretch += (targetStretch - this.stretch) * Math.min(1, squashLerp * dt);
+    this.squash += (targetSquash - this.squash) * Math.min(1, squashLerp * dt);
 
     if (this.airJumpFlashT > 0) {
       this.airJumpFlashT = Math.max(0, this.airJumpFlashT - dt);
@@ -301,6 +319,34 @@ export class Player {
     this.landImpactT = 0.26;
     const boost = platform.behaviorDef.jumpBoost;
     if (boost > 1) this.jumpBoost = Math.max(this.jumpBoost, boost);
+  }
+
+  beginTrampolineWindup(): void {
+    this.trampolineWindup = true;
+    this.vx = 0;
+  }
+
+  /** Antecipa a câmera na subida do trampolim para o jogador não sair do topo. */
+  get upwardLead(): number {
+    if (this.launchLockT <= 0) return 0;
+    return Math.max(0, this.vy) * 0.3;
+  }
+
+  /** Bounce imediato — o trampolim não espera o botão de pulo. */
+  launchFromTrampoline(platform: Platform): void {
+    this.trampolineWindup = false;
+    this.y = platform.surfaceY + this.h / 2;
+    this.vy = this.jumpVel * TRAMPOLINE.launchMul;
+    this.onGround = false;
+    this.coyote = 0;
+    this.groundedPlatform = null;
+    this.airJumpsLeft = PHYS.maxAirJumps;
+    this.launchLockT = TRAMPOLINE.launchLockS;
+    this.squash = 1.78;
+    this.stretch = 0.46;
+    this.landImpactT = 0.26;
+    impulseAccessoryHop(this.motion, this.vy);
+    platform.notePlayerOff(true);
   }
 
   stickToSurface(platform: Platform): void {

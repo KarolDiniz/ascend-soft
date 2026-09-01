@@ -806,7 +806,7 @@ export class Game {
     }
     this.hud.update(this.height, this.best, this.breathCount, this.perfectStreak);
 
-    this.camera.follow(this.player.y, this.H * 0.18);
+    this.camera.follow(this.player.y + this.player.upwardLead, this.H * 0.18);
     this.camera.update(dt);
 
     if (this.spawnGrace > 0) this.spawnGrace -= dt;
@@ -865,6 +865,14 @@ export class Game {
       const mat = p.getMaterialDef();
 
       p.notePlayerOn(impact * (perfect ? 1.2 : 1));
+
+      if (p.armTrampoline()) {
+        this.player.landOn(p);
+        this.player.beginTrampolineWindup();
+        this.player.applyLandSquash(impact * 1.2);
+        return;
+      }
+
       this.player.landOn(p);
       this.player.applyLandSquash(impact * (perfect ? 1.15 : 1));
       this.player.trailColor = mat.particle;
@@ -1266,6 +1274,20 @@ export class Game {
         break;
       case 'vanishUnderPlayer':
         break;
+      case 'trampolineLaunch': {
+        if (!this.player.trampolineWindup) break;
+        if (this.player.groundedPlatform && this.player.groundedPlatform !== p) break;
+        this.player.launchFromTrampoline(p);
+        this.particles.burst(this.player.x, p.surfaceY, mat.particle, 18, 'foam', false);
+        this.particles.burst(this.player.x, p.surfaceY, '#ffffff', 10, 'glitter', false);
+        this.addFloater(this.player.x, p.surfaceY + 18, 'boing!', mat.particle);
+        this.audio.playTrampoline();
+        if (!this.userSettings.reduceMotion) {
+          this.camera.nudgePerfect(10);
+          this.screenPunch = Math.max(this.screenPunch, 0.52);
+        }
+        break;
+      }
     }
   }
 

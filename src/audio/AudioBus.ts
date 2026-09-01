@@ -716,6 +716,17 @@ export class AudioBus {
     });
   }
 
+  playTrampoline(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      this.duckAmbient(140, 0.2);
+      this.tone(ctx, sfx, 'triangle', 220, 520, 0.07, 0.07, t);
+      this.tone(ctx, sfx, 'sine', 380, 140, 0.28, 0.08, t + 0.02);
+      this.tone(ctx, sfx, 'triangle', 640, 280, 0.16, 0.045, t + 0.04);
+      this.noiseBurst(ctx, sfx, 0.06, 900, 0.04, t + 0.01, 'bandpass');
+    });
+  }
+
   playCrumbleLoop(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;

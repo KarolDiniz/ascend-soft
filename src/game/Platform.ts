@@ -15,7 +15,10 @@ import { hasSpongeFlies, isSpongeFlyScatterDone } from './platform/spongeFlies';
 import { buildPlatformPersonality, type PlatformPersonality } from './platform/platformPersonality';
 import { getKittenCount, kittenIndexAtPlayer } from './platform/kittenPlatform';
 import { pickVariant } from './platform/PlatformVariant';
+import { TRAMPOLINE } from './platform/trampoline';
+import { drawTrampolinePlatform } from './platform/trampolineVisual';
 import type { PlatformDrawState, PlatformVariant, VariantDef } from './platform/types';
+import { PIXEL } from '../theme/pixel';
 
 const SINK_MAX = 7.8;
 const PRESS_MIN = 0.28;
@@ -33,7 +36,8 @@ export type PlatformEvent =
   | { type: 'vanishUnderPlayer' }
   | { type: 'mouseSqueak' }
   | { type: 'spongeFlyBuzz' }
-  | { type: 'honeyBeeBuzz' };
+  | { type: 'honeyBeeBuzz' }
+  | { type: 'trampolineLaunch' };
 
 export class Platform {
   x: number;
@@ -60,6 +64,13 @@ export class Platform {
   readonly seed: number;
 
   occupiedByPlayer = false;
+  /** Desvio lateral: bounce alto, fora da cadeia da rota. */
+  readonly isTrampoline: boolean;
+  trampolineSpent = false;
+  trampolineArmed = false;
+  trampolineCompress = 0;
+  trampolineVel = 0;
+  trampolineWindT = 0;
 
   pressTarget = 0;
   pressAmount = 0;
@@ -118,11 +129,13 @@ export class Platform {
     moveAmp?: number;
     moveSpeed?: number;
     seed?: number;
+    trampoline?: boolean;
   }) {
     this.x = opts.x;
     this.y = opts.y;
     this.w = opts.w;
     this.h = 16;
+    this.isTrampoline = opts.trampoline === true;
     this.material = opts.material;
     this.seed = opts.seed ?? Math.random() * 10000;
     this.personality = buildPlatformPersonality(this.seed, this.material);
@@ -137,8 +150,23 @@ export class Platform {
     this.variant = this.variantDef.id;
     this.behaviorDef = getBehaviorDef(this.material);
     this.behavior = this.behaviorDef.behavior;
-    this.moving = opts.moving ?? false;
-    this.fading = opts.fading ?? false;
+    if (this.isTrampoline) {
+      this.h = 14;
+      this.variantDef = { ...this.variantDef, visualDepth: 0.72, visualSpread: 1.08 };
+      this.behaviorDef = {
+        behavior: 'elastic',
+        lifetime: Infinity,
+        maxLands: Infinity,
+        shatterImpact: 99,
+        floater: '',
+        mortal: false,
+        jumpBoost: 1,
+        canMove: false,
+      };
+      this.behavior = 'elastic';
+    }
+    this.moving = this.isTrampoline ? false : (opts.moving ?? false);
+    this.fading = this.isTrampoline ? false : (opts.fading ?? false);
     this.fadeLife = REACH.fadeVisibleMin + 0.8;
     this.baseX = opts.x;
     this.moveAmp = opts.moveAmp ?? 12;
@@ -146,6 +174,18 @@ export class Platform {
       opts.moveSpeed ??
       REACH.moveSpeedMin + Math.random() * (REACH.moveSpeedMax - REACH.moveSpeedMin);
     this.movePhase = Math.random() * Math.PI * 2;
+  }
+
+  /** Inicia a compressão; o bounce dispara no fim da mola. */
+  armTrampoline(): boolean {
+    if (!this.isTrampoline || this.trampolineSpent || this.trampolineArmed) return false;
+    this.trampolineArmed = true;
+    this.trampolineCompress = 0;
+    this.trampolineVel = 0;
+    this.trampolineWindT = 0;
+    this.pressAmount = 0.35;
+    this.pressVel = 4;
+    return true;
   }
 
   get left(): number {
@@ -161,7 +201,11 @@ export class Platform {
     return this.y - this.h / 2;
   }
   get surfaceY(): number {
-    return this.top - this.sink;
+    const drop =
+      this.isTrampoline && this.trampolineArmed
+        ? Math.max(0, this.trampolineCompress) * TRAMPOLINE.compressDrop
+        : 0;
+    return this.top - this.sink - drop;
   }
   get isPressed(): boolean {
     return this.occupiedByPlayer;
@@ -344,7 +388,11 @@ export class Platform {
 
   update(dt: number, time: number): void {
     const prevX = this.x;
-    this.wobble += dt * (this.behavior === 'elastic' || this.behavior === 'sticky' ? 3.4 : 2.4);
+    this.wobble += dt * (this.isTrampoline
+      ? 5.6
+      : this.behavior === 'elastic' || this.behavior === 'sticky'
+        ? 3.4
+        : 2.4);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 8);
 
     if (this.cheeseMouseFleeT > 0) {
@@ -389,34 +437,67 @@ export class Platform {
     if (this.kittenMeowFlash > 0) this.kittenMeowFlash = Math.max(0, this.kittenMeowFlash - dt * 3.8);
     if (this.kittenMeowCooldown > 0) this.kittenMeowCooldown = Math.max(0, this.kittenMeowCooldown - dt);
 
+    if (this.isTrampoline && this.trampolineArmed && !this.trampolineSpent) {
+      this.trampolineWindT = Math.min(1, this.trampolineWindT + dt / TRAMPOLINE.compressS);
+      const t = this.trampolineWindT;
+      this.trampolineCompress = 1 - (1 - t) * (1 - t);
+      if (t >= 1) {
+        this.trampolineSpent = true;
+        this.trampolineArmed = false;
+        this.trampolineVel = TRAMPOLINE.recoilVel;
+        this.emit({ type: 'trampolineLaunch' });
+      }
+    } else if (this.isTrampoline && this.trampolineSpent) {
+      const force =
+        (0 - this.trampolineCompress) * TRAMPOLINE.jiggleK - this.trampolineVel * TRAMPOLINE.jiggleDamp;
+      this.trampolineVel += force * dt;
+      this.trampolineCompress += this.trampolineVel * dt;
+      if (this.trampolineCompress > 1.15) {
+        this.trampolineCompress = 1.15;
+        this.trampolineVel *= -0.35;
+      }
+      if (this.trampolineCompress < -0.55) {
+        this.trampolineCompress = -0.55;
+        this.trampolineVel *= -0.35;
+      }
+    } else if (this.isTrampoline) {
+      this.trampolineCompress =
+        0.14 + Math.sin(this.wobble * 1.45) * 0.11 + Math.sin(this.wobble * 3.2) * 0.05;
+    }
+
     // Mola elástica — alvo 0 em repouso; chantilly acumula leve pressão enquanto pisado
     const mat = MATERIALS[this.material];
-    const foamSustain =
-      this.occupiedByPlayer && this.behavior === 'foamPop'
-        ? Math.min(0.68, PRESS_MIN + 0.24 + this.pressTime * 0.36)
-        : 0;
-    const target = foamSustain;
-    const soft =
-      this.behavior === 'elastic' ||
-      this.behavior === 'foamPop' ||
-      this.behavior === 'melt' ||
-      this.behavior === 'sticky';
-    const k = soft ? 156 : 178;
-    const d = soft ? 7.2 : 8.4;
-    const force = (target - this.pressAmount) * k - this.pressVel * d;
-    this.pressVel += force * dt;
-    this.pressAmount += this.pressVel * dt;
-    if (this.pressAmount > 1.85) {
-      this.pressAmount = 1.85;
-      this.pressVel *= 0.32;
-    }
-    if (this.pressAmount < -0.48) {
-      this.pressAmount = -0.48;
-      this.pressVel *= 0.38;
+    if (this.isTrampoline) {
+      this.pressAmount = this.trampolineCompress;
+      this.pressVel = 0;
+    } else {
+      const foamSustain =
+        this.occupiedByPlayer && this.behavior === 'foamPop'
+          ? Math.min(0.68, PRESS_MIN + 0.24 + this.pressTime * 0.36)
+          : 0;
+      const target = foamSustain;
+      const soft =
+        this.behavior === 'elastic' ||
+        this.behavior === 'foamPop' ||
+        this.behavior === 'melt' ||
+        this.behavior === 'sticky';
+      const k = soft ? 156 : 178;
+      const d = soft ? 7.2 : 8.4;
+      const force = (target - this.pressAmount) * k - this.pressVel * d;
+      this.pressVel += force * dt;
+      this.pressAmount += this.pressVel * dt;
+      if (this.pressAmount > 1.85) {
+        this.pressAmount = 1.85;
+        this.pressVel *= 0.32;
+      }
+      if (this.pressAmount < -0.48) {
+        this.pressAmount = -0.48;
+        this.pressVel *= 0.38;
+      }
     }
 
     // Comportamento mortal enquanto o jogador está em cima
-    if (this.occupiedByPlayer && this.solid) {
+    if (this.occupiedByPlayer && this.solid && !this.isTrampoline) {
       this.pressTime += dt;
       this.updateBehaviorWhilePressed(dt);
     } else if (!this.occupiedByPlayer) {
@@ -437,16 +518,23 @@ export class Platform {
     const visual = Math.max(0, this.pressAmount);
     const meltFlat = this.meltProgress;
     this.squash = Math.max(visual, meltFlat * 0.85);
-    const sinkBase =
-      Math.max(0, this.pressAmount) * SINK_MAX * (0.75 + 0.35 * Math.min(1.5, mat.squash));
-    const meltSink = meltFlat * 10;
-    const crumbleSink = this.behavior === 'crumble' ? (1 - this.integrity) * 12 : 0;
-    this.sink = sinkBase + meltSink + crumbleSink;
+    if (this.isTrampoline) {
+      this.sink = 0;
+      this.deformX = 1;
+      this.deformY = 1;
+    } else {
+      const sinkBase =
+        Math.max(0, this.pressAmount) * SINK_MAX * (0.75 + 0.35 * Math.min(1.5, mat.squash));
+      const meltSink = meltFlat * 10;
+      const crumbleSink = this.behavior === 'crumble' ? (1 - this.integrity) * 12 : 0;
+      this.sink = sinkBase + meltSink + crumbleSink;
 
-    this.deformX = 1 + meltFlat * 0.35 + (this.behavior === 'foamPop' ? visual * 0.22 : 0);
-    this.deformY = 1 - meltFlat * 0.55 - (this.behavior === 'foamPop' ? visual * 0.3 : 0);
+      this.deformX = 1 + meltFlat * 0.35 + (this.behavior === 'foamPop' ? visual * 0.22 : 0);
+      this.deformY = 1 - meltFlat * 0.55 - (this.behavior === 'foamPop' ? visual * 0.3 : 0);
+    }
 
     if (
+      !this.isTrampoline &&
       !this.occupiedByPlayer &&
       Math.abs(this.pressAmount) < 0.04 &&
       Math.abs(this.pressVel) < 0.28 &&
@@ -590,6 +678,31 @@ export class Platform {
 
     const hitHw = (this.w / 2) * Math.max(0.85, squashX);
     const hitHh = (this.h / 2) * Math.max(0.4, squashY);
+
+    if (this.isTrampoline) {
+      const u = PIXEL.unit;
+      const restCenter = toScreen(this.x, this.y);
+      const restLeft = toScreen(this.x - this.w / 2, this.y);
+      const restTop = toScreen(this.x, this.y + this.h / 2);
+      const screenW = (restCenter.x - restLeft.x) * 2;
+      const screenH = Math.max(4, (restCenter.y - restTop.y) * 2);
+      const restSurfaceY = restCenter.y - screenH / 2;
+      const compress = this.trampolineCompress;
+      drawTrampolinePlatform(
+        ctx,
+        restCenter.x - screenW / 2,
+        restSurfaceY,
+        screenW,
+        u,
+        compress,
+        this.wobble,
+        mat,
+        this.trampolineSpent,
+        this.trampolineVel,
+      );
+      return;
+    }
+
     const center = toScreen(this.x, cy);
     const leftPt = toScreen(this.x - hitHw, cy);
     const topPt = toScreen(this.x, cy + hitHh);
