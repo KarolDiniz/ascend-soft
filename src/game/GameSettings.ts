@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   bannerMode: 'first',
   reduceMotion: false,
   showPlayingRank: true,
-  mobileControls: 'zones',
+  mobileControls: 'pad',
 };
 
 export function loadSettings(): UserSettings {

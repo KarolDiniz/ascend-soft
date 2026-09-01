@@ -37,7 +37,7 @@ export class Input {
   private padJump = false;
   private tiltTarget = 0;
   private tiltAxis = 0;
-  private mode: MobileControlMode = 'zones';
+  private mode: MobileControlMode = 'pad';
   private gameplayActive = false;
   private bound = false;
   private tiltListening = false;
