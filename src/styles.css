@@ -75,7 +75,8 @@ body {
 }
 
 .ui .btn,
-.ui input {
+.ui input,
+.ui .leaderboard-toggle {
   pointer-events: auto;
 }
 
@@ -1559,22 +1560,23 @@ body {
 @media (max-width: 899px) {
   .global-leaderboard.is-playing-mode {
     display: flex !important;
-    top: calc(10px + var(--safe-top));
+    top: calc(46px + var(--safe-top));
     right: calc(8px + var(--safe-right));
     width: min(44vw, 156px);
     max-height: min(34vh, 220px);
     overflow: hidden;
-  }
-
-  .leaderboard-toggle {
-    display: none !important;
   }
 }
 
 @media (min-width: 900px) {
   .global-leaderboard.is-playing-mode {
     display: flex !important;
+    top: calc(48px + var(--safe-top));
   }
+}
+
+html.hide-playing-rank .global-leaderboard.is-playing-mode {
+  display: none !important;
 }
 
 .global-leaderboard.is-open {
@@ -1593,7 +1595,7 @@ body {
   position: fixed;
   bottom: calc(16px + var(--safe-bottom));
   right: calc(14px + var(--safe-right, 0px));
-  z-index: 4;
+  z-index: 5;
   padding: 0.55rem 0.75rem;
   border: 3px solid var(--ink);
   background: rgba(255, 252, 248, 0.92);
@@ -1606,6 +1608,21 @@ body {
   image-rendering: pixelated;
 }
 
+.leaderboard-toggle.is-playing {
+  display: block;
+  top: calc(12px + var(--safe-top));
+  right: calc(10px + var(--safe-right));
+  bottom: auto;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.36rem;
+  background: rgba(255, 252, 248, 0.78);
+}
+
+.leaderboard-toggle.is-playing.is-off {
+  opacity: 0.62;
+  background: rgba(255, 252, 248, 0.48);
+}
+
 .leaderboard-toggle:active {
   transform: translate(2px, 2px);
   box-shadow: 1px 1px 0 rgba(90, 97, 108, 0.28);
@@ -1613,12 +1630,6 @@ body {
 
 .leaderboard-toggle.hidden {
   display: none !important;
-}
-
-@media (min-width: 900px) {
-  .leaderboard-toggle {
-    display: none !important;
-  }
 }
 
 .leaderboard-head {

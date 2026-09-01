@@ -15,6 +15,7 @@ export class GlobalLeaderboard {
   private playerId: string;
   private localBest = 0;
   private mode: 'hidden' | 'title' | 'playing' = 'hidden';
+  onPlayingRankToggle: ((show: boolean) => void) | null = null;
 
   constructor() {
     this.panel = document.getElementById('global-leaderboard')!;
@@ -25,9 +26,13 @@ export class GlobalLeaderboard {
     this.uiRoot = document.getElementById('ui')!;
     this.playerId = leaderboardService.getPlayerId();
 
-    this.mobileToggle?.addEventListener('click', () => {
-      const open = this.panel.classList.toggle('is-open');
-      this.mobileToggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    this.mobileToggle?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.mode !== 'playing') return;
+      const show = document.documentElement.classList.contains('hide-playing-rank');
+      this.onPlayingRankToggle?.(show);
+      this.syncPlayingToggle();
     });
 
     this.unsubscribe = leaderboardService.subscribe((snap) => this.render(snap));
@@ -57,7 +62,8 @@ export class GlobalLeaderboard {
     this.panel.classList.remove('hidden', 'is-playing-mode');
     this.panel.classList.add('is-title-mode');
     this.mobileToggle?.classList.add('hidden');
-    this.mobileToggle?.setAttribute('aria-expanded', 'false');
+    this.mobileToggle?.classList.remove('is-playing', 'is-off');
+    this.mobileToggle?.setAttribute('aria-pressed', 'true');
     this.panel.classList.remove('is-open');
     leaderboardService.onTitleShow();
     this.render(leaderboardService.getSnapshot());
@@ -74,8 +80,9 @@ export class GlobalLeaderboard {
     this.render(leaderboardService.getSnapshot());
 
     this.panel.classList.remove('is-open');
-    this.mobileToggle?.classList.add('hidden');
-    this.mobileToggle?.setAttribute('aria-expanded', 'false');
+    this.mobileToggle?.classList.remove('hidden');
+    this.mobileToggle?.classList.add('is-playing');
+    this.syncPlayingToggle();
   }
 
   onFallShow(): void {
@@ -83,6 +90,7 @@ export class GlobalLeaderboard {
     this.panel.classList.add('hidden');
     this.panel.classList.remove('is-title-mode', 'is-playing-mode', 'is-open');
     this.mobileToggle?.classList.add('hidden');
+    this.mobileToggle?.classList.remove('is-playing', 'is-off');
     leaderboardService.onPlayingHide();
   }
 
@@ -101,6 +109,16 @@ export class GlobalLeaderboard {
     if (this.panel.parentElement !== this.uiRoot) {
       this.uiRoot.appendChild(this.panel);
     }
+  }
+
+  private syncPlayingToggle(): void {
+    const visible = !document.documentElement.classList.contains('hide-playing-rank');
+    this.mobileToggle?.classList.toggle('is-off', !visible);
+    this.mobileToggle?.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    this.mobileToggle?.setAttribute(
+      'aria-label',
+      visible ? 'Ocultar ranking' : 'Mostrar ranking',
+    );
   }
 
   private render(snap: LeaderboardSnapshot): void {

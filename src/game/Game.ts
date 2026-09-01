@@ -195,6 +195,7 @@ export class Game {
   applyUserSettings(settings: UserSettings): void {
     this.userSettings = { ...settings };
     document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion);
+    document.documentElement.classList.toggle('hide-playing-rank', !settings.showPlayingRank);
 
     if (this.lightMode !== settings.lightMode) {
       this.lightMode = settings.lightMode;

@@ -22,6 +22,7 @@ export class TitleSettings {
   private landIntensity: HTMLSelectElement;
   private bannerMode: HTMLSelectElement;
   private reduceMotion: HTMLInputElement;
+  private showPlayingRank: HTMLInputElement;
   private settings: UserSettings;
   private open = false;
 
@@ -41,6 +42,7 @@ export class TitleSettings {
     this.landIntensity = document.getElementById('land-intensity') as HTMLSelectElement;
     this.bannerMode = document.getElementById('banner-mode') as HTMLSelectElement;
     this.reduceMotion = document.getElementById('reduce-motion') as HTMLInputElement;
+    this.showPlayingRank = document.getElementById('show-playing-rank') as HTMLInputElement;
 
     this.settings = loadSettings();
     this.syncUiFromSettings();
@@ -85,6 +87,10 @@ export class TitleSettings {
       this.patch({ reduceMotion: this.reduceMotion.checked });
     });
 
+    this.showPlayingRank.addEventListener('change', () => {
+      this.patch({ showPlayingRank: this.showPlayingRank.checked });
+    });
+
     this.btnOpen.addEventListener('click', () => this.toggle());
     this.btnClose.addEventListener('click', () => this.close());
     this.backdrop.addEventListener('click', () => this.close());
@@ -103,6 +109,10 @@ export class TitleSettings {
 
   isOpen(): boolean {
     return this.open;
+  }
+
+  setShowPlayingRank(show: boolean): void {
+    this.patch({ showPlayingRank: show });
   }
 
   toggle(): void {
@@ -124,9 +134,11 @@ export class TitleSettings {
     this.landIntensity.value = s.landIntensity;
     this.bannerMode.value = s.bannerMode;
     this.reduceMotion.checked = s.reduceMotion;
+    this.showPlayingRank.checked = s.showPlayingRank;
     this.volume.value = String(s.volume);
     this.hud.setMuteLabel(s.muted || s.volume === 0);
     document.documentElement.classList.toggle('reduce-motion', s.reduceMotion);
+    document.documentElement.classList.toggle('hide-playing-rank', !s.showPlayingRank);
   }
 
   private openPanel(): void {

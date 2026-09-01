@@ -23,6 +23,7 @@ const leaveGuard = new LeaveGuard(audio);
 const globalLeaderboard = new GlobalLeaderboard();
 const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
+globalLeaderboard.onPlayingRankToggle = (show) => titleSettings.setShowPlayingRank(show);
 
 hud.onTitleShow = () => {
   globalLeaderboard.setLocalBest(game.best);

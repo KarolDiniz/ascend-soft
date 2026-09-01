@@ -12,6 +12,7 @@ export interface UserSettings {
   landIntensity: LandIntensity;
   bannerMode: BannerMode;
   reduceMotion: boolean;
+  showPlayingRank: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   landIntensity: 'medium',
   bannerMode: 'first',
   reduceMotion: false,
+  showPlayingRank: true,
 };
 
 export function loadSettings(): UserSettings {
@@ -60,6 +62,7 @@ function sanitize(p: Partial<UserSettings>): Partial<UserSettings> {
     out.bannerMode = p.bannerMode;
   }
   if (typeof p.reduceMotion === 'boolean') out.reduceMotion = p.reduceMotion;
+  if (typeof p.showPlayingRank === 'boolean') out.showPlayingRank = p.showPlayingRank;
   return out;
 }
 

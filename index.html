@@ -56,8 +56,9 @@
           id="btn-leaderboard-toggle"
           class="leaderboard-toggle hidden"
           type="button"
-          aria-expanded="false"
+          aria-pressed="true"
           aria-controls="global-leaderboard"
+          aria-label="Ocultar ranking"
         >
           ranking
         </button>
@@ -177,6 +178,13 @@
                 </label>
 
                 <p class="settings-section">Jogo</p>
+                <label class="setting-row">
+                  <input id="show-playing-rank" type="checkbox" checked />
+                  <span class="setting-label">
+                    <span class="setting-title">Ranking na partida</span>
+                    <span class="setting-hint">lista no canto enquanto você sobe</span>
+                  </span>
+                </label>
                 <label class="setting-row setting-row--select">
                   <span class="setting-label">
                     <span class="setting-title">Banners de reflexão</span>
