@@ -30,20 +30,20 @@
           <div class="hud-block hud-block--center">
             <span id="hud-streak" class="hud-streak hidden"></span>
             <span class="hud-label">respiros</span>
-            <span id="hud-breaths" class="hud-value hud-value--sm">0</span>
+            <span id="hud-breaths" class="hud-value">0</span>
           </div>
         </header>
 
         <div id="material-toast" class="material-toast hidden" aria-live="polite" role="status">
+          <div id="toast-speaker-panel" class="toast-speaker-panel" aria-hidden="true">
+            <canvas id="toast-speaker" class="toast-speaker" width="128" height="152"></canvas>
+          </div>
           <div class="toast-banner-layout">
-            <div id="toast-speaker-panel" class="toast-speaker-panel" aria-hidden="true">
-              <canvas id="toast-speaker" class="toast-speaker" width="128" height="152"></canvas>
+            <div class="toast-banner-head">
+              <span class="toast-eyebrow">reflexão</span>
+              <span id="toast-phase" class="toast-phase"></span>
             </div>
             <div class="toast-banner-body">
-              <div class="toast-banner-head">
-                <span class="toast-eyebrow">reflexão</span>
-                <span id="toast-phase" class="toast-phase"></span>
-              </div>
               <blockquote class="toast-quote-wrap">
                 <p id="toast-quote" class="toast-quote"></p>
               </blockquote>
