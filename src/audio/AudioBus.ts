@@ -1743,14 +1743,49 @@ export class AudioBus {
     this.tone(ctx, sfx, 'triangle', 260 * pitch, 130 * pitch, 0.07, v * 0.2, t + 0.025);
   }
 
+  private bobaPearl(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    pitch: number,
+    v: number,
+    size: number,
+  ): void {
+    const p = pitch * (0.92 + Math.random() * 0.16);
+    const bite = 0.055 + size * 0.04;
+    const f = (210 + size * 90) * p;
+    this.tone(ctx, sfx, 'sine', f, f * 0.32, bite, v * (0.52 + size * 0.28), t);
+    this.tone(ctx, sfx, 'triangle', f * 1.55, f * 0.55, bite * 0.7, v * 0.22, t + 0.006);
+    this.noiseBurst(ctx, sfx, 0.022, 1600 + size * 700, v * 0.38, t, 'bandpass');
+    this.softNoise(ctx, sfx, 0.05, 980 * p, v * 0.2, t + 0.01, 'bandpass', 1.4);
+    this.jellyWobble(ctx, sfx, 72 * p, 44 * p, 0.14 + size * 0.08, v * 0.28, t + 0.012, 7.2, 0.1);
+  }
+
+  /** Pouso boba — chá molhado + pérolas de tapioca mastigadas */
   private bobaBlorp(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
     const t = ctx.currentTime;
-    const v = this.impactVol(0.1, impact);
-    this.tone(ctx, sfx, 'sine', 130 * pitch, 62 * pitch, 0.18, v * 0.55, t);
-    this.tone(ctx, sfx, 'sine', 95 * pitch, 48 * pitch, 0.22, v * 0.38, t + 0.015);
-    this.tone(ctx, sfx, 'triangle', 185 * pitch, 92 * pitch, 0.14, v * 0.32, t + 0.028);
-    this.softNoise(ctx, sfx, 0.06, 480, v * 0.24, t + 0.035, 'bandpass');
-    this.tone(ctx, sfx, 'sine', 240 * pitch, 120 * pitch, 0.06, v * 0.12, t + 0.05);
+    const v = this.impactVol(0.12, impact);
+    const p = pitch * (0.96 + Math.random() * 0.08);
+
+    this.warmLandTone(ctx, sfx, 'sine', 96 * p, 38 * p, 0.28, v * 0.7, t, 620);
+    this.warmLandTone(ctx, sfx, 'sine', 132 * p, 58 * p, 0.2, v * 0.38, t + 0.012, 880);
+    this.viscousSquish(ctx, sfx, 0.22, v * 0.55, t, p * 0.9);
+    this.softNoise(ctx, sfx, 0.18, 240, v * 0.32, t, 'lowpass');
+    this.softNoise(ctx, sfx, 0.1, 740, v * 0.22, t + 0.02, 'bandpass', 1.1);
+
+    this.jellyWobble(ctx, sfx, 78 * p, 42 * p, 0.36, v * 0.55, t + 0.018, 5.2, 0.13);
+    this.jellyWobble(ctx, sfx, 108 * p, 64 * p, 0.22, v * 0.28, t + 0.05, 6.4, 0.09);
+
+    const pearls = 2 + Math.floor(Math.random() * 3);
+    let at = 0.028;
+    for (let i = 0; i < pearls; i++) {
+      const size = i === 0 ? 0.85 + Math.random() * 0.2 : 0.4 + Math.random() * 0.45;
+      this.bobaPearl(ctx, sfx, t + at, p, v * (0.92 - i * 0.14), size);
+      at += 0.055 + Math.random() * 0.05;
+    }
+
+    this.tone(ctx, sfx, 'sine', 58 * p, 42 * p, 0.2, v * 0.22, t + 0.16);
+    this.softNoise(ctx, sfx, 0.12, 420, v * 0.16, t + 0.18, 'lowpass');
   }
 
   private featherWhisper(ctx: AudioContext, sfx: GainNode, pitch: number, impact: number): void {
