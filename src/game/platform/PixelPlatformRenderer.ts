@@ -43,6 +43,13 @@ import { drawSpongeFlies } from './spongeFlies';
 import { drawPlatformAmbientDecor } from './platformAmbientDecor';
 import type { PlatformDrawState, PlatformVariant } from './types';
 
+/** Modo leve: sem grão/specks/penduricalhos por plataforma (fillPx em massa). */
+let liteDecor = false;
+
+export function setPlatformLiteDecor(enabled: boolean): void {
+  liteDecor = enabled;
+}
+
 export interface PixelPlatformOverlay {
   crackLevel: number;
   meltProgress: number;
@@ -559,6 +566,7 @@ function drawSoftSpillDrips(a: DrawArgs, behavior: PlatformBehavior): void {
 
 /** Partículas relaxantes bem visíveis ao redor da prateleira */
 function drawRelaxSparkles(a: DrawArgs): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, h, u, mat, seed, time, wobble, personality } = a;
   const mul = personality?.sparkleMul ?? 1;
   const count = scaledCount(11, mul, 6);
@@ -588,6 +596,7 @@ function seeded(seed: number, i: number): number {
 
 /** Migalhas claras na base — só tons pastel */
 function drawDebris(a: DrawArgs, count: number, color: string): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, h, u, seed, personality } = a;
   if (!personality) return;
   const n = scaledCount(count, personality.debrisMul, 2);
@@ -601,6 +610,7 @@ function drawDebris(a: DrawArgs, count: number, color: string): void {
 
 /** Cravinhas nas bordas laterais */
 function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, h, u, seed, personality, time } = a;
   if (!personality) return;
   const n = scaledCount(count, personality.debrisMul * 0.85, 2);
@@ -618,6 +628,7 @@ function drawEdgeFlecks(a: DrawArgs, count: number, color: string): void {
 
 /** Micro-grãos no topo — textura suave */
 function drawSurfaceGrain(a: DrawArgs, count: number, color: string, alpha = 0.4): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, u, seed, personality } = a;
   if (!personality) return;
   const n = scaledCount(count, personality.debrisMul * 0.75, 3);
@@ -630,6 +641,7 @@ function drawSurfaceGrain(a: DrawArgs, count: number, color: string, alpha = 0.4
 
 /** Penduricalhos suaves — algodão, fios, gotas (por seed da prateleira) */
 function drawPersonalityHangs(a: DrawArgs): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, h, u, mat, seed, time, personality } = a;
   if (!personality) return;
   const style = personality.hangStyle;
@@ -678,6 +690,7 @@ function drawPersonalityHangs(a: DrawArgs): void {
 
 /** Twinkling floaters around the platform (idle juice) */
 function drawAmbientSpecks(a: DrawArgs, count: number, color: string): void {
+  if (liteDecor) return;
   const { ctx, cx, sy, w, h, u, seed, time, wobble, personality } = a;
   const n = scaledCount(
     Math.max(3, Math.round(count * 0.82)),

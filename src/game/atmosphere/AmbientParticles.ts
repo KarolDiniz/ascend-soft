@@ -101,14 +101,20 @@ export class AmbientParticles {
   }
 
   setMobileScale(scale: number): void {
-    this.densityScale = Math.max(0.4, Math.min(1, scale));
+    this.densityScale = Math.max(0.1, Math.min(1, scale));
   }
 
   setBudgetScale(scale: number): void {
-    this.budgetScale = Math.max(0.35, Math.min(1, scale));
+    this.budgetScale = Math.max(0.1, Math.min(1, scale));
+  }
+
+  setLite(on: boolean): void {
+    this.lite = on;
+    if (on) this.cullToBudget();
   }
 
   private budgetScale = 1;
+  private lite = false;
 
   private allocWorld(): AmbientParticle | null {
     for (const p of this.items) if (!p.active) return p;
@@ -128,8 +134,12 @@ export class AmbientParticles {
     viewH: number,
   ): void {
     const budget = Math.floor(atm.particleBudget * this.densityScale * this.budgetScale);
-    const maxWorld = Math.min(WORLD_POOL, Math.max(90, Math.floor(budget * 0.62)));
-    const maxScreen = Math.min(SCREEN_POOL, Math.max(80, Math.floor(budget * 0.58)));
+    const floorW = this.lite ? 12 : 90;
+    const floorS = this.lite ? 8 : 80;
+    const maxWorld = Math.min(WORLD_POOL, Math.max(floorW, Math.floor(budget * 0.62)));
+    const maxScreen = Math.min(SCREEN_POOL, Math.max(floorS, Math.floor(budget * 0.58)));
+    this.cullPool(this.items, maxWorld);
+    this.cullPool(this.screen, maxScreen);
 
     // Warm start: fill the view immediately
     if (!this.warmed) {
@@ -152,7 +162,7 @@ export class AmbientParticles {
 
     this.updateWorld(dt, atm, cameraY, viewW, viewH);
     this.updateScreen(dt, viewW, viewH);
-    this.tickMicroEvent(dt, atm, cameraY, viewW, viewH);
+    if (!this.lite) this.tickMicroEvent(dt, atm, cameraY, viewW, viewH);
     this.activeCount = this.countWorld() + this.countScreen();
     this.preferTiny = this.activeCount > atm.particleBudget * 0.85 * this.densityScale;
   }
@@ -232,7 +242,7 @@ export class AmbientParticles {
     viewH: number,
     dt = 1 / 60,
   ): void {
-    if (emitters.length === 0) return;
+    if (this.lite || emitters.length === 0) return;
     this.sceneryAcc += dt * (46 + atm.density * 58) * this.densityScale * (1 + atm.gustStrength * 0.6);
     const mix = atm.getAmbientMix();
     while (this.sceneryAcc >= 1) {
@@ -301,6 +311,20 @@ export class AmbientParticles {
     if (kind === 'popcornKernel') return 'sprinkle';
     if (kind === 'featherWisp') return 'petal';
     return null;
+  }
+
+  private cullToBudget(): void {
+    this.cullPool(this.items, 16);
+    this.cullPool(this.screen, 12);
+  }
+
+  private cullPool(arr: { active: boolean }[], max: number): void {
+    let n = 0;
+    for (const p of arr) {
+      if (!p.active) continue;
+      n += 1;
+      if (n > max) p.active = false;
+    }
   }
 
   private countWorld(): number {
@@ -621,6 +645,7 @@ export class AmbientParticles {
   }
 
   biomeBurst(x: number, y: number, atm: Atmosphere): void {
+    if (this.lite) return;
     const mix = atm.getAmbientMix();
     for (let i = 0; i < 84; i++) {
       const p = this.allocWorld();

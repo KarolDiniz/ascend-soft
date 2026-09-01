@@ -65,6 +65,8 @@ export class Player {
   groundedPlatform: Platform | null = null;
   private launchLockT = 0;
   trampolineWindup = false;
+  /** Sem rastro de pixels — modo leve. */
+  liteFx = false;
 
   /** Impulso de alegria — editor de personagem / feedback */
   nudgeHappy(): void {
@@ -235,7 +237,7 @@ export class Player {
       this.trail[i].life -= dt;
       if (this.trail[i].life <= 0) this.trail.splice(i, 1);
     }
-    if (!this.onGround && this.trailTimer <= 0) {
+    if (!this.liteFx && !this.onGround && this.trailTimer <= 0) {
       this.trail.push({ x: this.x, y: this.y, life: 0.28, color: this.trailColor });
       this.trailTimer = 0.028;
     }
@@ -405,14 +407,16 @@ export class Player {
     const titleBoost = opts.titleBoost ?? false;
 
     // Pixel trail
-    for (const t of this.trail) {
-      const raw = toScreen(t.x, t.y);
-      const s = snapPt(raw.x, raw.y);
-      ctx.globalAlpha = (t.life / 0.28) * 0.45;
-      const sz = Math.max(u, px(this.w * 0.28 * (t.life / 0.28)));
-      fillPx(ctx, s.x - sz / 2, s.y - sz / 2, sz, sz, t.color);
+    if (!this.liteFx) {
+      for (const t of this.trail) {
+        const raw = toScreen(t.x, t.y);
+        const s = snapPt(raw.x, raw.y);
+        ctx.globalAlpha = (t.life / 0.28) * 0.45;
+        const sz = Math.max(u, px(this.w * 0.28 * (t.life / 0.28)));
+        fillPx(ctx, s.x - sz / 2, s.y - sz / 2, sz, sz, t.color);
+      }
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
 
     const raw = toScreen(this.x, this.y);
     const s = snapPt(raw.x, raw.y);

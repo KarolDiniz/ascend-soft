@@ -340,8 +340,8 @@ export class SceneryLayer {
       const s = p.scale * motion.scaleMul;
       const isBird = p.kind === 'bird';
 
-      // Soft contact shadow (light-driven offset) — skip for birds in the sky
-      if (!isBird) {
+      // Soft contact shadow (light-driven offset) — skip for birds and low-perf
+      if (!isBird && !this.skipFar) {
         ctx.save();
         ctx.globalAlpha = vis * 0.28;
         const sx = x - lx * s * 0.35;
@@ -365,6 +365,7 @@ export class SceneryLayer {
       drawn++;
 
       if (isBird) continue;
+      if (this.skipFar) continue;
 
       // Soft rim light / highlight from top-left
       ctx.save();

@@ -24,6 +24,7 @@ import type { Hud } from '../ui/Hud';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { PlatformEvent } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
+import { setPlatformLiteDecor } from './platform/PixelPlatformRenderer';
 import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 import { PASTEL } from '../theme/pastelPalette';
@@ -89,6 +90,7 @@ export class Game {
   private runPerfectRecord = false;
   private background = new Background();
   private fpsEma = 60;
+  private lastRawDt = 1 / 60;
 
   state: GameState = 'title';
   height = 0;
@@ -136,7 +138,7 @@ export class Game {
 
   constructor(canvas: HTMLCanvasElement, audio: AudioBus, hud: Hud) {
     this.canvas = canvas;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) throw new Error('Canvas 2D unavailable');
     this.ctx = ctx;
     this.audio = audio;
@@ -250,6 +252,10 @@ export class Game {
     const p = this.perfProfile();
     this.softScenery.setScale(p.softPassScale);
     this.ambient.setBudgetScale(p.budgetScale);
+    this.ambient.setLite(p.lightMode);
+    this.player.liteFx = p.lightMode;
+    setPlatformLiteDecor(p.skipPlatformDecor);
+    this.particles.setAllowContinuous(!p.skipIdleAmbient);
     this.scenery.configurePerf({
       skipBiomeSprites: p.skipBiomeSprites,
       maxDraw: p.maxSceneryDraw,
@@ -277,6 +283,7 @@ export class Game {
     const loop = (ts: number) => {
       const raw = (ts - this.lastTs) / 1000;
       this.lastTs = ts;
+      this.lastRawDt = raw;
       const dt = Math.min(0.033, Math.max(0.001, raw));
       this.update(dt);
       this.draw();
@@ -440,7 +447,12 @@ export class Game {
     const mobile = this.W < 700;
     const rawDpr = window.devicePixelRatio || 1;
     const cap = mobile ? p.mobileDprCap : p.dprCap;
-    this.dpr = Math.min(cap, rawDpr);
+    let dpr = Math.min(cap, rawDpr);
+    if (p.maxBackingPixels > 0) {
+      const area = Math.max(1, this.W * this.H);
+      dpr = Math.min(dpr, Math.sqrt(p.maxBackingPixels / area));
+    }
+    this.dpr = Math.max(0.5, dpr);
     this.canvas.width = Math.floor(this.W * this.dpr);
     this.canvas.height = Math.floor(this.H * this.dpr);
     this.canvas.style.width = `${this.W}px`;
@@ -453,14 +465,30 @@ export class Game {
 
   private updateAdaptivePerf(): void {
     const p = this.perfProfile();
+    const fps = this.fpsEma;
+
+    if (p.lightMode) {
+      this.particles.setAllowContinuous(false);
+      this.scenery.setPerfMode(true);
+      let amb = p.ambientScale;
+      let part = p.particleScale;
+      if (fps < 40) {
+        amb = Math.min(amb, 0.12);
+        part = Math.min(part, 0.16);
+      }
+      this.ambient.setMobileScale(amb);
+      this.particles.setMobileScale(part);
+      return;
+    }
+
     let amb = p.ambientScale;
     let part = p.particleScale;
-    if (this.fpsEma < 45) {
+    if (fps < 45) {
       amb = Math.min(amb, 0.45);
       part = Math.min(part, 0.45);
       this.particles.setAllowContinuous(false);
       this.scenery.setPerfMode(true);
-    } else if (this.fpsEma < 55) {
+    } else if (fps < 55) {
       amb = Math.min(amb, 0.62);
       part = Math.min(part, 0.68);
       this.particles.setAllowContinuous(true);
@@ -469,7 +497,7 @@ export class Game {
       this.particles.setAllowContinuous(true);
       this.scenery.setPerfMode(p.forceSceneryPerf);
     }
-    if (!p.lightMode && this.W >= 700 && this.dpr < 1.5 && this.fpsEma >= 55) {
+    if (this.W >= 700 && this.dpr < 1.5 && fps >= 55) {
       amb = p.ambientScale;
       part = p.particleScale;
       this.scenery.setPerfMode(false);
@@ -481,7 +509,8 @@ export class Game {
   private update(dt: number): void {
     this.time += dt;
     this.input.update(dt);
-    this.fpsEma = this.fpsEma * 0.9 + (1 / Math.max(0.001, dt)) * 0.1;
+    const instFps = 1 / Math.max(0.008, Math.min(0.1, this.lastRawDt));
+    this.fpsEma = this.fpsEma * 0.9 + instFps * 0.1;
     this.updateAdaptivePerf();
 
     const atmoHeight = this.state === 'title' ? 40 : this.state === 'intro' ? 0 : this.height;
@@ -489,13 +518,15 @@ export class Game {
     this.background.update(dt, this.atmosphere);
     this.scenery.update(dt, this.atmosphere);
     this.ambient.update(dt, this.atmosphere, this.camera.y, this.W, this.H);
-    this.ambient.emitFromScenery(
-      this.scenery.collectEmitters(this.W, this.H, this.camera.y),
-      this.atmosphere,
-      this.W,
-      this.H,
-      dt,
-    );
+    if (!this.perfProfile().skipIdleAmbient) {
+      this.ambient.emitFromScenery(
+        this.scenery.collectEmitters(this.W, this.H, this.camera.y),
+        this.atmosphere,
+        this.W,
+        this.H,
+        dt,
+      );
+    }
 
     const grassWeight = this.atmosphere
       .getWeights()
@@ -1148,7 +1179,7 @@ export class Game {
 
       this.audio.playLand(p.material, perfect, this.perfectStreak, impact, marimbaBar);
 
-      if (!this.userSettings.reduceMotion) {
+      if (!this.userSettings.reduceMotion && !this.perfProfile().skipIdleAmbient) {
         const landScreen = this.toScreen(this.player.x, platformTop);
         this.ambient.sceneryLandRipple(
           this.scenery.collectEmitters(this.W, this.H, this.camera.y),
@@ -1583,14 +1614,14 @@ export class Game {
 
     this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
 
+    const p = this.perfProfile();
     const paintScenery = (s: CanvasRenderingContext2D) => {
       this.scenery.drawFar(s, this.W, this.H, this.camera.y, this.atmosphere);
-      this.ambient.drawFar(s, this.toScreen);
+      if (!p.skipIdleAmbient) this.ambient.drawFar(s, this.toScreen);
       this.scenery.drawMid(s, this.W, this.H, this.camera.y, this.atmosphere);
-      this.ambient.drawMid(s, this.toScreen);
+      if (!p.skipIdleAmbient) this.ambient.drawMid(s, this.toScreen);
     };
 
-    const p = this.perfProfile();
     const introBlend = this.getIntroBlend();
     const onTitle = this.state === 'title';
     const inIntro = this.state === 'intro';
@@ -1602,7 +1633,7 @@ export class Game {
       paintScenery(ctx);
     }
 
-    if (playVisuals && (!inIntro || introBlend > 0.2)) {
+    if (!p.skipLightFx && playVisuals && (!inIntro || introBlend > 0.2)) {
       ctx.save();
       if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.2) / 0.55);
       this.background.drawLightOverlay(ctx, this.W, this.H, this.atmosphere);
@@ -1610,8 +1641,9 @@ export class Game {
       enablePixelMode(ctx);
     }
 
-    // Depois do céu + cenário + luz — só afeta o fundo, antes das plataformas
-    this.background.drawCenterDepthGradient(ctx, this.W, this.H, this.atmosphere);
+    if (!p.skipLightFx) {
+      this.background.drawCenterDepthGradient(ctx, this.W, this.H, this.atmosphere);
+    }
 
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     this.collectibles.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
@@ -1624,7 +1656,7 @@ export class Game {
       this.player.draw(ctx, this.toScreen, { titleBoost: inIntro && introBlend < 0.45 });
     }
 
-    if (playVisuals && (!inIntro || introBlend > 0.25)) {
+    if (!p.skipLightFx && playVisuals && (!inIntro || introBlend > 0.25)) {
       ctx.save();
       if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.25) / 0.6);
       this.background.drawBiomeOverlays(ctx, this.W, this.H, this.atmosphere);
@@ -1645,7 +1677,12 @@ export class Game {
     }
     ctx.globalAlpha = 1;
 
-    if (!this.userSettings.reduceMotion && playVisuals && (!inIntro || introBlend > 0.5)) {
+    if (
+      !p.skipLightFx &&
+      !this.userSettings.reduceMotion &&
+      playVisuals &&
+      (!inIntro || introBlend > 0.5)
+    ) {
       ctx.save();
       if (inIntro) ctx.globalAlpha = Math.min(1, (introBlend - 0.5) / 0.45);
       this.background.drawVignetteAndGrain(ctx, this.W, this.H, this.atmosphere);

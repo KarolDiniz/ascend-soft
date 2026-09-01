@@ -99,6 +99,8 @@ export interface PerfProfile {
   lightMode: boolean;
   dprCap: number;
   mobileDprCap: number;
+  /** 0 = sem teto. Limita pixels do backing store (fill-rate em celular alto). */
+  maxBackingPixels: number;
   softPassScale: number;
   useSoftPass: boolean;
   ambientScale: number;
@@ -108,6 +110,11 @@ export interface PerfProfile {
   skipBiomeSprites: boolean;
   maxSceneryDraw: number;
   birdAmbience: boolean;
+  /** Overlay de luz, grain, gradiente multiply, véu de bioma. */
+  skipLightFx: boolean;
+  /** Idle contínuo + emissão a partir do cenário. */
+  skipIdleAmbient: boolean;
+  skipPlatformDecor: boolean;
 }
 
 export function getPerfProfile(lightMode: boolean): PerfProfile {
@@ -116,6 +123,7 @@ export function getPerfProfile(lightMode: boolean): PerfProfile {
       lightMode: false,
       dprCap: 2,
       mobileDprCap: 2,
+      maxBackingPixels: 0,
       softPassScale: 0.38,
       useSoftPass: true,
       ambientScale: 0.88,
@@ -125,21 +133,28 @@ export function getPerfProfile(lightMode: boolean): PerfProfile {
       skipBiomeSprites: false,
       maxSceneryDraw: 68,
       birdAmbience: true,
+      skipLightFx: false,
+      skipIdleAmbient: false,
+      skipPlatformDecor: false,
     };
   }
   return {
     lightMode: true,
-    dprCap: 1.25,
+    dprCap: 1,
     mobileDprCap: 1,
-    softPassScale: 0.55,
-    useSoftPass: true,
-    ambientScale: 0.52,
-    particleScale: 0.55,
-    budgetScale: 0.58,
+    maxBackingPixels: 921600,
+    softPassScale: 0.5,
+    useSoftPass: false,
+    ambientScale: 0.18,
+    particleScale: 0.22,
+    budgetScale: 0.2,
     forceSceneryPerf: true,
     skipBiomeSprites: true,
-    maxSceneryDraw: 44,
+    maxSceneryDraw: 10,
     birdAmbience: false,
+    skipLightFx: true,
+    skipIdleAmbient: true,
+    skipPlatformDecor: true,
   };
 }
 

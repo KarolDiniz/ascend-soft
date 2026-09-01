@@ -191,7 +191,7 @@ export class Particles {
   }
 
   setMobileScale(scale: number): void {
-    this.densityScale = Math.max(0.45, Math.min(1, scale));
+    this.densityScale = Math.max(0.12, Math.min(1, scale));
   }
 
   setAllowContinuous(ok: boolean): void {
