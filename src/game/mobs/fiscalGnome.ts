@@ -3,7 +3,7 @@ import type { Player } from '../Player';
 import { drawFiscalGnome } from './fiscalGnomeVisual';
 
 export const GNOME = {
-  dwellS: 5,
+  dwellS: 20,
   debugDwellS: 3,
   approachS: 2.35,
   fleeS: 1.35,
