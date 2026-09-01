@@ -21,6 +21,7 @@ import { PhaseRunOrder, setPhaseRun } from './PhaseRunOrder';
 import { materialMood } from './ThemedPhases';
 import type { FallSummary } from '../ui/fallCopy';
 import type { Hud } from '../ui/Hud';
+import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { PlatformEvent } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
 import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
@@ -108,6 +109,7 @@ export class Game {
   private startBest = 0;
   private fallRevealTimer = 0;
   private fallSummaryPending: FallSummary | null = null;
+  private runStartedAt = 0;
   private userSettings: UserSettings = loadSettings();
   private lightMode = this.userSettings.lightMode;
   private lastMarimbaBar = -1;
@@ -301,6 +303,7 @@ export class Game {
     this.introDuration = this.userSettings.reduceMotion ? 0.22 : 0.55;
     this.input.clearJump();
     this.spawnGrace = this.introDuration + 0.35;
+    this.runStartedAt = performance.now();
     this.state = 'intro';
     const pal = this.atmosphere.getPalette();
     this.hud.setAmbientColors(pal.top, pal.mid);
@@ -314,6 +317,7 @@ export class Game {
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
     this.spawnGrace = 0.45;
+    this.runStartedAt = performance.now();
     this.camera.snapTo(this.player.y, this.H * 0.18);
     this.state = 'playing';
     this.hud.showPlaying(this.best);
@@ -1328,6 +1332,7 @@ export class Game {
     this.perfectStreak = 0;
     this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());
     this.audio.playFall();
+    const runMs = Math.max(1000, performance.now() - this.runStartedAt);
     this.fallSummaryPending = {
       height: this.height,
       best: this.best,
@@ -1336,7 +1341,28 @@ export class Game {
       startBest: this.startBest,
       runBestBroken: this.runBestBroken,
     };
-    this.fallRevealTimer = 0.48;
+    this.fallRevealTimer = 0.52;
+    void this.submitScoreForFall(runMs);
+  }
+
+  private async submitScoreForFall(runMs: number): Promise<void> {
+    const pending = this.fallSummaryPending;
+    if (!pending) return;
+
+    try {
+      const result = await leaderboardService.submitRun(
+        pending.height,
+        pending.breaths,
+        pending.collectibles,
+        runMs,
+      );
+      if (this.fallSummaryPending === pending && result.ok) {
+        pending.globalRank = result.globalRank;
+        pending.globalMode = result.mode;
+      }
+    } catch {
+      /* ranking opcional — não bloqueia a queda */
+    }
   }
 
   private toScreen = (x: number, y: number) => {

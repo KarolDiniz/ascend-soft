@@ -282,6 +282,18 @@
             </div>
 
             <div class="title-panel">
+              <label class="player-name-field" for="player-name">
+                <span class="player-name-label">seu nome</span>
+                <input
+                  id="player-name"
+                  class="player-name-input"
+                  type="text"
+                  maxlength="16"
+                  autocomplete="nickname"
+                  spellcheck="false"
+                  placeholder="Blob1234"
+                />
+              </label>
               <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
                 Subir
               </button>
@@ -289,6 +301,25 @@
               <p class="hint">← → mover · espaço pular</p>
             </div>
           </div>
+
+          <button
+            id="btn-leaderboard-toggle"
+            class="leaderboard-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="global-leaderboard"
+          >
+            ranking
+          </button>
+
+          <aside id="global-leaderboard" class="global-leaderboard hidden" aria-label="Ranking global">
+            <div class="leaderboard-head">
+              <h2 class="leaderboard-title">Ranking</h2>
+              <span id="leaderboard-status" class="leaderboard-status">…</span>
+            </div>
+            <ol id="leaderboard-list" class="leaderboard-list"></ol>
+            <p id="leaderboard-you" class="leaderboard-you hidden">jogue para entrar</p>
+          </aside>
         </section>
 
         <section id="fall-screen" class="overlay fall-screen hidden">
@@ -325,6 +356,7 @@
                 </div>
               </div>
               <p id="fall-gap" class="fall-gap hidden"></p>
+              <p id="fall-rank" class="fall-rank hidden" aria-live="polite"></p>
 
               <div class="fall-actions">
                 <button id="btn-retry" class="btn btn-primary btn-soap btn-fall-retry" type="button">

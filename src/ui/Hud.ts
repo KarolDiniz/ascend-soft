@@ -22,6 +22,7 @@ export class Hud {
   private fallStatCollectibles: HTMLElement;
   private fallStatBest: HTMLElement;
   private fallGap: HTMLElement;
+  private fallRank: HTMLElement;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
   private toastPhaseEl: HTMLElement;
@@ -54,6 +55,7 @@ export class Hud {
     this.fallStatCollectibles = document.getElementById('fall-stat-collectibles')!;
     this.fallStatBest = document.getElementById('fall-stat-best')!;
     this.fallGap = document.getElementById('fall-gap')!;
+    this.fallRank = document.getElementById('fall-rank')!;
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
     this.toastPhaseEl = document.getElementById('toast-phase')!;
@@ -65,6 +67,11 @@ export class Hud {
     this.toastEl.style.setProperty('--toast-duration', `${PHASE_TOAST_MS}ms`);
   }
 
+  /** Callback quando a tela inicial aparece */
+  onTitleShow: (() => void) | null = null;
+  /** Callback quando a tela inicial some */
+  onTitleHide: (() => void) | null = null;
+
   showTitle(best: number): void {
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
@@ -74,6 +81,7 @@ export class Hud {
     this.root.classList.add('hidden');
     document.getElementById('app')?.classList.add('is-title');
     this.setTitleBest(best);
+    this.onTitleShow?.();
   }
 
   leaveTitle(onStart: () => void): void {
@@ -84,6 +92,7 @@ export class Hud {
     if (this.titleScreen.classList.contains('is-leaving')) return;
 
     onStart();
+    this.onTitleHide?.();
     this.titleScreen.classList.add('is-leaving');
     window.clearTimeout(this.leaveTimer);
     const leaveMs = document.documentElement.classList.contains('reduce-motion')
@@ -164,6 +173,14 @@ export class Hud {
       this.fallGap.classList.toggle('fall-gap--record', gapLabel === 'recorde!');
     } else {
       this.fallGap.classList.add('hidden');
+    }
+
+    if (summary.globalRank != null && summary.globalRank > 0) {
+      const scope = summary.globalMode === 'local' ? 'local' : 'global';
+      this.fallRank.textContent = `#${summary.globalRank} no ranking ${scope}`;
+      this.fallRank.classList.remove('hidden');
+    } else {
+      this.fallRank.classList.add('hidden');
     }
 
     this.fallScreen.classList.remove('hidden');

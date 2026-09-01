@@ -5,6 +5,8 @@ export interface FallSummary {
   collectibles: number;
   startBest: number;
   runBestBroken: boolean;
+  globalRank?: number | null;
+  globalMode?: 'global' | 'local';
 }
 
 export interface FallCopy {

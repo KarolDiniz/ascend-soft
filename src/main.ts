@@ -2,6 +2,9 @@ import { AudioBus } from './audio/AudioBus';
 import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
+import { isValidDisplayName } from './leaderboard/playerIdentity';
+import { leaderboardService } from './leaderboard/LeaderboardService';
+import { GlobalLeaderboard } from './ui/GlobalLeaderboard';
 import { Hud } from './ui/Hud';
 import { LeaveGuard } from './ui/LeaveGuard';
 import { TitleCatalog } from './ui/TitleCatalog';
@@ -16,7 +19,19 @@ const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const leaveGuard = new LeaveGuard(audio);
+const globalLeaderboard = new GlobalLeaderboard();
 game.onCatalogRefresh = () => titleCatalog.refresh();
+
+hud.onTitleShow = () => globalLeaderboard.onTitleShow();
+hud.onTitleHide = () => globalLeaderboard.onTitleHide();
+
+const nameInput = document.getElementById('player-name') as HTMLInputElement;
+nameInput.value = leaderboardService.getDisplayName();
+nameInput.addEventListener('input', () => nameInput.classList.remove('player-name-input--invalid'));
+nameInput.addEventListener('change', () => {
+  leaderboardService.setDisplayName(nameInput.value);
+  nameInput.value = leaderboardService.getDisplayName();
+});
 
 void spriteAtlas.init().then(() => {
   console.info(
@@ -33,6 +48,15 @@ async function unlockAndPlay(): Promise<void> {
   if (!hud.isTitleVisible() || document.getElementById('title-screen')!.classList.contains('is-leaving')) {
     return;
   }
+
+  const name = leaderboardService.setDisplayName(nameInput.value);
+  if (!isValidDisplayName(name)) {
+    nameInput.classList.add('player-name-input--invalid');
+    nameInput.focus();
+    return;
+  }
+  nameInput.value = name;
+
   await audio.unlock();
   audio.setVolume(titleSettings.getVolume() / 100);
   hud.leaveTitle(() => game.beginIntro());
