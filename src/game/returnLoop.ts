@@ -103,23 +103,21 @@ export function tomorrowsOpener(): MaterialId {
   return featuredOpenerFor(d);
 }
 
-export function titleReturnLine(seenCount: number): string {
-  const bits: string[] = [];
-  const state = loadReturnState();
+const DAILY_KICKERS = [
+  'sabor do dia',
+  'a torre pediu',
+  'primeira parada',
+  'o chão de hoje',
+  'ouvindo agora',
+  'cardápio da torre',
+  'hoje o piso é',
+] as const;
+
+export function titleDailyCard(): { kicker: string; name: string; streak: number } {
   const openerName = MATERIALS[todaysOpener()].name;
-  const col = collectedCount(loadCollected());
-  const lootTotal = totalCollectibles();
-  const texTotal = totalTextures();
-
-  if (state.streak >= 2) bits.push(`${state.streak} dias seguidos`);
-  bits.push(`hoje: ${openerName}`);
-
-  if (seenCount < texTotal && seenCount > 0) bits.push(`${seenCount}/${texTotal} texturas`);
-  else if (col >= lootTotal && lootTotal > 0 && seenCount >= texTotal) bits.push('álbum completo');
-  else if (col > 0) bits.push(`${col}/${lootTotal} tesouros`);
-  else if (state.bestPerfect >= 5) bits.push(`combo ${state.bestPerfect}×`);
-
-  return bits.join(' · ');
+  const state = loadReturnState();
+  const kicker = DAILY_KICKERS[dateIndex(new Date()) % DAILY_KICKERS.length]!;
+  return { kicker, name: openerName, streak: state.streak };
 }
 
 export function fallReturnHook(input: {

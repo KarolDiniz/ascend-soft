@@ -30,7 +30,7 @@ import { PASTEL } from '../theme/pastelPalette';
 import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
-import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleReturnLine } from './returnLoop';
+import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleDailyCard } from './returnLoop';
 import { addSeenMaterial, loadSeenMaterials } from './seenMaterials';
 
 export type GameState = 'title' | 'intro' | 'playing' | 'falling';
@@ -300,7 +300,7 @@ export class Game {
     this.titleOverlayOpen = false;
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
-    this.hud.showTitle(this.best, titleReturnLine(this.seenMaterials.size));
+    this.hud.showTitle(this.best, titleDailyCard());
     this.syncMobileControls();
     this.onCatalogRefresh?.();
   }

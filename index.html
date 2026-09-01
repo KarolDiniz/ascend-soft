@@ -327,69 +327,6 @@
                 <p class="eyebrow">torre sensorial</p>
                 <h1 class="brand">Ascend<br />Soft</h1>
                 <p class="tagline">Pouse. Ouça. Suba de novo.</p>
-                <p id="title-return-hook" class="title-return-hook"></p>
-
-                <nav class="title-toolbar" aria-label="Opções do jogo">
-                  <button
-                    id="btn-catalog"
-                    class="title-tool-btn title-catalog-btn"
-                    type="button"
-                    aria-label="Álbum de texturas e tesouros"
-                    aria-expanded="false"
-                    aria-controls="title-catalog"
-                  >
-                    <svg class="catalog-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                      <rect x="2" y="2" width="5" height="5" fill="currentColor" />
-                      <rect x="9" y="2" width="5" height="5" fill="currentColor" />
-                      <rect x="2" y="9" width="5" height="5" fill="currentColor" />
-                      <rect x="9" y="9" width="5" height="5" fill="currentColor" />
-                    </svg>
-                    <span class="title-tool-label">álbum</span>
-                    <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
-                  </button>
-
-                  <button
-                    id="btn-settings"
-                    class="title-tool-btn title-settings-btn"
-                    type="button"
-                    aria-label="Configurações"
-                    aria-expanded="false"
-                    aria-controls="title-settings"
-                  >
-                    <svg class="settings-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                      <rect x="6" y="1" width="4" height="2" fill="currentColor" />
-                      <rect x="6" y="13" width="4" height="2" fill="currentColor" />
-                      <rect x="1" y="6" width="2" height="4" fill="currentColor" />
-                      <rect x="13" y="6" width="2" height="4" fill="currentColor" />
-                      <rect x="3" y="3" width="2" height="2" fill="currentColor" />
-                      <rect x="11" y="3" width="2" height="2" fill="currentColor" />
-                      <rect x="3" y="11" width="2" height="2" fill="currentColor" />
-                      <rect x="11" y="11" width="2" height="2" fill="currentColor" />
-                      <rect x="5" y="5" width="6" height="6" fill="currentColor" />
-                      <rect x="6" y="6" width="4" height="4" fill="#f7f1ea" />
-                    </svg>
-                    <span class="title-tool-label">ajustes</span>
-                  </button>
-
-                  <button
-                    id="btn-character"
-                    class="title-tool-btn title-character-btn"
-                    type="button"
-                    aria-label="Vestir personagem"
-                    aria-expanded="false"
-                    aria-controls="title-character"
-                  >
-                    <svg class="character-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                      <rect x="4" y="2" width="8" height="2" fill="currentColor" />
-                      <rect x="3" y="4" width="10" height="7" fill="currentColor" />
-                      <rect x="5" y="6" width="2" height="2" fill="#f7f1ea" />
-                      <rect x="9" y="6" width="2" height="2" fill="#f7f1ea" />
-                      <rect x="6" y="9" width="4" height="1" fill="#f7f1ea" />
-                      <rect x="5" y="11" width="6" height="2" fill="currentColor" />
-                    </svg>
-                    <span class="title-tool-label">vestir</span>
-                  </button>
-                </nav>
               </div>
 
               <div class="title-panel title-panel--play">
@@ -423,6 +360,95 @@
 
               <ol id="leaderboard-list" class="leaderboard-list" aria-live="polite"></ol>
             </aside>
+          </div>
+
+          <nav class="title-toolbar" aria-label="Opções do jogo">
+            <div class="title-rail title-rail--left">
+              <button
+                id="btn-character"
+                class="title-tool-btn title-character-btn"
+                type="button"
+                aria-label="Vestir personagem"
+                aria-expanded="false"
+                aria-controls="title-character"
+              >
+                <span class="title-tool-face">
+                  <svg class="title-tool-icon character-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <rect x="4" y="2" width="8" height="2" fill="currentColor" />
+                    <rect x="3" y="4" width="10" height="7" fill="currentColor" />
+                    <rect x="4" y="11" width="8" height="2" fill="currentColor" />
+                    <rect x="5" y="6" width="2" height="2" fill="#fffcf8" />
+                    <rect x="9" y="6" width="2" height="2" fill="#fffcf8" />
+                    <rect x="6" y="9" width="4" height="1" fill="#fffcf8" />
+                    <rect x="4" y="13" width="3" height="2" fill="currentColor" />
+                    <rect x="9" y="13" width="3" height="2" fill="currentColor" />
+                  </svg>
+                </span>
+                <span class="title-tool-label">vestir</span>
+              </button>
+
+              <button
+                id="btn-catalog"
+                class="title-tool-btn title-catalog-btn"
+                type="button"
+                aria-label="Álbum de texturas e tesouros"
+                aria-expanded="false"
+                aria-controls="title-catalog"
+              >
+                <span class="title-tool-face">
+                  <svg class="title-tool-icon catalog-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <rect x="4" y="1" width="11" height="11" fill="#2a343c" />
+                    <rect x="3" y="2" width="11" height="11" fill="currentColor" />
+                    <rect x="4" y="3" width="9" height="9" fill="#fffcf8" />
+                    <rect x="5" y="4" width="3" height="3" fill="currentColor" />
+                    <rect x="9" y="4" width="3" height="3" fill="currentColor" />
+                    <rect x="5" y="8" width="3" height="3" fill="currentColor" />
+                    <rect x="9" y="8" width="3" height="3" fill="currentColor" />
+                  </svg>
+                </span>
+                <span class="title-tool-label">álbum</span>
+                <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
+              </button>
+            </div>
+
+            <div class="title-rail title-rail--right">
+              <button
+                id="btn-settings"
+                class="title-tool-btn title-settings-btn"
+                type="button"
+                aria-label="Configurações"
+                aria-expanded="false"
+                aria-controls="title-settings"
+              >
+                <span class="title-tool-face">
+                  <svg class="title-tool-icon settings-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <rect x="7" y="1" width="2" height="3" fill="currentColor" />
+                    <rect x="7" y="12" width="2" height="3" fill="currentColor" />
+                    <rect x="1" y="7" width="3" height="2" fill="currentColor" />
+                    <rect x="12" y="7" width="3" height="2" fill="currentColor" />
+                    <rect x="3" y="3" width="2" height="2" fill="currentColor" />
+                    <rect x="11" y="3" width="2" height="2" fill="currentColor" />
+                    <rect x="3" y="11" width="2" height="2" fill="currentColor" />
+                    <rect x="11" y="11" width="2" height="2" fill="currentColor" />
+                    <rect x="5" y="5" width="6" height="6" fill="currentColor" />
+                    <rect x="6" y="6" width="4" height="4" fill="#fffcf8" />
+                    <rect x="7" y="7" width="2" height="2" fill="currentColor" />
+                  </svg>
+                </span>
+                <span class="title-tool-label">ajustes</span>
+              </button>
+            </div>
+          </nav>
+
+          <div id="title-daily" class="title-daily hidden" aria-live="polite">
+            <span class="title-daily-pin" aria-hidden="true"></span>
+            <span class="title-daily-banner">
+              <span id="title-daily-kicker" class="title-daily-kicker"></span>
+            </span>
+            <span class="title-daily-body">
+              <span id="title-daily-name" class="title-daily-name"></span>
+            </span>
+            <span id="title-daily-streak" class="title-daily-streak hidden"></span>
           </div>
         </section>
 

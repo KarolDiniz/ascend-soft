@@ -21,7 +21,10 @@ export class Hud {
   private fallStatBest: HTMLElement;
   private fallGap: HTMLElement;
   private fallRank: HTMLElement;
-  private titleReturnHook: HTMLElement | null;
+  private titleDaily: HTMLElement | null;
+  private titleDailyKicker: HTMLElement | null;
+  private titleDailyName: HTMLElement | null;
+  private titleDailyStreak: HTMLElement | null;
   private fallReturnHook: HTMLElement | null;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
@@ -54,7 +57,10 @@ export class Hud {
     this.fallStatBest = document.getElementById('fall-stat-best')!;
     this.fallGap = document.getElementById('fall-gap')!;
     this.fallRank = document.getElementById('fall-rank')!;
-    this.titleReturnHook = document.getElementById('title-return-hook');
+    this.titleDaily = document.getElementById('title-daily');
+    this.titleDailyKicker = document.getElementById('title-daily-kicker');
+    this.titleDailyName = document.getElementById('title-daily-name');
+    this.titleDailyStreak = document.getElementById('title-daily-streak');
     this.fallReturnHook = document.getElementById('fall-return-hook');
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
@@ -74,14 +80,25 @@ export class Hud {
   /** Callback quando overlay de queda aparece */
   onFallShow: (() => void) | null = null;
 
-  showTitle(best: number, returnLine = ''): void {
+  showTitle(best: number, daily?: { kicker: string; name: string; streak: number }): void {
     void best;
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
     this.fallTears.stop();
-    if (this.titleReturnHook) {
-      this.titleReturnHook.textContent = returnLine;
-      this.titleReturnHook.classList.toggle('hidden', !returnLine);
+    if (this.titleDaily && this.titleDailyKicker && this.titleDailyName) {
+      const hasDaily = Boolean(daily?.name);
+      this.titleDailyKicker.textContent = daily?.kicker ?? '';
+      this.titleDailyName.textContent = daily?.name ?? '';
+      this.titleDaily.classList.toggle('hidden', !hasDaily);
+      if (this.titleDailyStreak) {
+        const showStreak = (daily?.streak ?? 0) >= 2;
+        this.titleDailyStreak.textContent = showStreak ? `${daily!.streak}d` : '';
+        this.titleDailyStreak.classList.toggle('hidden', !showStreak);
+      }
+      if (hasDaily && daily) {
+        const streakBit = (daily.streak ?? 0) >= 2 ? ` · ${daily.streak} dias` : '';
+        this.titleDaily.setAttribute('aria-label', `${daily.kicker} ${daily.name}${streakBit}`);
+      }
     }
     this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
