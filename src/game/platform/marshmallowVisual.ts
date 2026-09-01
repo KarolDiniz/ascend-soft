@@ -38,9 +38,11 @@ function twistColorAt(gCol: number, gRow: number, totalRows: number): string {
 
 function scallopHalfWidth(row: number, rows: number, cols: number, seed: number): number {
   const t = row / Math.max(1, rows - 1);
-  const wave = Math.sin(t * Math.PI * 2 + seed * 0.017) * 0.07;
-  const belly = Math.sin(t * Math.PI) * 0.13;
-  return (cols / 2) * (0.87 + belly + wave);
+  const wave = Math.sin(t * Math.PI * 2 + seed * 0.017) * 0.03;
+  const top = 0.98;
+  const belly = Math.sin(t * Math.PI) * 0.05;
+  const bottomRound = t > 0.8 ? (t - 0.8) * 0.18 : 0;
+  return (cols / 2) * Math.min(1, top + belly + wave - bottomRound);
 }
 
 /** Marshmallow torcido — pixel art fiel à referência (espiral rosa/creme) */

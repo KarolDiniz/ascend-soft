@@ -52,8 +52,8 @@ export const MATERIAL_LEDGE: Record<
   clearSlime: { minW: 42, maxW: 50, visualDepth: 0.82, visualSpread: 1.02 },
   /** massa — média */
   butterSlime: { minW: 48, maxW: 58, visualDepth: 0.98, visualSpread: 1.02 },
-  /** marshmallow — alta e fofa */
-  marshmallow: { minW: 44, maxW: 54, visualDepth: 1.25, visualSpread: 1.0 },
+  /** marshmallow — travesseiro largo; superfície de pouso maior que o blob */
+  marshmallow: { minW: 58, maxW: 74, visualDepth: 1.38, visualSpread: 1.12 },
   /** esponja — retangular porosa */
   sponge: { minW: 50, maxW: 62, visualDepth: 0.9, visualSpread: 1.04 },
   /** bolha de sabão — redonda */

@@ -52,8 +52,8 @@ const VARIANTS: Record<MaterialId, VariantDef[]> = {
     { id: 'butterSlime_scoop', visualDepth: 1.6, visualSpread: 1.12 },
   ],
   marshmallow: [
-    { id: 'marshmallow_puff', visualDepth: 1.55, visualSpread: 1.1 },
-    { id: 'marshmallow_cube', visualDepth: 1.4, visualSpread: 1.05 },
+    { id: 'marshmallow_puff', visualDepth: 1.62, visualSpread: 1.18 },
+    { id: 'marshmallow_cube', visualDepth: 1.48, visualSpread: 1.14 },
   ],
   sponge: [
     { id: 'sponge_block', visualDepth: 1.25, visualSpread: 1.08 },
