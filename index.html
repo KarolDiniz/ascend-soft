@@ -52,6 +52,18 @@
           <div class="toast-progress" aria-hidden="true"></div>
         </div>
 
+        <div
+          id="virtual-stick"
+          class="virtual-stick"
+          aria-hidden="true"
+          aria-label="Mover"
+          role="group"
+        >
+          <div class="virtual-stick-base">
+            <div id="virtual-stick-knob" class="virtual-stick-knob"></div>
+          </div>
+        </div>
+
         <button
           id="btn-leaderboard-toggle"
           class="leaderboard-toggle hidden"
@@ -309,8 +321,6 @@
                 <button id="btn-start" class="btn btn-primary btn-soap btn-start" type="button">
                   Subir
                 </button>
-                <p class="press-blink" aria-hidden="true">aperte subir</p>
-                <p class="hint">← → mover · espaço pular</p>
               </div>
             </div>
             </div>
@@ -368,7 +378,7 @@
                 </button>
                 <button id="btn-home" class="btn btn-ghost btn-fall-home" type="button">início</button>
               </div>
-              <p class="fall-hint">espaço · de novo · esc · início</p>
+              <p class="fall-hint">toque ou espaço · de novo · esc · início</p>
             </div>
 
             <div id="fall-tears-overlay" class="fall-tears-overlay" aria-hidden="true">

@@ -125,10 +125,10 @@ export class Player {
 
   update(dt: number, input: Input): JumpResult {
     let jumped: JumpResult = false;
-    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    if (dir !== 0) this.facing = dir;
+    const dir = input.moveAxis;
+    if (Math.abs(dir) > 0.08) this.facing = Math.sign(dir);
 
-    if (dir !== 0) {
+    if (Math.abs(dir) > 0.08) {
       const sticky = this.groundedPlatform?.behavior === 'sticky';
       this.vx += dir * this.moveAccel * dt * (sticky ? 0.72 : 1);
     } else {
