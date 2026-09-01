@@ -1,6 +1,7 @@
 import {
   isSupabaseConfigured,
-  LEADERBOARD_TOP_LIMIT,
+  LEADERBOARD_MAX_ROWS,
+  LEADERBOARD_PAGE_SIZE,
   supabaseAnonKey,
   supabaseUrl,
 } from './config';
@@ -73,8 +74,7 @@ function localBestPerPlayer(rows: LocalScoreRow[]): LeaderboardEntry[] {
     if (!prev || row.height > prev.height) best.set(row.player_id, row);
   }
   return [...best.values()]
-    .sort((a, b) => b.height - a.height)
-    .slice(0, LEADERBOARD_TOP_LIMIT)
+    .sort((a, b) => b.height - a.height || a.display_name.localeCompare(b.display_name))
     .map(mapLocalRow);
 }
 
@@ -109,16 +109,7 @@ export class LeaderboardClient {
       };
     }
 
-    const base = supabaseUrl().replace(/\/$/, '');
-    const url =
-      `${base}/rest/v1/leaderboard_best?select=player_id,display_name,height,breaths,collectibles,created_at` +
-      `&order=height.desc&limit=${LEADERBOARD_TOP_LIMIT}`;
-
-    const res = await fetch(url, { headers: supabaseHeaders() });
-    if (!res.ok) throw new Error(`leaderboard fetch ${res.status}`);
-
-    const data = (await res.json()) as Record<string, unknown>[];
-    const entries = data.map(mapRow);
+    const entries = await this.fetchAllGlobal();
     const mine = entries.find((e) => e.playerId === playerId);
 
     let playerRank = mine ? entries.indexOf(mine) + 1 : null;
@@ -131,6 +122,30 @@ export class LeaderboardClient {
     }
 
     return { entries, mode: 'global', playerRank, playerBest };
+  }
+
+  private async fetchAllGlobal(): Promise<LeaderboardEntry[]> {
+    const base = supabaseUrl().replace(/\/$/, '');
+    const select =
+      'player_id,display_name,height,breaths,collectibles,created_at';
+    const entries: LeaderboardEntry[] = [];
+    let offset = 0;
+
+    while (offset < LEADERBOARD_MAX_ROWS) {
+      const url =
+        `${base}/rest/v1/leaderboard_best?select=${select}` +
+        `&order=height.desc,display_name.asc` +
+        `&limit=${LEADERBOARD_PAGE_SIZE}&offset=${offset}`;
+      const res = await fetch(url, { headers: supabaseHeaders() });
+      if (!res.ok) throw new Error(`leaderboard fetch ${res.status}`);
+
+      const data = (await res.json()) as Record<string, unknown>[];
+      entries.push(...data.map(mapRow));
+      if (data.length < LEADERBOARD_PAGE_SIZE) break;
+      offset += LEADERBOARD_PAGE_SIZE;
+    }
+
+    return entries;
   }
 
   private async fetchGlobalRank(

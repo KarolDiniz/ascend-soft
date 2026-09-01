@@ -1,8 +1,7 @@
 import { loadLocalBest } from '../game/localBest';
+import { LEADERBOARD_PLAYING_LIMIT } from '../leaderboard/config';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardSnapshot } from '../leaderboard/types';
-
-const TOP_LIMIT = 10;
 
 export class GlobalLeaderboard {
   private panel: HTMLElement;
@@ -139,7 +138,8 @@ export class GlobalLeaderboard {
       return;
     }
 
-    const top = ranked.slice(0, TOP_LIMIT);
+    const top =
+      this.mode === 'playing' ? ranked.slice(0, LEADERBOARD_PLAYING_LIMIT) : ranked;
     const inTop = top.some((e) => e.playerId === this.playerId);
 
     top.forEach((entry, i) => {

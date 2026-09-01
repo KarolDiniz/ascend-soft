@@ -23,7 +23,9 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(supabaseUrl() && supabaseAnonKey());
 }
 
-export const LEADERBOARD_TOP_LIMIT = 20;
+export const LEADERBOARD_PAGE_SIZE = 1000;
+export const LEADERBOARD_MAX_ROWS = 10_000;
+export const LEADERBOARD_PLAYING_LIMIT = 10;
 export const LEADERBOARD_REFRESH_MS = 90_000;
 export const MIN_SUBMIT_HEIGHT = 3;
 /** Teto folgado vs pico sticky (~554 u/s). Bloqueia height absurdo em 1s. */
