@@ -1,15 +1,26 @@
-export function isSupabaseConfigured(): boolean {
-  const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
-  return Boolean(url && key);
+function readEnv(...keys: string[]): string {
+  const env = import.meta.env as Record<string, string | undefined>;
+  for (const key of keys) {
+    const value = env[key]?.trim();
+    if (value) return value;
+  }
+  return '';
 }
 
 export function supabaseUrl(): string {
-  return import.meta.env.VITE_SUPABASE_URL?.trim() ?? '';
+  return readEnv('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL');
 }
 
 export function supabaseAnonKey(): string {
-  return import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? '';
+  return readEnv(
+    'VITE_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  );
+}
+
+export function isSupabaseConfigured(): boolean {
+  return Boolean(supabaseUrl() && supabaseAnonKey());
 }
 
 export const LEADERBOARD_TOP_LIMIT = 20;

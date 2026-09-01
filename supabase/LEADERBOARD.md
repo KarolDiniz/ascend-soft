@@ -43,12 +43,12 @@ Na tela inicial, o painel **Ranking** deve mostrar `global` (não `local`).
 
 ## Deploy (Vite / Netlify / Vercel)
 
-Adicione as mesmas variáveis de ambiente no painel do host:
+Adicione as mesmas variáveis de ambiente no painel do host (**obrigatório no build** — o Vite embute no JS):
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`
+- ou `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-Rebuild após salvar.
+Rebuild / Redeploy depois de salvar. Sem essas vars, o ranking cai para modo **local** (só neste navegador).
 
 ## Performance
 
