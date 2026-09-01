@@ -274,14 +274,9 @@ export class Game {
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
     this.hud.showTitle(this.best);
-    this.input.setStickPlaying(false);
     this.onCatalogRefresh?.();
   }
 
-  /** Compat: o analógico no toque substitui o giroscópio. */
-  requestPlayInput(): Promise<void> {
-    return this.input.enableMotion();
-  }
   /** Callback para atualizar catálogo na tela inicial */
   onCatalogRefresh: (() => void) | null = null;
   /** Recorde ao vivo — sobe com a altura quando ela passa o recorde */
@@ -309,7 +304,6 @@ export class Game {
     this.introT = 0;
     this.introDuration = this.userSettings.reduceMotion ? 0.22 : 0.55;
     this.input.clearJump();
-    this.input.setStickPlaying(true);
     this.spawnGrace = this.introDuration + 0.35;
     this.runStartedAt = performance.now();
     this.state = 'intro';
@@ -324,7 +318,6 @@ export class Game {
     this.resetRun();
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
-    this.input.setStickPlaying(true);
     this.spawnGrace = 0.45;
     this.runStartedAt = performance.now();
     this.camera.snapTo(this.player.y, this.H * 0.18);
@@ -1338,7 +1331,6 @@ export class Game {
       this.player.groundedPlatform.notePlayerOff(false);
     }
     this.state = 'falling';
-    this.input.setStickPlaying(false);
     this.input.clearJump();
     this.fallTimer = 0;
     this.perfectStreak = 0;
