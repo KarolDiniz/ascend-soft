@@ -24,8 +24,8 @@ export class Background {
     w: number,
     h: number,
     atm?: Atmosphere,
+    opts?: { smoothSky?: boolean },
   ): void {
-    ctx.imageSmoothingEnabled = false;
     const period = atm?.breathPeriod ?? 11;
     const breath = (Math.sin(this.time * ((Math.PI * 2) / period)) + 1) * 0.5;
     const pal = atm?.getPalette();
@@ -34,25 +34,39 @@ export class Background {
     const topA = pal?.top ?? '#d8ebe4';
     const midA = pal?.mid ?? '#f0e8c8';
     const botA = pal?.bottom ?? '#f5dcc8';
+    const shiftAmt = breath * 4 + flash * 10;
+    const top = this.lerpColor(topA, this.shiftRgb(topA, shiftAmt), 0.38);
+    const mid = this.lerpColor(midA, this.shiftRgb(midA, shiftAmt), 0.38);
+    const bot = this.lerpColor(botA, this.shiftRgb(botA, shiftAmt), 0.38);
 
-    const bands = 16;
-    for (let i = 0; i < bands; i++) {
-      const t = i / (bands - 1);
-      const c =
-        t < 0.42
-          ? this.lerpColor(topA, midA, t / 0.42)
-          : this.lerpColor(midA, botA, (t - 0.42) / 0.58);
-      const shifted = this.shiftRgb(c, breath * 4 + flash * 10);
-      const breatheShift = this.lerpColor(c, shifted, 0.38);
-      const y0 = Math.floor((h * i) / bands);
-      const y1 = Math.floor((h * (i + 1)) / bands);
-      ctx.fillStyle = breatheShift;
-      ctx.fillRect(0, y0, w, Math.max(1, y1 - y0));
+    if (opts?.smoothSky) {
+      ctx.imageSmoothingEnabled = true;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, top);
+      g.addColorStop(0.42, mid);
+      g.addColorStop(1, bot);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = false;
+    } else {
+      ctx.imageSmoothingEnabled = false;
+      const bands = 16;
+      for (let i = 0; i < bands; i++) {
+        const t = i / (bands - 1);
+        const c = t < 0.42 ? this.lerpColor(topA, midA, t / 0.42) : this.lerpColor(midA, botA, (t - 0.42) / 0.58);
+        const shifted = this.shiftRgb(c, shiftAmt);
+        ctx.fillStyle = this.lerpColor(c, shifted, 0.38);
+        const y0 = Math.floor((h * i) / bands);
+        const y1 = Math.floor((h * (i + 1)) / bands);
+        ctx.fillRect(0, y0, w, Math.max(1, y1 - y0));
+      }
     }
 
     this.drawMoodSkyWash(ctx, w, h, atm, pal, breath);
 
-    this.drawThemedBlobs(ctx, w, h, atm, breath);
+    if (!opts?.smoothSky) {
+      this.drawThemedBlobs(ctx, w, h, atm, breath);
+    }
 
     // Soft atmospheric depth haze (pre-light)
     if (atm) {

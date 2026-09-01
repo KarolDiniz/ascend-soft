@@ -57,6 +57,11 @@ body {
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Modo leve: canvas interno menor; nearest-neighbor vira listra no céu. */
+html.light-mode #game {
+  image-rendering: auto;
+}
+
 .reduce-motion #game {
   transition-duration: 0.22s;
 }

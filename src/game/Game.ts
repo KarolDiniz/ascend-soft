@@ -203,6 +203,7 @@ export class Game {
     this.userSettings = { ...settings };
     document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion);
     document.documentElement.classList.toggle('hide-playing-rank', !settings.showPlayingRank);
+    document.documentElement.classList.toggle('light-mode', settings.lightMode);
 
     if (this.lightMode !== settings.lightMode) {
       this.lightMode = settings.lightMode;
@@ -1612,9 +1613,11 @@ export class Game {
     }
     enablePixelMode(ctx);
 
-    this.background.drawSky(ctx, this.W, this.H, this.atmosphere);
-
     const p = this.perfProfile();
+    this.background.drawSky(ctx, this.W, this.H, this.atmosphere, {
+      smoothSky: p.lightMode,
+    });
+
     const paintScenery = (s: CanvasRenderingContext2D) => {
       this.scenery.drawFar(s, this.W, this.H, this.camera.y, this.atmosphere);
       if (!p.skipIdleAmbient) this.ambient.drawFar(s, this.toScreen);
