@@ -198,7 +198,7 @@ html.has-mobile-pad {
   --pad-dir: var(--pad-btn);
   --pad-jump: var(--pad-btn);
   --pad-dir-gap: 16px;
-  --pad-edge-x: max(36px, 8.5vw);
+  --pad-edge-x: max(12px, 3.2vw);
   --pad-edge-bottom: 22px;
   --pad-edge-top: 10px;
   --mobile-pad-h: calc(var(--pad-jump) + var(--pad-edge-top) + var(--pad-edge-bottom) + 8px);
@@ -2418,7 +2418,7 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   }
 
   html.has-mobile-pad {
-    --pad-edge-x: max(36px, 10vw);
+    --pad-edge-x: max(10px, 2.8vw);
     --pad-edge-bottom: 20px;
   }
 
@@ -2761,9 +2761,9 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   align-items: flex-end;
   justify-content: space-between;
   padding: var(--pad-edge-top, 10px)
-    calc(var(--pad-edge-x, 36px) + var(--safe-right))
+    calc(var(--pad-edge-x, 12px) + var(--safe-right))
     calc(var(--pad-edge-bottom, 22px) + var(--safe-bottom))
-    calc(var(--pad-edge-x, 36px) + var(--safe-left));
+    calc(var(--pad-edge-x, 12px) + var(--safe-left));
   pointer-events: none;
   gap: 24px;
 }
@@ -2784,17 +2784,26 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 .pad-btn {
+  --pad-face: #fffcf8;
+  --pad-face-held: #f0e6d8;
+  --pad-shine: rgba(255, 252, 248, 0.62);
   position: relative;
   appearance: none;
   -webkit-appearance: none;
   display: flex;
   flex-shrink: 0;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
   border: 3px solid var(--ink);
-  background: #fffcf8;
+  background:
+    linear-gradient(180deg, var(--pad-shine) 0 5px, transparent 5px),
+    var(--pad-face);
   color: var(--ink);
-  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
+  box-shadow:
+    4px 4px 0 #2a343c,
+    inset 0 0 0 2px rgba(255, 252, 248, 0.55);
   border-radius: 0;
   cursor: pointer;
   touch-action: none;
@@ -2803,6 +2812,19 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   -webkit-touch-callout: none;
   pointer-events: auto;
   image-rendering: pixelated;
+}
+
+/* Specular de canto — volume de sabão pixel. */
+.pad-btn::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 7px;
+  height: 7px;
+  background: rgba(255, 252, 248, 0.78);
+  box-shadow: 7px 0 0 rgba(255, 252, 248, 0.28);
+  pointer-events: none;
 }
 
 /* Área de toque maior que o desenho — o inset visual vira zona extra. */
@@ -2820,23 +2842,36 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   outline-offset: 2px;
 }
 
+.pad-btn svg {
+  width: 42%;
+  height: 42%;
+  display: block;
+  flex-shrink: 0;
+  shape-rendering: crispEdges;
+}
+
+.pad-btn svg path {
+  fill: currentColor;
+}
+
+.pad-btn-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.36rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--ink);
+}
+
 .pad-btn--dir {
-  width: var(--pad-dir, 60px);
-  height: var(--pad-dir, 60px);
-  background: var(--butter);
+  width: var(--pad-dir, 78px);
+  height: var(--pad-dir, 78px);
+  --pad-face: var(--butter);
+  --pad-face-held: #e6ce86;
 }
 
 .pad-btn--dir svg {
   width: 46%;
   height: 46%;
-}
-
-.pad-btn--dir svg path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.8;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
 }
 
 #pad-left::after {
@@ -2856,12 +2891,14 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 .pad-btn--jump {
   width: var(--pad-jump, 78px);
   height: var(--pad-jump, 78px);
-  background: var(--coral);
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  padding: 0 6px;
+  --pad-face: var(--coral);
+  --pad-face-held: #d99286;
+  padding: 0 4px 5px;
+}
+
+.pad-btn--jump svg {
+  width: 40%;
+  height: 40%;
 }
 
 #pad-jump::after {
@@ -2869,16 +2906,18 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 .pad-btn.is-held {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.22);
+  transform: translate(3px, 3px);
+  --pad-shine: rgba(255, 252, 248, 0.22);
+  background:
+    linear-gradient(180deg, var(--pad-shine) 0 3px, transparent 3px),
+    var(--pad-face-held);
+  box-shadow:
+    1px 1px 0 #2a343c,
+    inset 0 0 0 2px rgba(255, 252, 248, 0.28);
 }
 
-.pad-btn--dir.is-held {
-  background: #ead38c;
-}
-
-.pad-btn--jump.is-held {
-  background: #dc9488;
+.pad-btn.is-held::before {
+  opacity: 0.35;
 }
 
 .reduce-motion .pad-btn.is-held {
@@ -2904,7 +2943,7 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   align-items: flex-end;
   justify-content: space-between;
   width: min(92vw, 360px);
-  padding: 0.7rem 1.25rem 0.85rem;
+  padding: 0.7rem 0.55rem 0.85rem;
   background: rgba(255, 252, 248, 0.86);
   border: 3px solid var(--ink);
   box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.22);
@@ -2920,23 +2959,37 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   align-items: center;
   justify-content: center;
   border: 3px solid var(--ink);
-  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.22);
-  font-family: 'Press Start 2P', monospace;
+  box-shadow:
+    3px 3px 0 #2a343c,
+    inset 0 0 0 2px rgba(255, 252, 248, 0.55);
   color: var(--ink);
+}
+
+.coach-pad-preview svg {
+  width: 46%;
+  height: 46%;
+  display: block;
+  shape-rendering: crispEdges;
+}
+
+.coach-pad-preview svg path {
+  fill: currentColor;
 }
 
 .coach-pad-preview--dir {
   width: 52px;
   height: 52px;
-  background: var(--butter);
-  font-size: 0.7rem;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.55) 0 4px, transparent 4px),
+    var(--butter);
 }
 
 .coach-pad-preview--jump {
   width: 52px;
   height: 52px;
-  background: var(--coral);
-  font-size: 0.42rem;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.5) 0 4px, transparent 4px),
+    var(--coral);
 }
 
 .coach-tilt-phone {
@@ -2973,7 +3026,7 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   html.has-mobile-pad {
     --pad-btn: 70px;
     --pad-dir-gap: 12px;
-    --pad-edge-x: 28px;
+    --pad-edge-x: 10px;
   }
 }
 
@@ -2981,13 +3034,13 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   html.has-mobile-pad {
     --pad-btn: 66px;
     --pad-dir-gap: 14px;
-    --pad-edge-x: max(28px, 7vw);
+    --pad-edge-x: max(10px, 2.5vw);
     --pad-edge-bottom: 16px;
     --pad-edge-top: 8px;
   }
 
-  .pad-btn--jump {
-    font-size: 0.44rem;
+  .pad-btn-label {
+    font-size: 0.32rem;
   }
 }
 
@@ -2995,8 +3048,16 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   html.has-mobile-pad {
     --pad-btn: 60px;
     --pad-dir-gap: 12px;
-    --pad-edge-x: max(40px, 5vw);
+    --pad-edge-x: max(16px, 2.5vw);
     --pad-edge-bottom: 12px;
     --pad-edge-top: 6px;
+  }
+
+  .pad-btn-label {
+    display: none;
+  }
+
+  .pad-btn--jump {
+    padding: 0;
   }
 }

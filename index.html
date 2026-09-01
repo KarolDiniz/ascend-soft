@@ -99,10 +99,16 @@
           <div class="coach-pad" aria-label="Setas à esquerda para andar, botão à direita para pular">
             <div class="coach-pad-row">
               <div class="coach-pad-cluster">
-                <span class="coach-pad-preview coach-pad-preview--dir">◀</span>
-                <span class="coach-pad-preview coach-pad-preview--dir">▶</span>
+                <span class="coach-pad-preview coach-pad-preview--dir" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M15 3 L6 12 L15 21 L18 18 L12 12 L18 6 Z" /></svg>
+                </span>
+                <span class="coach-pad-preview coach-pad-preview--dir" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M9 3 L18 12 L9 21 L6 18 L12 12 L6 6 Z" /></svg>
+                </span>
               </div>
-              <span class="coach-pad-preview coach-pad-preview--jump">pulo</span>
+              <span class="coach-pad-preview coach-pad-preview--jump" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 15 L12 6 L21 15 L18 18 L12 12 L6 18 Z" /></svg>
+              </span>
             </div>
             <p class="coach-label">setas e pulo</p>
           </div>
@@ -468,17 +474,20 @@
           <div class="mobile-pad-move">
             <button type="button" id="pad-left" class="pad-btn pad-btn--dir" aria-label="Esquerda" tabindex="-1">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 5 L8 12 L15 19" />
+                <path d="M15 3 L6 12 L15 21 L18 18 L12 12 L18 6 Z" />
               </svg>
             </button>
             <button type="button" id="pad-right" class="pad-btn pad-btn--dir" aria-label="Direita" tabindex="-1">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 5 L16 12 L9 19" />
+                <path d="M9 3 L18 12 L9 21 L6 18 L12 12 L6 6 Z" />
               </svg>
             </button>
           </div>
           <button type="button" id="pad-jump" class="pad-btn pad-btn--jump" aria-label="Pular" tabindex="-1">
-            pulo
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 15 L12 6 L21 15 L18 18 L12 12 L6 18 Z" />
+            </svg>
+            <span class="pad-btn-label">pulo</span>
           </button>
         </div>
 
