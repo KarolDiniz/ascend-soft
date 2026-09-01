@@ -30,6 +30,7 @@ export const LEADERBOARD_NEARBY = 4;
 export const LEADERBOARD_REFRESH_MS = 90_000;
 export const LEADERBOARD_LIVE_DEBOUNCE_MS = 160;
 export const MIN_SUBMIT_HEIGHT = 3;
+export const MAX_SUBMIT_HEIGHT = 3_000_000;
 /** Teto vs pico do trampolim (~1800 u/s). Bloqueia height absurdo em 1s. */
 export const MAX_HEIGHT_UNITS_PER_MS = 2.5;
 
@@ -39,7 +40,9 @@ export function scoreLooksPlausible(
   collectibles: number,
   runMs: number,
 ): boolean {
-  if (height < MIN_SUBMIT_HEIGHT || runMs < 1000) return false;
+  if (height < MIN_SUBMIT_HEIGHT || height > MAX_SUBMIT_HEIGHT || runMs < 1000) {
+    return false;
+  }
   if (height > runMs * MAX_HEIGHT_UNITS_PER_MS) return false;
   const breathCap = Math.max(12, Math.floor(height / 16));
   const lootCap = Math.max(8, Math.floor(height / 12));

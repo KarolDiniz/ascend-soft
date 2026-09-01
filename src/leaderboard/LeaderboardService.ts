@@ -3,6 +3,7 @@ import {
   isSupabaseConfigured,
   LEADERBOARD_LIVE_DEBOUNCE_MS,
   LEADERBOARD_REFRESH_MS,
+  MAX_SUBMIT_HEIGHT,
   MIN_SUBMIT_HEIGHT,
   scoreLooksPlausible,
 } from './config';
@@ -282,7 +283,7 @@ export class LeaderboardService {
     collectibles: number,
     runMs: number,
   ): Promise<SubmitResult> {
-    if (height < MIN_SUBMIT_HEIGHT) {
+    if (height < MIN_SUBMIT_HEIGHT || height > MAX_SUBMIT_HEIGHT) {
       return { ok: false, globalRank: null, mode: this.client.isGlobal() ? 'global' : 'local' };
     }
 

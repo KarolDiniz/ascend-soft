@@ -5,7 +5,7 @@ create table if not exists public.scores (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null,
   display_name text not null check (char_length(display_name) between 2 and 16),
-  height integer not null check (height >= 0 and height <= 2147483647),
+  height integer not null check (height >= 0 and height <= 3000000),
   breaths integer not null default 0 check (breaths >= 0 and breaths <= 100000),
   collectibles integer not null default 0 check (collectibles >= 0 and collectibles <= 5000),
   run_ms integer not null default 0 check (run_ms >= 0 and run_ms <= 86400000),
@@ -53,7 +53,7 @@ create policy "scores_public_insert"
     char_length(display_name) between 2 and 16
     and display_name ~ '^[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç0-9 ]+$'
     and display_name ~ '[A-Za-zÁÀÂÃÉÊÍÓÔÕÚÜÇáàâãéêíóôõúüç]'
-    and height between 3 and 2147483647
+    and height between 3 and 3000000
     and breaths between 0 and 100000
     and collectibles between 0 and 5000
     and run_ms between 1000 and 86400000
@@ -300,9 +300,14 @@ grant execute on function public.name_is_available(text, uuid) to anon, authenti
 -- Tabela já existente: CREATE IF NOT EXISTS não altera CHECK. Rode o arquivo inteiro.
 alter table public.scores drop constraint if exists scores_height_check;
 alter table public.scores add constraint scores_height_check
-  check (height >= 0 and height <= 2147483647);
+  check (height >= 0 and height <= 3000000);
 
 alter table public.scores drop constraint if exists scores_run_ms_check;
 alter table public.scores add constraint scores_run_ms_check
   check (run_ms >= 0 and run_ms <= 86400000);
+
+-- Recorde de 1.010.261 atribuído ao nome errado; o jogador é RyanLindo.
+delete from public.scores
+where id = '284d6a86-31dc-4004-99ed-d8f318c35bb7'
+   or player_id = '6af8d8a6-4664-42f1-8f62-209ee7100b09';
 
