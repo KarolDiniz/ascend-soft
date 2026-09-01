@@ -35,6 +35,7 @@ export class GlobalLeaderboard {
     });
 
     this.unsubscribe = leaderboardService.subscribe((snap) => this.render(snap));
+    this.listEl.addEventListener('scroll', () => this.syncScrollHint(), { passive: true });
   }
 
   setLocalBest(best: number): void {
@@ -135,6 +136,7 @@ export class GlobalLeaderboard {
       empty.textContent =
         snap.mode === 'loading' ? 'carregando…' : 'seja o primeiro a subir!';
       this.listEl.appendChild(empty);
+      this.syncScrollHint();
       return;
     }
 
@@ -177,6 +179,23 @@ export class GlobalLeaderboard {
         ),
       );
     }
+
+    this.syncScrollHint();
+  }
+
+  private syncScrollHint(): void {
+    const apply = () => {
+      if (this.mode !== 'title') {
+        this.panel.classList.remove('has-more-below');
+        return;
+      }
+      const overflow = this.listEl.scrollHeight > this.listEl.clientHeight + 3;
+      const atEnd =
+        this.listEl.scrollTop + this.listEl.clientHeight >= this.listEl.scrollHeight - 6;
+      this.panel.classList.toggle('has-more-below', overflow && !atEnd);
+    };
+    apply();
+    window.requestAnimationFrame(apply);
   }
 
   private rankedEntries(snap: LeaderboardSnapshot, liveBest: number): LeaderboardEntry[] {
