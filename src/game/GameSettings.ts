@@ -71,8 +71,8 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 export function landIntensityGain(level: LandIntensity): number {
-  if (level === 'low') return 0.52;
-  if (level === 'high') return 1.42;
+  if (level === 'low') return 0.72;
+  if (level === 'high') return 1.18;
   return 1;
 }
 

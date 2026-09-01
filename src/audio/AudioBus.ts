@@ -15,11 +15,11 @@ export class AudioBus {
   private land: GainNode | null = null;
   private ambient: GainNode | null = null;
   private music: GainNode | null = null;
-  private ambientGainBase = 0.36;
+  private ambientGainBase = 0.42;
   /** Volume relativo da música generativa (abaixo das plataformas) */
-  private readonly musicGain = 0.26;
+  private readonly musicGain = 0.34;
   /** Ganho da voz da criaturinha (banner, pulo, queda, respiração) — abaixo do pouso */
-  private readonly creatureVolBoost = 1.45;
+  private readonly creatureVolBoost = 1.2;
   private noiseCache = new Map<number, AudioBuffer>();
   private started = false;
   private muted = false;
@@ -112,7 +112,7 @@ export class AudioBus {
   }
 
   setLandIntensity(level: LandIntensity): void {
-    this.landIntensityMul = { low: 0.52, medium: 1, high: 1.42 }[level];
+    this.landIntensityMul = { low: 0.72, medium: 1, high: 1.18 }[level];
   }
 
   private voiceEnabled = true;
@@ -123,8 +123,8 @@ export class AudioBus {
     const now = this.ctx.currentTime;
     const m = this.muted ? 0 : this.volume;
     this.master.gain.setTargetAtTime(m, now, 0.05);
-    this.sfx.gain.setTargetAtTime(0.78, now, 0.05);
-    this.land.gain.setTargetAtTime(1.08, now, 0.05);
+    this.sfx.gain.setTargetAtTime(0.72, now, 0.05);
+    this.land.gain.setTargetAtTime(1, now, 0.05);
     this.ambient.gain.setTargetAtTime(this.ambientGainBase, now, 0.08);
   }
 
@@ -151,7 +151,7 @@ export class AudioBus {
     filter.type = 'lowpass';
     filter.frequency.value = 380;
     const ng = ctx.createGain();
-    ng.gain.value = 0.04;
+    ng.gain.value = 0.05;
     src.connect(filter);
     filter.connect(ng);
     ng.connect(this.ambient);
@@ -314,9 +314,9 @@ export class AudioBus {
   playLand(material: MaterialId, perfect: boolean, streak = 0, impact = 1, marimbaBar?: number): void {
     this.withLandCtx((ctx, landBus) => {
       void this.landSamples.load(ctx);
-      this.duckAmbient(300, 0.07);
+      this.duckAmbient(120, 0.22);
       const land = ctx.createGain();
-      land.gain.value = this.landBusGain * this.landIntensityMul;
+      land.gain.value = this.landBusGain * this.landIntensityMul * this.landFamilyTrim(material);
       land.connect(landBus);
       const pitch = 0.92 + Math.random() * 0.16;
       const imp = clamp(impact, 0.35, 1.35);
@@ -467,7 +467,7 @@ export class AudioBus {
       void this.landSamples.load(ctx);
       this.duckAmbient(90);
       const land = ctx.createGain();
-      land.gain.value = this.landBusGain * this.landIntensityMul;
+      land.gain.value = this.landBusGain * this.landIntensityMul * this.landFamilyTrim('kitten');
       land.connect(landBus);
       const pitch = 0.86 + Math.random() * 0.22;
       this.landWithSample(
@@ -475,7 +475,7 @@ export class AudioBus {
         land,
         'kitten',
         pitch,
-        0.6,
+        0.35,
         () => this.kittenMeowProcedural(ctx, land, pitch),
         {
           maxDuration: 0.72,
@@ -591,7 +591,7 @@ export class AudioBus {
     this.withLandCtx((ctx, landBus) => {
       const t = ctx.currentTime + 0.07;
       const dest = ctx.createGain();
-      dest.gain.value = 1.85;
+      dest.gain.value = 1.15;
       dest.connect(landBus);
       const p = 0.98 + Math.random() * 0.05;
       this.softNoise(ctx, dest, 0.18, 1100 * p, 0.16, t, 'bandpass', 0.7);
@@ -614,7 +614,7 @@ export class AudioBus {
         osc.frequency.setValueAtTime(f, t + i * 0.07);
         const st = t + i * 0.07;
         g.gain.setValueAtTime(0.0001, st);
-        g.gain.exponentialRampToValueAtTime(0.11 - i * 0.012, st + 0.018);
+        g.gain.exponentialRampToValueAtTime(0.16 - i * 0.012, st + 0.018);
         g.gain.exponentialRampToValueAtTime(0.0001, st + 0.22);
         osc.connect(g);
         g.connect(sfx);
@@ -628,7 +628,7 @@ export class AudioBus {
       shimmer.frequency.setValueAtTime(1568, t + 0.28);
       shimmer.frequency.exponentialRampToValueAtTime(2093, t + 0.48);
       sg.gain.setValueAtTime(0.0001, t + 0.28);
-      sg.gain.exponentialRampToValueAtTime(0.07, t + 0.32);
+      sg.gain.exponentialRampToValueAtTime(0.1, t + 0.32);
       sg.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
       shimmer.connect(sg);
       sg.connect(sfx);
@@ -661,7 +661,7 @@ export class AudioBus {
         osc.frequency.value = f;
         const st = t + i * 0.08;
         g.gain.setValueAtTime(0.0001, st);
-        g.gain.exponentialRampToValueAtTime(0.06, st + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.09, st + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
         osc.connect(g);
         g.connect(sfx);
@@ -1119,10 +1119,72 @@ export class AudioBus {
 
   // —— Material one-shots ——
 
-  /** Ganho extra nos SFX de pouso — plataformas dominam o mix */
-  private readonly landVolBoost = 4.6;
+  /** Ganho extra nos SFX de pouso — plataformas dominam o mix, sem clipar */
+  private readonly landVolBoost = 2.4;
   /** Bus por impacto — acima de murmúrio, música e outros SFX */
-  private readonly landBusGain = 2.95;
+  private readonly landBusGain = 1.15;
+
+  /** Trim relativo à gelatina (1.0). Click e macio mais baixos para não furar o fone. */
+  private landFamilyTrim(material: MaterialId): number {
+    switch (material) {
+      case 'jelly':
+      case 'butter':
+      case 'clearSlime':
+      case 'butterSlime':
+      case 'amoeba':
+      case 'boba':
+        return 1;
+      case 'glycerin':
+      case 'whipped':
+      case 'soapBubble':
+      case 'bathFoam':
+      case 'lavenderSoap':
+      case 'creamSoap':
+      case 'honeycomb':
+      case 'chocolate':
+      case 'sponge':
+        return 0.92;
+      case 'marimba':
+      case 'kalimba':
+      case 'xylophone':
+        return 0.88;
+      case 'bubbleWrap':
+      case 'popcorn':
+      case 'paper':
+      case 'cork':
+      case 'citrus':
+      case 'macaron':
+        return 0.82;
+      case 'grass':
+      case 'moss':
+      case 'mushroom':
+      case 'kitten':
+      case 'seashell':
+      case 'blossom':
+      case 'kinetic':
+      case 'clay':
+      case 'bamboo':
+        return 0.8;
+      case 'cloud':
+      case 'cotton':
+      case 'feather':
+      case 'silk':
+      case 'velvet':
+      case 'marshmallow':
+      case 'mochi':
+        return 0.76;
+      case 'keyboard':
+      case 'ceramic':
+      case 'woodBlock':
+      case 'iceSoap':
+      case 'plasticBottle':
+      case 'crystal':
+      case 'tambourine':
+        return 0.68;
+      default:
+        return 0.88;
+    }
+  }
 
   private impactVol(base: number, impact: number): number {
     return base * this.landVolBoost * (0.72 + Math.min(1.3, impact) * 0.42);
@@ -1539,7 +1601,7 @@ export class AudioBus {
   playInstrumentBar(material: MaterialId, barIndex: number, impact = 1): void {
     this.withLandCtx((ctx, landBus) => {
       const land = ctx.createGain();
-      land.gain.value = this.landBusGain * this.landIntensityMul;
+      land.gain.value = this.landBusGain * this.landIntensityMul * this.landFamilyTrim(material);
       land.connect(landBus);
       const pitch = 0.94 + Math.random() * 0.08;
       const imp = clamp(impact, 0.35, 1.35);
@@ -1998,8 +2060,8 @@ export class AudioBus {
   ): void {
     const t = ctx.currentTime;
     const base = 660 * pitch * (1 + Math.min(4, streak) * 0.03);
-    this.tone(ctx, sfx, 'sine', base, base, 0.4, 0.055, t);
-    this.tone(ctx, sfx, 'sine', base * 1.5, base * 1.5, 0.32, 0.03, t + 0.02);
+    this.tone(ctx, sfx, 'sine', base, base, 0.4, 0.085, t);
+    this.tone(ctx, sfx, 'sine', base * 1.5, base * 1.5, 0.32, 0.046, t + 0.02);
   }
 
   private tone(
