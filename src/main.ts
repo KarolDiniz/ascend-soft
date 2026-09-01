@@ -30,6 +30,7 @@ hud.onPlayingShow = () => {
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onPlayingShow();
 };
+game.onLiveBest = (best) => globalLeaderboard.setLiveBest(best);
 hud.onFallShow = () => globalLeaderboard.onFallShow();
 
 const nameInput = document.getElementById('player-name') as HTMLInputElement;

@@ -279,6 +279,8 @@ export class Game {
 
   /** Callback para atualizar catálogo na tela inicial */
   onCatalogRefresh: (() => void) | null = null;
+  /** Recorde ao vivo — sobe com a altura quando ela passa o recorde */
+  onLiveBest: ((best: number) => void) | null = null;
 
   goToTitle(): void {
     this.audio.stopSoftMurmur();
@@ -755,6 +757,7 @@ export class Game {
     if (this.height > this.best) {
       this.best = this.height;
       saveLocalBest(this.best);
+      this.onLiveBest?.(this.best);
       if (!this.runBestBroken && this.height > this.startBest && this.startBest > 0) {
         this.runBestBroken = true;
         this.audio.playRecord();
