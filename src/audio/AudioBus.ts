@@ -43,6 +43,8 @@ export class AudioBus {
   private birdChirpAcc = 0;
   private birdChirpCooldown = 0;
   private readonly landSamples = new LandSampleBank();
+  private gnomeLaughBuf: AudioBuffer | null = null;
+  private gnomeLaughSrc: AudioBufferSourceNode | null = null;
 
   get isMuted(): boolean {
     return this.muted;
@@ -66,6 +68,7 @@ export class AudioBus {
         }
       }
       await this.landSamples.load(this.ctx!);
+      await this.loadGnomeLaugh(this.ctx!);
       return;
     }
     const Ctx =
@@ -93,6 +96,7 @@ export class AudioBus {
     }
     this.started = true;
     await this.landSamples.load(this.ctx);
+    await this.loadGnomeLaugh(this.ctx);
     this.startAmbient();
   }
 
@@ -727,16 +731,86 @@ export class AudioBus {
     });
   }
 
-  /** Gnomo fiscal — risadinha curta no empurrão */
+  /** Gnomo fiscal — sample da hiena cartoon; síntese só se o MP3 não carregar. */
   playFiscalGnomeLaugh(): void {
+    if (this.playGnomeLaughSample(1, 0.72)) return;
     this.withCtx((ctx, sfx) => {
-      this.duckAmbient(110, 0.28);
+      this.duckAmbient(280, 0.18);
       const t = ctx.currentTime;
-      this.noiseBurst(ctx, sfx, 0.05, 1400, 0.035, t, 'bandpass');
-      this.creatureVocal(ctx, sfx, t, 0.09, 920, 1240, 0.07, { squeak: true, wobble: true, pop: true });
-      this.creatureVocal(ctx, sfx, t + 0.1, 0.11, 1080, 760, 0.062, { squeak: true, boing: true });
-      this.tone(ctx, sfx, 'triangle', 1480, 980, 0.07, 0.028, t + 0.08);
+      const hits: Array<[number, number, number, number, boolean]> = [
+        [0.0, 0.11, 210, 232, false],
+        [0.13, 0.11, 228, 248, false],
+        [0.26, 0.12, 252, 278, false],
+        [0.4, 0.16, 290, 318, true],
+        [0.58, 0.13, 268, 236, false],
+        [0.74, 0.38, 224, 148, true],
+      ];
+      for (const [at, dur, f0, f1, open] of hits) {
+        this.humanoidLaughSyllable(ctx, sfx, t + at, dur, f0, f1, open ? 0.13 : 0.1, open);
+      }
     });
+  }
+
+  playFiscalGnomeChuckle(): void {
+    if (this.gnomeLaughSrc) return;
+    if (this.playGnomeLaughSample(1.04, 0.58)) return;
+    this.withCtx((ctx, sfx) => {
+      this.duckAmbient(140, 0.24);
+      const t = ctx.currentTime;
+      this.humanoidLaughSyllable(ctx, sfx, t, 0.1, 260, 288, 0.11, false);
+      this.humanoidLaughSyllable(ctx, sfx, t + 0.12, 0.16, 300, 210, 0.12, true);
+    });
+  }
+
+  private async loadGnomeLaugh(ctx: AudioContext): Promise<void> {
+    if (this.gnomeLaughBuf) return;
+    try {
+      const url = `${import.meta.env.BASE_URL}assets/audio/gnome-laugh.mp3`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      this.gnomeLaughBuf = await ctx.decodeAudioData(await res.arrayBuffer());
+    } catch {
+      /* fallback procedural em playFiscalGnomeLaugh */
+    }
+  }
+
+  private playGnomeLaughSample(pitch: number, vol: number): boolean {
+    const ctx = this.ctx;
+    const sfx = this.sfx;
+    const buf = this.gnomeLaughBuf;
+    if (!ctx || !sfx || !buf || this.muted) return false;
+    try {
+      if (this.gnomeLaughSrc) {
+        try {
+          this.gnomeLaughSrc.stop();
+        } catch {
+          /* já parou */
+        }
+        this.gnomeLaughSrc = null;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = pitch;
+      const g = ctx.createGain();
+      const t = ctx.currentTime;
+      const dur = buf.duration / pitch;
+      this.duckAmbient(Math.min(900, dur * 1000), 0.2);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+      g.gain.setValueAtTime(vol, t + Math.max(0.05, dur - 0.12));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(g);
+      g.connect(sfx);
+      src.onended = () => {
+        if (this.gnomeLaughSrc === src) this.gnomeLaughSrc = null;
+      };
+      src.start(t);
+      src.stop(t + dur + 0.04);
+      this.gnomeLaughSrc = src;
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   playCrumbleLoop(): void {
@@ -2129,6 +2203,86 @@ export class AudioBus {
     const base = 660 * pitch * (1 + Math.min(4, streak) * 0.03);
     this.tone(ctx, sfx, 'sine', base, base, 0.4, 0.085, t);
     this.tone(ctx, sfx, 'sine', base * 1.5, base * 1.5, 0.32, 0.046, t + 0.02);
+  }
+
+  /** Sílaba “há” — prega vocal + formantes, não chiado de criatura. */
+  private humanoidLaughSyllable(
+    ctx: AudioContext,
+    sfx: GainNode,
+    t: number,
+    dur: number,
+    f0: number,
+    f1: number,
+    vol: number,
+    open: boolean,
+  ): void {
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(vol, t + 0.018);
+    out.gain.setValueAtTime(vol * (open ? 0.92 : 0.78), t + dur * 0.38);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    out.connect(sfx);
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 90;
+    const fA = ctx.createBiquadFilter();
+    fA.type = 'bandpass';
+    fA.frequency.value = open ? 780 : 620;
+    fA.Q.value = 7.5;
+    const fB = ctx.createBiquadFilter();
+    fB.type = 'bandpass';
+    fB.frequency.value = open ? 1240 : 1480;
+    fB.Q.value = 6.2;
+    const fC = ctx.createBiquadFilter();
+    fC.type = 'bandpass';
+    fC.frequency.value = 2550;
+    fC.Q.value = 4.4;
+    hp.connect(fA);
+    hp.connect(fB);
+    hp.connect(fC);
+    const mix = ctx.createGain();
+    mix.gain.value = 1;
+    fA.connect(mix);
+    fB.connect(mix);
+    fC.connect(mix);
+    mix.connect(out);
+
+    const folds = ctx.createOscillator();
+    folds.type = 'sawtooth';
+    folds.frequency.setValueAtTime(Math.max(80, f0), t);
+    folds.frequency.exponentialRampToValueAtTime(Math.max(80, f1), t + dur);
+    const foldsG = ctx.createGain();
+    foldsG.gain.value = 0.22;
+    const vib = ctx.createOscillator();
+    const vibG = ctx.createGain();
+    vib.frequency.value = open ? 5.4 : 7.2;
+    vibG.gain.value = f0 * (open ? 0.028 : 0.012);
+    vib.connect(vibG);
+    vibG.connect(folds.frequency);
+    folds.connect(foldsG);
+    foldsG.connect(hp);
+
+    const body = ctx.createOscillator();
+    body.type = 'triangle';
+    body.frequency.setValueAtTime(Math.max(80, f0), t);
+    body.frequency.exponentialRampToValueAtTime(Math.max(80, f1), t + dur);
+    const bodyG = ctx.createGain();
+    bodyG.gain.value = 0.16;
+    body.connect(bodyG);
+    bodyG.connect(hp);
+
+    folds.start(t);
+    body.start(t);
+    vib.start(t);
+    folds.stop(t + dur + 0.03);
+    body.stop(t + dur + 0.03);
+    vib.stop(t + dur + 0.03);
+
+    this.noiseBurst(ctx, sfx, Math.min(0.045, dur * 0.28), 2100, vol * 0.22, t, 'bandpass');
+    if (open) {
+      this.softNoise(ctx, sfx, dur * 0.7, 900, vol * 0.12, t + dur * 0.12, 'lowpass');
+    }
   }
 
   private tone(

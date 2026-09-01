@@ -802,8 +802,11 @@ export class Game {
       this.debug,
       this.userSettings.reduceMotion,
     );
-    if (gnomeEv === 'strike') {
+    if (gnomeEv === 'approach') {
       this.audio.playFiscalGnomeLaugh();
+    }
+    if (gnomeEv === 'strike') {
+      this.audio.playFiscalGnomeChuckle();
       this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
       if (!this.perfProfile().lightMode) {
         this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
