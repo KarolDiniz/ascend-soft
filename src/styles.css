@@ -486,6 +486,7 @@ html.has-mobile-pad .material-toast {
   justify-content: center;
   gap: 0.85rem;
   width: min(92vw, 360px);
+  --title-card-w: min(78vw, 260px);
   max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 32px);
   margin: 0 auto;
   overflow-y: auto;
@@ -1852,6 +1853,38 @@ html.has-mobile-pad .material-toast {
   width: 100%;
 }
 
+.title-stack .title-panel--play {
+  width: var(--title-card-w);
+  padding: 0.65rem 0.7rem 0.7rem;
+  gap: 0;
+}
+
+.title-panel--play .player-name-field {
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.title-panel--play .player-name-label {
+  font-size: 0.36rem;
+}
+
+.title-panel--play .player-name-input {
+  padding: 0.38rem 0.5rem;
+  font-size: 0.88rem;
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.22);
+}
+
+.title-panel--play .player-name-hint {
+  font-size: 0.62rem;
+  min-height: 0.9em;
+}
+
+.title-panel--play .btn-start {
+  min-width: 8.5rem;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.72rem;
+}
+
 .player-name-field {
   display: flex;
   flex-direction: column;
@@ -1921,7 +1954,7 @@ html.has-mobile-pad .material-toast {
 /* Tela inicial — 4 de cada vez, paginado */
 .global-leaderboard.is-title-mode {
   position: relative;
-  width: 100%;
+  width: var(--title-card-w);
   max-height: none;
   min-height: 0;
   padding: 0.55rem 0.55rem 0.45rem;
