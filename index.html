@@ -32,10 +32,6 @@
             <span class="hud-label">respiros</span>
             <span id="hud-breaths" class="hud-value hud-value--sm">0</span>
           </div>
-          <div class="hud-block hud-block--right">
-            <span class="hud-label">melhor</span>
-            <span id="hud-best" class="hud-value">0</span>
-          </div>
         </header>
 
         <div id="material-toast" class="material-toast hidden" aria-live="polite" role="status">
@@ -233,7 +229,6 @@
                 <p class="eyebrow">torre sensorial</p>
                 <h1 class="brand">Ascend<br />Soft</h1>
                 <p class="tagline">Pouse. Ouça. Suba de novo.</p>
-                <p id="title-best" class="title-best hidden" aria-live="polite"></p>
 
                 <nav class="title-toolbar" aria-label="Opções do jogo">
                   <button
@@ -325,8 +320,8 @@
                 <h2 class="leaderboard-title">Ranking</h2>
                 <span id="leaderboard-status" class="leaderboard-status">…</span>
               </div>
-              <ol id="leaderboard-list" class="leaderboard-list"></ol>
-              <p id="leaderboard-you" class="leaderboard-you hidden">jogue para entrar</p>
+
+              <ol id="leaderboard-list" class="leaderboard-list" aria-live="polite"></ol>
             </aside>
           </div>
         </section>

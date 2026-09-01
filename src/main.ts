@@ -22,8 +22,14 @@ const leaveGuard = new LeaveGuard(audio);
 const globalLeaderboard = new GlobalLeaderboard();
 game.onCatalogRefresh = () => titleCatalog.refresh();
 
-hud.onTitleShow = () => globalLeaderboard.onTitleShow();
-hud.onPlayingShow = () => globalLeaderboard.onPlayingShow();
+hud.onTitleShow = () => {
+  globalLeaderboard.setLocalBest(game.best);
+  globalLeaderboard.onTitleShow();
+};
+hud.onPlayingShow = () => {
+  globalLeaderboard.setLocalBest(game.best);
+  globalLeaderboard.onPlayingShow();
+};
 hud.onFallShow = () => globalLeaderboard.onFallShow();
 
 const nameInput = document.getElementById('player-name') as HTMLInputElement;

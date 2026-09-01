@@ -28,7 +28,7 @@ import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } fro
 import { enablePixelMode, PIXEL, snapPt } from '../theme/pixel';
 import { PASTEL } from '../theme/pastelPalette';
 
-const BEST_KEY = 'ascend-soft-best';
+import { loadLocalBest, saveLocalBest } from './localBest';
 const SEEN_KEY = 'ascend-soft-seen-materials';
 
 export type GameState = 'title' | 'intro' | 'playing' | 'falling';
@@ -135,7 +135,7 @@ export class Game {
     this.ctx = ctx;
     this.audio = audio;
     this.hud = hud;
-    this.best = Number(localStorage.getItem(BEST_KEY) || '0') || 0;
+    this.best = loadLocalBest();
     this.debug = new URLSearchParams(location.search).has('debug');
     try {
       const raw = localStorage.getItem(SEEN_KEY);
@@ -754,7 +754,7 @@ export class Game {
     this.height = Math.max(0, Math.floor(this.player.y));
     if (this.height > this.best) {
       this.best = this.height;
-      localStorage.setItem(BEST_KEY, String(this.best));
+      saveLocalBest(this.best);
       if (!this.runBestBroken && this.height > this.startBest && this.startBest > 0) {
         this.runBestBroken = true;
         this.audio.playRecord();

@@ -8,11 +8,9 @@ import type { AudioBus } from '../audio/AudioBus';
 export class Hud {
   private root: HTMLElement;
   private heightEl: HTMLElement;
-  private bestEl: HTMLElement;
   private breathsEl: HTMLElement;
   private streakEl: HTMLElement;
   private titleScreen: HTMLElement;
-  private titleBestEl: HTMLElement;
   private fallScreen: HTMLElement;
   private fallEyebrow: HTMLElement;
   private fallTitle: HTMLElement;
@@ -41,11 +39,9 @@ export class Hud {
   constructor(audio?: AudioBus) {
     this.root = document.getElementById('hud')!;
     this.heightEl = document.getElementById('hud-height')!;
-    this.bestEl = document.getElementById('hud-best')!;
     this.breathsEl = document.getElementById('hud-breaths')!;
     this.streakEl = document.getElementById('hud-streak')!;
     this.titleScreen = document.getElementById('title-screen')!;
-    this.titleBestEl = document.getElementById('title-best')!;
     this.fallScreen = document.getElementById('fall-screen')!;
     this.fallEyebrow = document.getElementById('fall-eyebrow')!;
     this.fallTitle = document.getElementById('fall-title')!;
@@ -75,6 +71,7 @@ export class Hud {
   onFallShow: (() => void) | null = null;
 
   showTitle(best: number): void {
+    void best;
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
     this.fallTears.stop();
@@ -82,7 +79,6 @@ export class Hud {
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
     document.getElementById('app')?.classList.add('is-title');
-    this.setTitleBest(best);
     this.onTitleShow?.();
   }
 
@@ -106,7 +102,7 @@ export class Hud {
   }
 
   /** HUD entra suavemente enquanto a tela inicial some. */
-  preparePlaying(best: number): void {
+  preparePlaying(_best: number): void {
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
     this.fallTears.stop();
@@ -116,7 +112,6 @@ export class Hud {
     this.root.classList.remove('is-entering');
     void this.root.offsetWidth;
     this.root.classList.add('is-entering');
-    this.bestEl.textContent = String(best);
     this.heightEl.textContent = '0';
     this.breathsEl.textContent = '0';
     this.streakEl.textContent = '';
@@ -133,16 +128,7 @@ export class Hud {
     return !this.fallScreen.classList.contains('hidden');
   }
 
-  private setTitleBest(best: number): void {
-    if (best > 0) {
-      this.titleBestEl.textContent = `melhor ${best}`;
-      this.titleBestEl.classList.remove('hidden');
-    } else {
-      this.titleBestEl.classList.add('hidden');
-    }
-  }
-
-  showPlaying(best: number): void {
+  showPlaying(_best: number): void {
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
     this.fallTears.stop();
@@ -151,7 +137,6 @@ export class Hud {
     document.getElementById('app')?.classList.remove('is-title');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
-    this.bestEl.textContent = String(best);
     this.heightEl.textContent = '0';
     this.breathsEl.textContent = '0';
     this.streakEl.textContent = '';
@@ -200,9 +185,8 @@ export class Hud {
     }
   }
 
-  update(height: number, best: number, breaths: number, streak = 0): void {
+  update(height: number, _best: number, breaths: number, streak = 0): void {
     this.heightEl.textContent = String(height);
-    this.bestEl.textContent = String(best);
     this.breathsEl.textContent = String(breaths);
     if (streak >= 2) {
       this.streakEl.classList.remove('hidden');
