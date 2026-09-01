@@ -2,6 +2,7 @@ import { AudioBus } from './audio/AudioBus';
 import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
+import { isTextEntryTarget } from './game/Input';
 import { nameRejectMessage } from './leaderboard/namePolicy';
 import { leaderboardService } from './leaderboard/LeaderboardService';
 import { GlobalLeaderboard } from './ui/GlobalLeaderboard';
@@ -124,6 +125,13 @@ btnHome.addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
   if (titleSettings.isOpen() || titleCatalog.isOpen() || titleCharacter.isOpen()) return;
+  if (isTextEntryTarget(e.target)) {
+    if (e.code === 'Enter' && hud.isTitleVisible()) {
+      e.preventDefault();
+      void unlockAndPlay();
+    }
+    return;
+  }
   if (e.code === 'Escape' && hud.isFallVisible()) {
     e.preventDefault();
     game.goToTitle();

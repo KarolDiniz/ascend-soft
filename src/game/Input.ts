@@ -9,6 +9,14 @@ export function isTouchUi(): boolean {
   return window.matchMedia(TOUCH_QUERY).matches;
 }
 
+/** Campo de texto focado — não capturar A/D/W/Espaço como controle. */
+export function isTextEntryTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 type DeviceOrientationCtor = {
   requestPermission?: () => Promise<PermissionState | 'granted' | 'denied' | 'default'>;
 };
@@ -49,6 +57,7 @@ export class Input {
     this.bound = true;
 
     window.addEventListener('keydown', (e) => {
+      if (isTextEntryTarget(e.target)) return;
       this.keys.add(e.code);
       if (['Space', 'ArrowUp', 'KeyW', 'ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) {
         e.preventDefault();
@@ -64,6 +73,7 @@ export class Input {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (isTextEntryTarget(e.target)) return;
       this.keys.delete(e.code);
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         this.jumpHeld = this.computeJumpHeld();
