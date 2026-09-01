@@ -236,7 +236,7 @@
               id="title-catalog-backdrop"
               class="title-catalog-backdrop"
               type="button"
-              aria-label="Fechar catálogo"
+                    aria-label="Fechar álbum"
               tabindex="-1"
             ></button>
             <div
@@ -247,12 +247,34 @@
               aria-labelledby="catalog-title"
             >
               <div class="title-catalog-head">
-                <h2 id="catalog-title" class="settings-title">Colecionáveis</h2>
+                <h2 id="catalog-title" class="settings-title">Álbum</h2>
                 <button id="btn-catalog-close" class="btn-settings-close" type="button" aria-label="Fechar">
                   ×
                 </button>
               </div>
-              <p id="catalog-progress" class="catalog-progress">0 / 25 encontrados</p>
+              <div class="catalog-tabs" role="tablist" aria-label="Seções do álbum">
+                <button
+                  id="catalog-tab-textures"
+                  class="catalog-tab is-active"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="catalog-grid"
+                >
+                  texturas
+                </button>
+                <button
+                  id="catalog-tab-loot"
+                  class="catalog-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="catalog-grid"
+                >
+                  tesouros
+                </button>
+              </div>
+              <p id="catalog-progress" class="catalog-progress">0 / 47 texturas</p>
               <div id="catalog-grid" class="catalog-grid" role="list"></div>
             </div>
           </div>
@@ -312,7 +334,7 @@
                     id="btn-catalog"
                     class="title-tool-btn title-catalog-btn"
                     type="button"
-                    aria-label="Catálogo de colecionáveis"
+                    aria-label="Álbum de texturas e tesouros"
                     aria-expanded="false"
                     aria-controls="title-catalog"
                   >
@@ -322,7 +344,7 @@
                       <rect x="2" y="9" width="5" height="5" fill="currentColor" />
                       <rect x="9" y="9" width="5" height="5" fill="currentColor" />
                     </svg>
-                    <span class="title-tool-label">itens</span>
+                    <span class="title-tool-label">álbum</span>
                     <span id="catalog-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
                   </button>
 

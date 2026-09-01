@@ -31,7 +31,7 @@ import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
 import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleReturnLine } from './returnLoop';
-const SEEN_KEY = 'ascend-soft-seen-materials';
+import { addSeenMaterial, loadSeenMaterials } from './seenMaterials';
 
 export type GameState = 'title' | 'intro' | 'playing' | 'falling';
 
@@ -84,6 +84,7 @@ export class Game {
   private collected = loadCollected();
   private runCollectibles = 0;
   private runNewFindNames: string[] = [];
+  private runNewHeardNames: string[] = [];
   private runBestPerfect = 0;
   private runPerfectRecord = false;
   private background = new Background();
@@ -106,7 +107,7 @@ export class Game {
   private debug = false;
   private screenPunch = 0;
   private floaters: Floater[] = [];
-  private seenMaterials = new Set<MaterialId>();
+  private seenMaterials = loadSeenMaterials();
   /** Banners de fase já exibidos nesta rodada — não repetir ao ciclar altitudes */
   private shownPhaseToasts = new Set<MaterialId>();
   private runBestBroken = false;
@@ -142,12 +143,6 @@ export class Game {
     this.hud = hud;
     this.best = loadLocalBest();
     this.debug = new URLSearchParams(location.search).has('debug');
-    try {
-      const raw = localStorage.getItem(SEEN_KEY);
-      if (raw) (JSON.parse(raw) as MaterialId[]).forEach((id) => this.seenMaterials.add(id));
-    } catch {
-      /* ignore */
-    }
     this.applyUserSettings(this.userSettings);
     this.applyPlayerAppearance(loadPlayerAppearance());
     this.input.bind(canvas);
@@ -387,7 +382,7 @@ export class Game {
 
   private resetRun(): void {
     const seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const phaseRun = new PhaseRunOrder(seed);
+    const phaseRun = new PhaseRunOrder(seed, this.seenMaterials);
     setPhaseRun(phaseRun);
 
     this.spawner = new PlatformSpawner(seed);
@@ -402,6 +397,7 @@ export class Game {
     this.collectibles.reset(this.collected);
     this.runCollectibles = 0;
     this.runNewFindNames = [];
+    this.runNewHeardNames = [];
     this.runBestPerfect = 0;
     this.runPerfectRecord = false;
     this.scenery.resetForRun(phaseRun.starterMaterial());
@@ -1170,13 +1166,10 @@ export class Game {
         this.perfectStreak = 0;
       }
 
-      if (!this.seenMaterials.has(p.material)) {
-        this.seenMaterials.add(p.material);
-        try {
-          localStorage.setItem(SEEN_KEY, JSON.stringify([...this.seenMaterials]));
-        } catch {
-          /* ignore */
-        }
+      if (addSeenMaterial(this.seenMaterials, p.material)) {
+        this.runNewHeardNames.push(MATERIALS[p.material].name);
+        this.addFloater(this.player.x, platformTop + 28, MATERIALS[p.material].name, mat.particle);
+        this.onCatalogRefresh?.();
       }
 
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -1377,6 +1370,7 @@ export class Game {
       runBestBroken: this.runBestBroken,
       returnHook: fallReturnHook({
         newFindNames: this.runNewFindNames,
+        newHeardNames: this.runNewHeardNames,
         runBestPerfect: this.runBestPerfect,
         perfectRecord: this.runPerfectRecord,
       }),

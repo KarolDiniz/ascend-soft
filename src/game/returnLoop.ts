@@ -1,7 +1,8 @@
 import { MATERIALS, type MaterialId } from '../audio/materials';
 import { collectedCount, loadCollected, totalCollectibles } from './collectibles/storage';
 import { getBehaviorDef } from './platform/behaviors';
-import { PHASE_COUNT, PHASE_ORDER } from './ThemedPhases';
+import { loadSeenMaterials, totalTextures } from './seenMaterials';
+import { PHASE_ORDER } from './ThemedPhases';
 
 const RETURN_KEY = 'ascend-soft-return';
 
@@ -107,14 +108,15 @@ export function titleReturnLine(seenCount: number): string {
   const state = loadReturnState();
   const openerName = MATERIALS[todaysOpener()].name;
   const col = collectedCount(loadCollected());
-  const total = totalCollectibles();
+  const lootTotal = totalCollectibles();
+  const texTotal = totalTextures();
 
   if (state.streak >= 2) bits.push(`${state.streak} dias seguidos`);
   bits.push(`hoje: ${openerName}`);
 
-  if (col >= total && total > 0) bits.push('catálogo completo');
-  else if (col > 0) bits.push(`${col}/${total} tesouros`);
-  else if (seenCount > 0) bits.push(`${seenCount}/${PHASE_COUNT} texturas`);
+  if (seenCount < texTotal && seenCount > 0) bits.push(`${seenCount}/${texTotal} texturas`);
+  else if (col >= lootTotal && lootTotal > 0 && seenCount >= texTotal) bits.push('álbum completo');
+  else if (col > 0) bits.push(`${col}/${lootTotal} tesouros`);
   else if (state.bestPerfect >= 5) bits.push(`combo ${state.bestPerfect}×`);
 
   return bits.join(' · ');
@@ -122,26 +124,41 @@ export function titleReturnLine(seenCount: number): string {
 
 export function fallReturnHook(input: {
   newFindNames: readonly string[];
+  newHeardNames: readonly string[];
   runBestPerfect: number;
   perfectRecord: boolean;
 }): string {
   const col = collectedCount(loadCollected());
-  const total = totalCollectibles();
-  const remain = total - col;
+  const lootTotal = totalCollectibles();
+  const lootRemain = lootTotal - col;
+  const seen = loadSeenMaterials();
+  const heard = seen.size;
+  const texTotal = totalTextures();
+  const texRemain = texTotal - heard;
   const tomorrow = MATERIALS[tomorrowsOpener()].name;
   const state = loadReturnState();
   const names = input.newFindNames;
+  const heardNames = input.newHeardNames;
 
-  if (names.length === 1) return `novo: ${names[0]} · ${col}/${total} tesouros`;
-  if (names.length > 1) return `${names.length} tesouros novos · ${col}/${total}`;
+  if (names.length === 1) return `novo: ${names[0]} · ${col}/${lootTotal} tesouros`;
+  if (names.length > 1) return `${names.length} tesouros novos · ${col}/${lootTotal}`;
+  if (heardNames.length === 1) return `nova textura: ${heardNames[0]} · ${heard}/${texTotal}`;
+  if (heardNames.length > 1) return `${heardNames.length} texturas novas · ${heard}/${texTotal}`;
   if (input.perfectRecord && input.runBestPerfect >= 3) {
     return `combo ${input.runBestPerfect}× — teu melhor pouso`;
   }
-  if (col >= total && total > 0) return `catálogo completo · amanhã: ${tomorrow}`;
-  if (remain > 0 && remain <= 5 && col > 0) {
-    return remain === 1
+  if (heard >= texTotal && col >= lootTotal && lootTotal > 0) {
+    return `álbum completo · amanhã: ${tomorrow}`;
+  }
+  if (texRemain > 0 && texRemain <= 5 && heard > 0) {
+    return texRemain === 1
+      ? `falta 1 textura no álbum`
+      : `faltam ${texRemain} texturas no álbum`;
+  }
+  if (lootRemain > 0 && lootRemain <= 5 && col > 0) {
+    return lootRemain === 1
       ? `falta 1 tesouro no catálogo`
-      : `faltam ${remain} tesouros no catálogo`;
+      : `faltam ${lootRemain} tesouros no catálogo`;
   }
   if (state.streak >= 2) return `${state.streak} dias seguidos · amanhã: ${tomorrow}`;
   return `amanhã a torre começa em ${tomorrow}`;

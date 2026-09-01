@@ -43,6 +43,23 @@ function pinFeaturedOpener(order: MaterialId[], featured: MaterialId): MaterialI
   return next;
 }
 
+/** Texturas ainda não ouvidas sobem para as fases 2–4, para o álbum completar em subidas curtas. */
+const UNSEEN_NEAR_FRONT = 3;
+
+function pinUnseenNearFront(
+  order: MaterialId[],
+  seen: ReadonlySet<MaterialId> | undefined,
+): MaterialId[] {
+  const featured = order[0];
+  if (!featured) return order;
+  const unseen = order.filter((id) => id !== featured && (!seen || !seen.has(id)));
+  const take = unseen.slice(0, UNSEEN_NEAR_FRONT);
+  if (take.length === 0) return order;
+  const takeSet = new Set(take);
+  const rest = order.filter((id) => id !== featured && !takeSet.has(id));
+  return [featured, ...take, ...rest];
+}
+
 function blendProgress(ch: number, idx: number): number {
   const boundary = (idx + 1) * PHASE_HEIGHT;
   const isLast = idx >= PHASE_COUNT - 1;
@@ -81,8 +98,9 @@ export class PhaseRunOrder {
   readonly order: readonly MaterialId[];
   readonly zones: readonly ThemedPhaseZone[];
 
-  constructor(seed: number) {
-    this.order = pinFeaturedOpener(shufflePhaseOrder(PHASE_ORDER, seed), todaysOpener());
+  constructor(seed: number, seen?: ReadonlySet<MaterialId>) {
+    const shuffled = pinFeaturedOpener(shufflePhaseOrder(PHASE_ORDER, seed), todaysOpener());
+    this.order = pinUnseenNearFront(shuffled, seen);
     this.zones = buildThemedZonesForOrder(this.order);
   }
 
