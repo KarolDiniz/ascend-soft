@@ -30,6 +30,7 @@ import { PASTEL } from '../theme/pastelPalette';
 import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
+import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleReturnLine } from './returnLoop';
 const SEEN_KEY = 'ascend-soft-seen-materials';
 
 export type GameState = 'title' | 'intro' | 'playing' | 'falling';
@@ -82,6 +83,9 @@ export class Game {
   private collectibles = new CollectibleManager();
   private collected = loadCollected();
   private runCollectibles = 0;
+  private runNewFindNames: string[] = [];
+  private runBestPerfect = 0;
+  private runPerfectRecord = false;
   private background = new Background();
   private fpsEma = 60;
 
@@ -301,7 +305,7 @@ export class Game {
     this.titleOverlayOpen = false;
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
-    this.hud.showTitle(this.best);
+    this.hud.showTitle(this.best, titleReturnLine(this.seenMaterials.size));
     this.syncMobileControls();
     this.onCatalogRefresh?.();
   }
@@ -336,6 +340,7 @@ export class Game {
     this.input.clearJump();
     this.spawnGrace = this.introDuration + 0.35;
     this.runStartedAt = performance.now();
+    noteDailyPlay();
     this.state = 'intro';
     const pal = this.atmosphere.getPalette();
     this.hud.setAmbientColors(pal.top, pal.mid);
@@ -351,6 +356,7 @@ export class Game {
     this.input.clearJump();
     this.spawnGrace = 0.45;
     this.runStartedAt = performance.now();
+    noteDailyPlay();
     this.camera.snapTo(this.player.y, this.H * 0.18);
     this.state = 'playing';
     this.hud.showPlaying(this.best);
@@ -393,8 +399,11 @@ export class Game {
     this.ambient.clear();
     this.shards.clear();
     this.breaths.reset();
-    this.collectibles.reset();
+    this.collectibles.reset(this.collected);
     this.runCollectibles = 0;
+    this.runNewFindNames = [];
+    this.runBestPerfect = 0;
+    this.runPerfectRecord = false;
     this.scenery.resetForRun(phaseRun.starterMaterial());
     this.atmosphere.resetForHeight(0);
     this.height = 0;
@@ -1145,6 +1154,8 @@ export class Game {
 
       if (perfect) {
         this.perfectStreak += 1;
+        if (this.perfectStreak > this.runBestPerfect) this.runBestPerfect = this.perfectStreak;
+        if (noteBestPerfect(this.perfectStreak)) this.runPerfectRecord = true;
         if (!this.userSettings.reduceMotion) {
           this.camera.nudgePerfect(5 + Math.min(6, this.perfectStreak));
           this.screenPunch = 0.55 + Math.min(0.25, this.perfectStreak * 0.04);
@@ -1272,6 +1283,7 @@ export class Game {
     const def = COLLECTIBLES[id];
     const isNew = addCollected(this.collected, id);
     this.runCollectibles += 1;
+    if (isNew) this.runNewFindNames.push(def.name);
     this.audio.playCollect();
     if (!this.userSettings.reduceMotion) {
       this.screenPunch = Math.min(1, this.screenPunch + 0.35);
@@ -1363,6 +1375,11 @@ export class Game {
       collectibles: this.runCollectibles,
       startBest: this.startBest,
       runBestBroken: this.runBestBroken,
+      returnHook: fallReturnHook({
+        newFindNames: this.runNewFindNames,
+        runBestPerfect: this.runBestPerfect,
+        perfectRecord: this.runPerfectRecord,
+      }),
     };
     this.fallRevealTimer = 0.52;
     void this.submitScoreForFall(runMs);

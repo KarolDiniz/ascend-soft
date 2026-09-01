@@ -5,6 +5,8 @@ export interface FallSummary {
   collectibles: number;
   startBest: number;
   runBestBroken: boolean;
+  /** Motivo para voltar — tesouro novo, combo, material de amanhã */
+  returnHook?: string;
   globalRank?: number | null;
   globalMode?: 'global' | 'local';
   submitError?: 'blocked' | 'taken' | 'invalid' | 'network' | 'rejected';

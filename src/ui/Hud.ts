@@ -21,6 +21,8 @@ export class Hud {
   private fallStatBest: HTMLElement;
   private fallGap: HTMLElement;
   private fallRank: HTMLElement;
+  private titleReturnHook: HTMLElement | null;
+  private fallReturnHook: HTMLElement | null;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
   private toastPhaseEl: HTMLElement;
@@ -52,6 +54,8 @@ export class Hud {
     this.fallStatBest = document.getElementById('fall-stat-best')!;
     this.fallGap = document.getElementById('fall-gap')!;
     this.fallRank = document.getElementById('fall-rank')!;
+    this.titleReturnHook = document.getElementById('title-return-hook');
+    this.fallReturnHook = document.getElementById('fall-return-hook');
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
     this.toastPhaseEl = document.getElementById('toast-phase')!;
@@ -70,11 +74,15 @@ export class Hud {
   /** Callback quando overlay de queda aparece */
   onFallShow: (() => void) | null = null;
 
-  showTitle(best: number): void {
+  showTitle(best: number, returnLine = ''): void {
     void best;
     window.clearTimeout(this.leaveTimer);
     this.fallMascot.stop();
     this.fallTears.stop();
+    if (this.titleReturnHook) {
+      this.titleReturnHook.textContent = returnLine;
+      this.titleReturnHook.classList.toggle('hidden', !returnLine);
+    }
     this.titleScreen.classList.remove('hidden', 'is-leaving');
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
@@ -164,6 +172,12 @@ export class Hud {
     }
 
     this.applyFallRank(summary);
+
+    if (this.fallReturnHook) {
+      const hook = summary.returnHook ?? '';
+      this.fallReturnHook.textContent = hook;
+      this.fallReturnHook.classList.toggle('hidden', !hook);
+    }
 
     this.fallScreen.classList.remove('hidden');
     this.fallScreen.classList.add('is-entering');

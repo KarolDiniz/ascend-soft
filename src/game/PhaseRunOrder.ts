@@ -1,4 +1,5 @@
 import type { MaterialId } from '../audio/materials';
+import { todaysOpener } from './returnLoop';
 import {
   buildThemedZonesForOrder,
   CYCLE_LENGTH,
@@ -30,6 +31,16 @@ function shufflePhaseOrder(source: readonly MaterialId[], seed: number): Materia
     arr[j] = tmp;
   }
   return arr;
+}
+
+/** O abridor do dia fica na base da torre — o resto continua embaralhado por run. */
+function pinFeaturedOpener(order: MaterialId[], featured: MaterialId): MaterialId[] {
+  const i = order.indexOf(featured);
+  if (i <= 0) return order;
+  const next = [...order];
+  next.splice(i, 1);
+  next.unshift(featured);
+  return next;
 }
 
 function blendProgress(ch: number, idx: number): number {
@@ -71,7 +82,7 @@ export class PhaseRunOrder {
   readonly zones: readonly ThemedPhaseZone[];
 
   constructor(seed: number) {
-    this.order = shufflePhaseOrder(PHASE_ORDER, seed);
+    this.order = pinFeaturedOpener(shufflePhaseOrder(PHASE_ORDER, seed), todaysOpener());
     this.zones = buildThemedZonesForOrder(this.order);
   }
 

@@ -1396,6 +1396,24 @@ html.has-mobile-pad .material-toast {
   animation-delay: 0.22s, 0.8s;
 }
 
+.title-return-hook {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 18rem;
+  margin: 0.15rem 0 0;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.75);
+  animation: soft-fade 0.5s steps(5) both;
+  animation-delay: 0.28s;
+}
+
+.title-return-hook.hidden {
+  display: none;
+}
+
 .title-panel {
   position: relative;
   display: flex;
@@ -2266,6 +2284,24 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   color: #c96a52;
   border-color: rgba(201, 106, 82, 0.35);
   background: rgba(255, 235, 228, 0.55);
+}
+
+.fall-return-hook {
+  margin: 0 0 14px;
+  padding: 0.4rem 0.7rem;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  text-align: center;
+  max-width: 18rem;
+  border: 2px dashed rgba(201, 106, 82, 0.32);
+  background: rgba(255, 248, 242, 0.72);
+}
+
+.fall-return-hook.hidden {
+  display: none;
 }
 
 .fall-actions {

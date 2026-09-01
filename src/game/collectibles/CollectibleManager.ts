@@ -5,6 +5,7 @@ import {
   collectibleSeed,
   COLLECTIBLE_MIN_GAP_PLATFORMS,
   COLLECTIBLE_MIN_HEIGHT,
+  COLLECTIBLE_PITY_PLATFORMS,
   COLLECTIBLES,
   rollCollectible,
   type CollectibleId,
@@ -27,11 +28,13 @@ export class CollectibleManager {
   private pickups: Pickup[] = [];
   private seededPlatforms = new Set<number>();
   private platformsSinceSpawn = 999;
+  private owned: ReadonlySet<CollectibleId> = new Set();
 
-  reset(): void {
+  reset(owned: ReadonlySet<CollectibleId> = new Set()): void {
     this.pickups.length = 0;
     this.seededPlatforms.clear();
     this.platformsSinceSpawn = 999;
+    this.owned = owned;
   }
 
   /** Register new platforms once — O(new) per frame, no per-frame allocations */
@@ -45,7 +48,10 @@ export class CollectibleManager {
       if (p.y < COLLECTIBLE_MIN_HEIGHT || !p.alive) continue;
       if (this.platformsSinceSpawn < COLLECTIBLE_MIN_GAP_PLATFORMS) continue;
 
-      const id = rollCollectible(p.seed);
+      const force =
+        this.platformsSinceSpawn >=
+        COLLECTIBLE_MIN_GAP_PLATFORMS + COLLECTIBLE_PITY_PLATFORMS;
+      const id = rollCollectible(p.seed, this.owned, force);
       if (!id) continue;
 
       this.platformsSinceSpawn = 0;

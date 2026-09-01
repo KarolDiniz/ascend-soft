@@ -275,13 +275,27 @@ export function collectibleSeed(seed: number, salt: number): number {
 
 /** ~6% das plataformas elegíveis — aparecem com espaçamento, não em toda partida */
 export const COLLECTIBLE_SPAWN_CHANCE = 0.06;
+/** Chance um pouco maior enquanto o catálogo ainda tem buracos */
+export const COLLECTIBLE_MISSING_SPAWN_CHANCE = 0.1;
 /** Só após sair da zona inicial confortável */
 export const COLLECTIBLE_MIN_HEIGHT = 160;
 /** Mínimo de plataformas entre um colecionável e outro */
 export const COLLECTIBLE_MIN_GAP_PLATFORMS = 5;
+/** Após o intervalo mínimo, força um tesouro se nenhum tiver saído */
+export const COLLECTIBLE_PITY_PLATFORMS = 14;
 
-export function rollCollectible(seed: number): CollectibleId | null {
-  if (collectibleSeed(seed, 77) > COLLECTIBLE_SPAWN_CHANCE) return null;
-  const idx = Math.floor(collectibleSeed(seed, 88) * COLLECTIBLE_ORDER.length);
-  return COLLECTIBLE_ORDER[idx]!;
+export function rollCollectible(
+  seed: number,
+  owned?: ReadonlySet<CollectibleId>,
+  force = false,
+): CollectibleId | null {
+  const missing = owned
+    ? COLLECTIBLE_ORDER.filter((id) => !owned.has(id))
+    : COLLECTIBLE_ORDER;
+  const hunting = missing.length > 0;
+  const pool = hunting ? missing : COLLECTIBLE_ORDER;
+  const chance = hunting ? COLLECTIBLE_MISSING_SPAWN_CHANCE : COLLECTIBLE_SPAWN_CHANCE;
+  if (!force && collectibleSeed(seed, 77) > chance) return null;
+  const idx = Math.floor(collectibleSeed(seed, 88) * pool.length);
+  return pool[idx]!;
 }
