@@ -1,32 +1,31 @@
+import { VirtualStick } from '../ui/VirtualStick';
+
 export class Input {
   left = false;
   right = false;
-  /** -1 esquerda … 0 … +1 direita (teclado ou inclinação). */
+  /** -1 esquerda … 0 … +1 direita (teclado ou analógico). */
   moveAxis = 0;
   jumpPressed = false;
   jumpHeld = false;
-  /** Posição do ponteiro na viewport (tela inicial). */
   pointerX = 0;
   pointerY = 0;
   pointerKnown = false;
   private jumpBuffer = 0;
   private jumpHeldTimer = 0;
   private pointerJump = false;
+  private jumpPointerId: number | null = null;
+  private stickJumpArmed = true;
 
   private keys = new Set<string>();
   private bound = false;
-  private tiltBound = false;
-  private tiltAxis = 0;
-  private tiltZero = 0;
-  private tiltReady = false;
-  private motionEnabled = false;
-
-  private readonly tiltDead = 5;
-  private readonly tiltFull = 26;
+  private stick: VirtualStick | null = null;
+  private stickX = 0;
 
   bind(el: HTMLElement): void {
     if (this.bound) return;
     this.bound = true;
+
+    this.stick = new VirtualStick((x, y) => this.onStickAxis(x, y));
 
     window.addEventListener('keydown', (e) => {
       this.keys.add(e.code);
@@ -53,10 +52,13 @@ export class Input {
       this.pointerX = e.clientX;
       this.pointerY = e.clientY;
       this.pointerKnown = true;
+      this.jumpPointerId = e.pointerId;
       this.pointerJump = true;
       this.pressJump();
     };
-    const onPointerUp = () => {
+    const onPointerUp = (e: PointerEvent) => {
+      if (this.jumpPointerId !== null && e.pointerId !== this.jumpPointerId) return;
+      this.jumpPointerId = null;
       this.pointerJump = false;
       if (this.jumpHeldTimer <= 0) this.jumpHeld = this.keyJumpHeld();
     };
@@ -65,16 +67,7 @@ export class Input {
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
 
-    window.addEventListener('blur', () => {
-      this.keys.clear();
-      this.jumpHeld = false;
-      this.pointerJump = false;
-      this.jumpHeldTimer = 0;
-      this.left = false;
-      this.right = false;
-      this.moveAxis = 0;
-      this.pointerKnown = false;
-    });
+    window.addEventListener('blur', () => this.resetIdle());
 
     const onPointer = (e: PointerEvent) => {
       this.pointerX = e.clientX;
@@ -85,37 +78,51 @@ export class Input {
     window.addEventListener('pointerleave', () => {
       this.pointerKnown = false;
     });
-
-    window.addEventListener('orientationchange', () => this.calibrateTilt());
-    screen.orientation?.addEventListener?.('change', () => this.calibrateTilt());
   }
 
-  /** Pedir giroscópio (iOS exige gesto do usuário) e ligar inclinação. */
-  async enableMotion(): Promise<void> {
-    this.motionEnabled = true;
-    this.calibrateTilt();
-
-    const DOE = DeviceOrientationEvent as unknown as {
-      requestPermission?: () => Promise<string>;
-    };
-    if (typeof DOE.requestPermission === 'function') {
-      try {
-        const state = await DOE.requestPermission();
-        if (state !== 'granted') return;
-      } catch {
-        return;
-      }
+  setStickPlaying(playing: boolean): void {
+    this.stick?.setPlaying(playing);
+    if (!playing) {
+      this.stickX = 0;
+      this.stickJumpArmed = true;
+      this.syncMove();
     }
+  }
 
-    if (this.tiltBound) return;
-    this.tiltBound = true;
-    window.addEventListener('deviceorientation', this.onOrientation, true);
+  /** Mantido por compatibilidade — o analógico substitui o giroscópio. */
+  async enableMotion(): Promise<void> {
+    return;
   }
 
   calibrateTilt(): void {
-    this.tiltReady = false;
-    this.tiltAxis = 0;
+    /* no-op: inclinação substituída pelo analógico */
+  }
+
+  private onStickAxis(x: number, y: number): void {
+    this.stickX = x;
+    if (y < -0.58) {
+      if (this.stickJumpArmed) {
+        this.stickJumpArmed = false;
+        this.pressJump();
+      }
+    } else if (y > -0.32) {
+      this.stickJumpArmed = true;
+    }
     this.syncMove();
+  }
+
+  private resetIdle(): void {
+    this.keys.clear();
+    this.jumpHeld = false;
+    this.pointerJump = false;
+    this.jumpPointerId = null;
+    this.jumpHeldTimer = 0;
+    this.left = false;
+    this.right = false;
+    this.moveAxis = 0;
+    this.stickX = 0;
+    this.pointerKnown = false;
+    this.stickJumpArmed = true;
   }
 
   private pressJump(): void {
@@ -129,53 +136,11 @@ export class Input {
     return this.keys.has('Space') || this.keys.has('ArrowUp') || this.keys.has('KeyW');
   }
 
-  private onOrientation = (e: DeviceOrientationEvent): void => {
-    if (!this.motionEnabled) return;
-    const lean = this.screenLean(e);
-    if (lean == null) return;
-
-    if (!this.tiltReady) {
-      this.tiltZero = lean;
-      this.tiltReady = true;
-    }
-
-    let delta = lean - this.tiltZero;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
-
-    const mag = Math.abs(delta);
-    if (mag < this.tiltDead) {
-      this.tiltAxis = 0;
-    } else {
-      const t = Math.min(1, (mag - this.tiltDead) / (this.tiltFull - this.tiltDead));
-      this.tiltAxis = Math.sign(delta) * t;
-    }
-    this.syncMove();
-  };
-
-  /** Inclinação esquerda/direita no referencial da tela. */
-  private screenLean(e: DeviceOrientationEvent): number | null {
-    const gamma = e.gamma;
-    const beta = e.beta;
-    if (gamma == null || beta == null) return null;
-    const angle = this.screenAngle();
-    if (angle === 90) return beta;
-    if (angle === -90 || angle === 270) return -beta;
-    if (angle === 180) return -gamma;
-    return gamma;
-  }
-
-  private screenAngle(): number {
-    const orient = screen.orientation;
-    if (orient && typeof orient.angle === 'number') return orient.angle;
-    const legacy = (window as Window & { orientation?: number }).orientation;
-    return typeof legacy === 'number' ? legacy : 0;
-  }
-
   private syncMove(): void {
-    const key = (this.keys.has('ArrowRight') || this.keys.has('KeyD') ? 1 : 0)
-      - (this.keys.has('ArrowLeft') || this.keys.has('KeyA') ? 1 : 0);
-    this.moveAxis = key !== 0 ? key : this.tiltAxis;
+    const key =
+      (this.keys.has('ArrowRight') || this.keys.has('KeyD') ? 1 : 0) -
+      (this.keys.has('ArrowLeft') || this.keys.has('KeyA') ? 1 : 0);
+    this.moveAxis = key !== 0 ? key : this.stickX;
     this.left = this.moveAxis < -0.12;
     this.right = this.moveAxis > 0.12;
   }
@@ -199,11 +164,11 @@ export class Input {
     return false;
   }
 
-  /** Descarta pulo pendente (ex.: Space/Enter usados para iniciar a partida). */
   clearJump(): void {
     this.jumpPressed = false;
     this.jumpBuffer = 0;
     this.jumpHeldTimer = 0;
     this.pointerJump = false;
+    this.jumpPointerId = null;
   }
 }

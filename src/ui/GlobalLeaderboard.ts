@@ -3,7 +3,6 @@ import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardSnapshot } from '../leaderboard/types';
 
 const TOP_LIMIT = 10;
-const MOBILE_BREAKPOINT = 900;
 
 export class GlobalLeaderboard {
   private panel: HTMLElement;
@@ -74,14 +73,9 @@ export class GlobalLeaderboard {
     leaderboardService.onPlayingShow();
     this.render(leaderboardService.getSnapshot());
 
-    const isMobile = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
-    if (isMobile) {
-      this.panel.classList.remove('is-open');
-      this.mobileToggle?.classList.remove('hidden');
-      this.mobileToggle?.setAttribute('aria-expanded', 'false');
-    } else {
-      this.mobileToggle?.classList.add('hidden');
-    }
+    this.panel.classList.remove('is-open');
+    this.mobileToggle?.classList.add('hidden');
+    this.mobileToggle?.setAttribute('aria-expanded', 'false');
   }
 
   onFallShow(): void {

@@ -274,10 +274,11 @@ export class Game {
     this.audio.stopSoftMurmur();
     this.player.mouthOpen = false;
     this.hud.showTitle(this.best);
+    this.input.setStickPlaying(false);
     this.onCatalogRefresh?.();
   }
 
-  /** Giroscópio — chamar no toque de Subir (iOS exige gesto). */
+  /** Compat: o analógico no toque substitui o giroscópio. */
   requestPlayInput(): Promise<void> {
     return this.input.enableMotion();
   }
@@ -308,7 +309,7 @@ export class Game {
     this.introT = 0;
     this.introDuration = this.userSettings.reduceMotion ? 0.22 : 0.55;
     this.input.clearJump();
-    this.input.calibrateTilt();
+    this.input.setStickPlaying(true);
     this.spawnGrace = this.introDuration + 0.35;
     this.runStartedAt = performance.now();
     this.state = 'intro';
@@ -323,7 +324,7 @@ export class Game {
     this.resetRun();
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
-    this.input.calibrateTilt();
+    this.input.setStickPlaying(true);
     this.spawnGrace = 0.45;
     this.runStartedAt = performance.now();
     this.camera.snapTo(this.player.y, this.H * 0.18);
@@ -1337,6 +1338,8 @@ export class Game {
       this.player.groundedPlatform.notePlayerOff(false);
     }
     this.state = 'falling';
+    this.input.setStickPlaying(false);
+    this.input.clearJump();
     this.fallTimer = 0;
     this.perfectStreak = 0;
     this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());
