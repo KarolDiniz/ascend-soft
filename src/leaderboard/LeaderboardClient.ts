@@ -1,3 +1,4 @@
+import { mapScoreRecord } from './board';
 import {
   isSupabaseConfigured,
   LEADERBOARD_MAX_ROWS,
@@ -35,17 +36,6 @@ function mapLocalRow(row: LocalScoreRow): LeaderboardEntry {
     breaths: row.breaths,
     collectibles: row.collectibles,
     createdAt: row.created_at,
-  };
-}
-
-function mapRow(row: Record<string, unknown>): LeaderboardEntry {
-  return {
-    playerId: String(row.player_id ?? ''),
-    displayName: String(row.display_name ?? ''),
-    height: Number(row.height ?? 0),
-    breaths: Number(row.breaths ?? 0),
-    collectibles: Number(row.collectibles ?? 0),
-    createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
 
@@ -140,7 +130,10 @@ export class LeaderboardClient {
       if (!res.ok) throw new Error(`leaderboard fetch ${res.status}`);
 
       const data = (await res.json()) as Record<string, unknown>[];
-      entries.push(...data.map(mapRow));
+      for (const row of data) {
+        const entry = mapScoreRecord(row);
+        if (entry) entries.push(entry);
+      }
       if (data.length < LEADERBOARD_PAGE_SIZE) break;
       offset += LEADERBOARD_PAGE_SIZE;
     }

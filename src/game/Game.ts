@@ -307,8 +307,8 @@ export class Game {
 
   /** Callback para atualizar catálogo na tela inicial */
   onCatalogRefresh: (() => void) | null = null;
-  /** Recorde ao vivo — sobe com a altura quando ela passa o recorde */
-  onLiveBest: ((best: number) => void) | null = null;
+  /** Altura inteira da subida atual — para o ranking ao vivo. */
+  onLiveHeight: ((height: number) => void) | null = null;
 
   goToTitle(): void {
     this.audio.stopSoftMurmur();
@@ -785,11 +785,14 @@ export class Game {
     this.particles.update(dt);
     this.shards.update(dt);
 
-    this.height = Math.max(0, Math.floor(this.player.y));
+    const nextHeight = Math.max(0, Math.floor(this.player.y));
+    if (nextHeight !== this.height) {
+      this.height = nextHeight;
+      this.onLiveHeight?.(this.height);
+    }
     if (this.height > this.best) {
       this.best = this.height;
       saveLocalBest(this.best);
-      this.onLiveBest?.(this.best);
       if (!this.runBestBroken && this.height > this.startBest && this.startBest > 0) {
         this.runBestBroken = true;
         this.audio.playRecord();

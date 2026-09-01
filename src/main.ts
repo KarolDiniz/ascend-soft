@@ -33,7 +33,7 @@ hud.onPlayingShow = () => {
   globalLeaderboard.onPlayingShow();
   controlsCoach.showIfNeeded();
 };
-game.onLiveBest = (best) => globalLeaderboard.setLiveBest(best);
+game.onLiveHeight = (height) => globalLeaderboard.setLiveHeight(height);
 hud.onFallShow = () => {
   controlsCoach.hide();
   globalLeaderboard.onFallShow();

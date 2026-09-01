@@ -1,8 +1,17 @@
-import { LEADERBOARD_REFRESH_MS, MIN_SUBMIT_HEIGHT, scoreLooksPlausible } from './config';
+import { mapScoreRecord, rankOf, upsertBest } from './board';
+import {
+  isSupabaseConfigured,
+  LEADERBOARD_LIVE_DEBOUNCE_MS,
+  LEADERBOARD_REFRESH_MS,
+  MIN_SUBMIT_HEIGHT,
+  scoreLooksPlausible,
+} from './config';
 import { LeaderboardClient } from './LeaderboardClient';
 import { checkDisplayName, namesCollide, type NameRejectReason } from './namePolicy';
 import { getDisplayName, getPlayerId, saveDisplayName } from './playerIdentity';
-import type { LeaderboardSnapshot, ScoreSubmitPayload, SubmitResult } from './types';
+import { getSupabase } from './supabaseClient';
+import type { LeaderboardEntry, LeaderboardSnapshot, ScoreSubmitPayload, SubmitResult } from './types';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 type SnapshotListener = (snap: LeaderboardSnapshot) => void;
 
@@ -18,10 +27,21 @@ export class LeaderboardService {
   private listeners = new Set<SnapshotListener>();
   private refreshTimer = 0;
   private titleVisible = false;
+  private playingVisible = false;
   private lastSubmitRank: number | null = null;
+  private refreshSeq = 0;
+  private channel: RealtimeChannel | null = null;
+  private live = false;
+  private pendingLive: LeaderboardEntry[] = [];
+  private liveFlushTimer = 0;
+  private visibilityBound = false;
 
   isGlobalMode(): boolean {
     return this.client.isGlobal();
+  }
+
+  isLive(): boolean {
+    return this.live;
   }
 
   getSnapshot(): LeaderboardSnapshot {
@@ -35,6 +55,7 @@ export class LeaderboardService {
   subscribe(fn: SnapshotListener): () => void {
     this.listeners.add(fn);
     fn(this.snapshot);
+    this.bindVisibility();
     return () => this.listeners.delete(fn);
   }
 
@@ -94,6 +115,8 @@ export class LeaderboardService {
 
   onTitleShow(): void {
     this.titleVisible = true;
+    this.playingVisible = false;
+    this.ensureRealtime();
     void this.refresh();
     this.startPolling();
   }
@@ -101,23 +124,48 @@ export class LeaderboardService {
   onTitleHide(): void {
     this.titleVisible = false;
     this.stopPolling();
+    if (!this.playingVisible) this.stopRealtime();
   }
 
-  /** Partida ativa: mantém snapshot em cache, sem polling. */
+  /** Partida ativa: sem polling; ranking vive do snapshot + altura local + realtime. */
   onPlayingShow(): void {
     this.titleVisible = false;
+    this.playingVisible = true;
     this.stopPolling();
+    this.ensureRealtime();
   }
 
   onPlayingHide(): void {
-    this.titleVisible = false;
+    this.playingVisible = false;
     this.stopPolling();
+  }
+
+  disconnect(): void {
+    this.titleVisible = false;
+    this.playingVisible = false;
+    this.stopPolling();
+    this.stopRealtime();
+  }
+
+  private bindVisibility(): void {
+    if (this.visibilityBound) return;
+    this.visibilityBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') {
+        this.stopPolling();
+        return;
+      }
+      if (this.titleVisible) {
+        void this.refresh();
+        this.startPolling();
+      }
+    });
   }
 
   private startPolling(): void {
     this.stopPolling();
     this.refreshTimer = window.setInterval(() => {
-      if (this.titleVisible) void this.refresh();
+      if (this.titleVisible && document.visibilityState === 'visible') void this.refresh();
     }, LEADERBOARD_REFRESH_MS);
   }
 
@@ -126,18 +174,99 @@ export class LeaderboardService {
     this.refreshTimer = 0;
   }
 
+  private ensureRealtime(): void {
+    if (!isSupabaseConfigured() || this.channel) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    this.channel = supabase
+      .channel('scores-live')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'scores' },
+        (payload) => {
+          const entry = mapScoreRecord((payload.new ?? {}) as Record<string, unknown>);
+          if (entry) this.queueLiveEntry(entry);
+        },
+      )
+      .subscribe((status) => {
+        const nextLive = status === 'SUBSCRIBED';
+        if (nextLive === this.live) return;
+        this.live = nextLive;
+        this.emit();
+      });
+  }
+
+  private stopRealtime(): void {
+    window.clearTimeout(this.liveFlushTimer);
+    this.liveFlushTimer = 0;
+    this.pendingLive.length = 0;
+    const channel = this.channel;
+    this.channel = null;
+    this.live = false;
+    if (!channel) return;
+    const supabase = getSupabase();
+    if (supabase) void supabase.removeChannel(channel);
+    else void channel.unsubscribe();
+  }
+
+  private queueLiveEntry(entry: LeaderboardEntry): void {
+    this.pendingLive.push(entry);
+    if (this.liveFlushTimer) return;
+    this.liveFlushTimer = window.setTimeout(() => {
+      this.liveFlushTimer = 0;
+      const batch = this.pendingLive;
+      this.pendingLive = [];
+      this.applyLiveEntries(batch);
+    }, LEADERBOARD_LIVE_DEBOUNCE_MS);
+  }
+
+  private applyLiveEntries(batch: LeaderboardEntry[]): void {
+    if (batch.length === 0) return;
+    let entries = this.snapshot.entries;
+    let changed = false;
+    for (const row of batch) {
+      const next = upsertBest(entries, row);
+      if (next !== entries) {
+        entries = next;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+
+    const playerId = getPlayerId();
+    const mine = entries.find((e) => e.playerId === playerId);
+    this.snapshot = {
+      ...this.snapshot,
+      entries,
+      mode: this.client.isGlobal() ? 'global' : this.snapshot.mode,
+      updatedAt: Date.now(),
+      playerRank: rankOf(entries, playerId),
+      playerBest: mine?.height ?? this.snapshot.playerBest,
+    };
+    this.emit();
+  }
+
   async refresh(): Promise<void> {
     const playerId = getPlayerId();
+    const seq = ++this.refreshSeq;
     try {
       const result = await this.client.fetchTop(playerId);
+      if (seq !== this.refreshSeq) return;
+      let entries = result.entries;
+      for (const row of this.snapshot.entries) {
+        entries = upsertBest(entries, row);
+      }
+      const mine = entries.find((e) => e.playerId === playerId);
       this.snapshot = {
-        entries: result.entries,
+        entries,
         mode: result.mode,
         updatedAt: Date.now(),
-        playerRank: result.playerRank,
-        playerBest: result.playerBest,
+        playerRank: rankOf(entries, playerId) ?? result.playerRank,
+        playerBest: mine?.height ?? result.playerBest,
       };
     } catch {
+      if (seq !== this.refreshSeq) return;
       this.snapshot = {
         ...this.snapshot,
         mode: this.client.isGlobal() ? 'offline' : 'local',
@@ -179,6 +308,16 @@ export class LeaderboardService {
     const result = await this.client.submit(payload);
     if (result.ok) {
       this.lastSubmitRank = result.globalRank;
+      this.applyLiveEntries([
+        {
+          playerId: payload.playerId,
+          displayName: payload.displayName,
+          height: payload.height,
+          breaths: payload.breaths,
+          collectibles: payload.collectibles,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
       if (this.titleVisible) void this.refresh();
     }
     return result;

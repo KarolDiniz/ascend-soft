@@ -88,6 +88,17 @@ grant insert on public.scores to anon, authenticated;
 grant select on public.leaderboard_best to anon, authenticated;
 grant execute on function public.player_rank(integer) to anon, authenticated;
 
+-- Realtime: INSERT em scores atualiza o ranking no cliente (capa + partida).
+do $$
+begin
+  begin
+    execute 'alter publication supabase_realtime add table public.scores';
+  exception
+    when duplicate_object then null;
+    when undefined_object then null;
+  end;
+end $$;
+
 -- —— Nomes: ofensas + unicidade (case/leet-insensitive) ——
 
 create or replace function public.normalize_player_name(n text)

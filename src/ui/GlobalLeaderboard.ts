@@ -1,6 +1,6 @@
 import { loadLocalBest } from '../game/localBest';
-import { LEADERBOARD_PLAYING_LIMIT } from '../leaderboard/config';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
+import { playingWindow } from '../leaderboard/playingWindow';
 import type { LeaderboardEntry, LeaderboardSnapshot } from '../leaderboard/types';
 
 export class GlobalLeaderboard {
@@ -13,6 +13,11 @@ export class GlobalLeaderboard {
   private unsubscribe: (() => void) | null = null;
   private playerId: string;
   private localBest = 0;
+  private liveHeight = 0;
+  private chaseBoard: LeaderboardEntry[] = [];
+  private windowKey = '';
+  private youScoreEl: HTMLElement | null = null;
+  private lastEntriesRef: LeaderboardEntry[] | null = null;
   private mode: 'hidden' | 'title' | 'playing' = 'hidden';
   onPlayingRankToggle: ((show: boolean) => void) | null = null;
 
@@ -41,21 +46,25 @@ export class GlobalLeaderboard {
   setLocalBest(best: number): void {
     this.localBest = Math.max(0, best);
     if (this.mode !== 'hidden') {
-      this.render(leaderboardService.getSnapshot());
+      this.render(leaderboardService.getSnapshot(), true);
     }
   }
 
-  /** Recorde ao vivo: sobe junto com a altura quando ela passa o recorde. */
-  setLiveBest(best: number): void {
+  /** Altura inteira da subida atual — reposiciona a janela sem refetch. */
+  setLiveHeight(height: number): void {
     if (this.mode !== 'playing') return;
-    const record = Math.max(0, Math.floor(best));
-    if (record <= this.localBest) return;
-    this.localBest = record;
-    this.render(leaderboardService.getSnapshot());
+    const next = Math.max(0, Math.floor(height));
+    if (next === this.liveHeight) return;
+    this.liveHeight = next;
+    this.renderPlaying(leaderboardService.getSnapshot(), false);
   }
 
   onTitleShow(): void {
     this.mode = 'title';
+    this.liveHeight = 0;
+    this.windowKey = '';
+    this.youScoreEl = null;
+    this.lastEntriesRef = null;
     this.localBest = loadLocalBest();
     this.playerId = leaderboardService.getPlayerId();
     this.mountForTitle();
@@ -71,6 +80,10 @@ export class GlobalLeaderboard {
 
   onPlayingShow(): void {
     this.mode = 'playing';
+    this.liveHeight = 0;
+    this.windowKey = '';
+    this.youScoreEl = null;
+    this.lastEntriesRef = null;
     this.localBest = loadLocalBest();
     this.playerId = leaderboardService.getPlayerId();
     this.mountForPlaying();
@@ -87,6 +100,10 @@ export class GlobalLeaderboard {
 
   onFallShow(): void {
     this.mode = 'hidden';
+    this.liveHeight = 0;
+    this.windowKey = '';
+    this.youScoreEl = null;
+    this.lastEntriesRef = null;
     this.panel.classList.add('hidden');
     this.panel.classList.remove('is-title-mode', 'is-playing-mode', 'is-open');
     this.mobileToggle?.classList.add('hidden');
@@ -96,7 +113,7 @@ export class GlobalLeaderboard {
 
   destroy(): void {
     this.unsubscribe?.();
-    leaderboardService.onPlayingHide();
+    leaderboardService.disconnect();
   }
 
   private mountForTitle(): void {
@@ -121,66 +138,111 @@ export class GlobalLeaderboard {
     );
   }
 
-  private render(snap: LeaderboardSnapshot): void {
+  private render(snap: LeaderboardSnapshot, force = false): void {
     if (this.mode === 'hidden') return;
 
+    const entriesChanged = force || snap.entries !== this.lastEntriesRef;
+    if (entriesChanged) {
+      this.lastEntriesRef = snap.entries;
+      this.chaseBoard = snap.entries.filter((e) => e.playerId !== this.playerId);
+    }
+
     this.statusEl.textContent = this.statusLabel(snap.mode);
-    this.listEl.innerHTML = '';
+
+    if (this.mode === 'playing') {
+      this.renderPlaying(snap, entriesChanged);
+      return;
+    }
+    if (entriesChanged) this.renderTitle(snap);
+  }
+
+  private renderTitle(snap: LeaderboardSnapshot): void {
+    this.statusEl.textContent = this.statusLabel(snap.mode);
+    const scrollTop = this.listEl.scrollTop;
 
     const liveBest = Math.max(this.localBest, snap.playerBest);
     const ranked = this.rankedEntries(snap, liveBest);
 
+    this.listEl.replaceChildren();
     if (ranked.length === 0) {
-      const empty = document.createElement('li');
-      empty.className = 'leaderboard-empty';
-      empty.textContent =
-        snap.mode === 'loading' ? 'carregando…' : 'seja o primeiro a subir!';
-      this.listEl.appendChild(empty);
+      this.listEl.appendChild(this.createEmpty(snap.mode));
       this.syncScrollHint();
       return;
     }
 
-    const top =
-      this.mode === 'playing' ? ranked.slice(0, LEADERBOARD_PLAYING_LIMIT) : ranked;
-    const inTop = ranked
-      .slice(0, this.mode === 'playing' ? LEADERBOARD_PLAYING_LIMIT : ranked.length)
-      .some((e) => e.playerId === this.playerId);
-
-    top.forEach((entry, i) => {
+    const frag = document.createDocumentFragment();
+    ranked.forEach((entry, i) => {
       const rankNum = i + 1;
-      this.listEl.appendChild(
-        this.createRow(
-          rankNum,
-          entry.displayName,
-          entry.height,
-          entry.playerId === this.playerId,
-          rankNum,
-        ),
+      frag.appendChild(
+        this.createRow(rankNum, entry.displayName, entry.height, entry.playerId === this.playerId, rankNum),
       );
     });
+    this.listEl.appendChild(frag);
+    this.listEl.scrollTop = scrollTop;
+    this.syncScrollHint();
+  }
 
-    if (this.mode === 'playing' && liveBest > 0 && !inTop) {
-      const gap = document.createElement('li');
-      gap.className = 'leaderboard-gap';
-      gap.setAttribute('aria-hidden', 'true');
-      gap.textContent = '…';
-      this.listEl.appendChild(gap);
-
-      const you = ranked.find((e) => e.playerId === this.playerId);
-      const rank = you ? ranked.indexOf(you) + 1 : snap.playerRank;
-      this.listEl.appendChild(
-        this.createRow(
-          rank != null && rank > 0 ? rank : null,
-          leaderboardService.getDisplayName(),
-          liveBest,
-          true,
-          null,
-          true,
-        ),
-      );
+  private renderPlaying(snap: LeaderboardSnapshot, fromSnapshot: boolean): void {
+    if (snap.mode === 'loading' && snap.entries.length === 0) {
+      this.windowKey = '';
+      this.youScoreEl = null;
+      this.listEl.replaceChildren();
+      this.listEl.appendChild(this.createEmpty(snap.mode));
+      this.syncScrollHint();
+      return;
     }
 
+    const me: LeaderboardEntry = {
+      playerId: this.playerId,
+      displayName: leaderboardService.getDisplayName(),
+      height: this.liveHeight,
+      breaths: 0,
+      collectibles: 0,
+    };
+    const rows = playingWindow(this.chaseBoard, me);
+    const key = rows.map((r) => `${r.rank}:${r.entry.playerId}`).join('|');
+
+    if (!fromSnapshot && key === this.windowKey && this.youScoreEl) {
+      this.youScoreEl.textContent = String(this.liveHeight);
+      return;
+    }
+
+    this.windowKey = key;
+    this.listEl.replaceChildren();
+
+    if (rows.length === 0) {
+      this.youScoreEl = null;
+      this.listEl.appendChild(this.createEmpty(snap.mode));
+      this.syncScrollHint();
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    let youScore: HTMLElement | null = null;
+    for (const row of rows) {
+      const li = this.createRow(
+        row.rank,
+        row.entry.displayName,
+        row.isYou ? this.liveHeight : row.entry.height,
+        row.isYou,
+        row.rank,
+      );
+      if (row.isYou) {
+        youScore = li.querySelector<HTMLSpanElement>('.leaderboard-score');
+        li.classList.toggle('is-leader', row.rank === 1);
+      }
+      frag.appendChild(li);
+    }
+    this.listEl.appendChild(frag);
+    this.youScoreEl = youScore;
     this.syncScrollHint();
+  }
+
+  private createEmpty(mode: LeaderboardSnapshot['mode']): HTMLLIElement {
+    const empty = document.createElement('li');
+    empty.className = 'leaderboard-empty';
+    empty.textContent = mode === 'loading' ? 'carregando…' : 'seja o primeiro a subir!';
+    return empty;
   }
 
   private syncScrollHint(): void {
@@ -224,12 +286,10 @@ export class GlobalLeaderboard {
     score: number,
     isYou: boolean,
     medalRank: number | null,
-    outsideTop = false,
   ): HTMLLIElement {
     const li = document.createElement('li');
     li.className = 'leaderboard-row';
     if (isYou) li.classList.add('is-you');
-    if (outsideTop) li.classList.add('is-outside-top');
     if (medalRank != null && medalRank <= 3) li.classList.add(`is-top-${medalRank}`);
 
     const rankEl = document.createElement('span');
@@ -250,6 +310,9 @@ export class GlobalLeaderboard {
   }
 
   private statusLabel(mode: LeaderboardSnapshot['mode']): string {
+    if (leaderboardService.isLive() && (mode === 'global' || mode === 'loading')) {
+      return 'ao vivo';
+    }
     switch (mode) {
       case 'global':
         return 'global';
