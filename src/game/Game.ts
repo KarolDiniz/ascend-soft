@@ -1680,7 +1680,7 @@ export class Game {
 
     if (playVisuals) {
       this.player.draw(ctx, this.toScreen, { titleBoost: inIntro && introBlend < 0.45 });
-      this.gnome.draw(ctx, this.toScreen, this.time);
+      this.gnome.draw(ctx, this.toScreen);
     }
 
     if (!p.skipLightFx && playVisuals && (!inIntro || introBlend > 0.25)) {
