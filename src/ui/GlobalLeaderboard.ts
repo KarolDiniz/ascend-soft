@@ -3,16 +3,10 @@ import { LEADERBOARD_PLAYING_LIMIT } from '../leaderboard/config';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardSnapshot } from '../leaderboard/types';
 
-const TITLE_PAGE_SIZE = 4;
-
 export class GlobalLeaderboard {
   private panel: HTMLElement;
   private listEl: HTMLElement;
   private statusEl: HTMLElement;
-  private pagerEl: HTMLElement | null;
-  private pageLabelEl: HTMLElement | null;
-  private prevBtn: HTMLButtonElement | null;
-  private nextBtn: HTMLButtonElement | null;
   private mobileToggle: HTMLElement | null;
   private titleAnchor: HTMLElement;
   private uiRoot: HTMLElement;
@@ -20,18 +14,12 @@ export class GlobalLeaderboard {
   private playerId: string;
   private localBest = 0;
   private mode: 'hidden' | 'title' | 'playing' = 'hidden';
-  private titlePage = 0;
-  private titleRanked: LeaderboardEntry[] = [];
   onPlayingRankToggle: ((show: boolean) => void) | null = null;
 
   constructor() {
     this.panel = document.getElementById('global-leaderboard')!;
     this.listEl = document.getElementById('leaderboard-list')!;
     this.statusEl = document.getElementById('leaderboard-status')!;
-    this.pagerEl = document.getElementById('leaderboard-pager');
-    this.pageLabelEl = document.getElementById('leaderboard-page-label');
-    this.prevBtn = document.getElementById('leaderboard-prev') as HTMLButtonElement | null;
-    this.nextBtn = document.getElementById('leaderboard-next') as HTMLButtonElement | null;
     this.mobileToggle = document.getElementById('btn-leaderboard-toggle');
     this.titleAnchor = document.querySelector('.title-center')!;
     this.uiRoot = document.getElementById('ui')!;
@@ -44,15 +32,6 @@ export class GlobalLeaderboard {
       const show = document.documentElement.classList.contains('hide-playing-rank');
       this.onPlayingRankToggle?.(show);
       this.syncPlayingToggle();
-    });
-
-    this.prevBtn?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.shiftTitlePage(-1);
-    });
-    this.nextBtn?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.shiftTitlePage(1);
     });
 
     this.unsubscribe = leaderboardService.subscribe((snap) => this.render(snap));
@@ -85,7 +64,6 @@ export class GlobalLeaderboard {
     this.mobileToggle?.classList.remove('is-playing', 'is-off');
     this.mobileToggle?.setAttribute('aria-pressed', 'true');
     this.panel.classList.remove('is-open');
-    this.titlePage = 0;
     leaderboardService.onTitleShow();
     this.render(leaderboardService.getSnapshot());
   }
@@ -142,29 +120,6 @@ export class GlobalLeaderboard {
     );
   }
 
-  private shiftTitlePage(delta: number): void {
-    if (this.mode !== 'title') return;
-    const pages = Math.max(1, Math.ceil(this.titleRanked.length / TITLE_PAGE_SIZE));
-    const next = Math.min(pages - 1, Math.max(0, this.titlePage + delta));
-    if (next === this.titlePage) return;
-    this.titlePage = next;
-    this.render(leaderboardService.getSnapshot());
-  }
-
-  private syncTitlePager(total: number): void {
-    if (!this.pagerEl) return;
-    const pages = Math.max(1, Math.ceil(total / TITLE_PAGE_SIZE));
-    const show = this.mode === 'title' && total > TITLE_PAGE_SIZE;
-    this.pagerEl.classList.toggle('hidden', !show);
-    if (!show) return;
-
-    const start = this.titlePage * TITLE_PAGE_SIZE + 1;
-    const end = Math.min(total, (this.titlePage + 1) * TITLE_PAGE_SIZE);
-    if (this.pageLabelEl) this.pageLabelEl.textContent = `${start}–${end}`;
-    if (this.prevBtn) this.prevBtn.disabled = this.titlePage <= 0;
-    if (this.nextBtn) this.nextBtn.disabled = this.titlePage >= pages - 1;
-  }
-
   private render(snap: LeaderboardSnapshot): void {
     if (this.mode === 'hidden') return;
 
@@ -180,31 +135,17 @@ export class GlobalLeaderboard {
       empty.textContent =
         snap.mode === 'loading' ? 'carregando…' : 'seja o primeiro a subir!';
       this.listEl.appendChild(empty);
-      this.titleRanked = [];
-      this.syncTitlePager(0);
       return;
     }
 
-    this.titleRanked = ranked;
-    const pages = Math.max(1, Math.ceil(ranked.length / TITLE_PAGE_SIZE));
-    if (this.mode === 'title') {
-      this.titlePage = Math.min(this.titlePage, pages - 1);
-    }
-
     const top =
-      this.mode === 'playing'
-        ? ranked.slice(0, LEADERBOARD_PLAYING_LIMIT)
-        : ranked.slice(
-            this.titlePage * TITLE_PAGE_SIZE,
-            this.titlePage * TITLE_PAGE_SIZE + TITLE_PAGE_SIZE,
-          );
-    const rankOffset = this.mode === 'title' ? this.titlePage * TITLE_PAGE_SIZE : 0;
+      this.mode === 'playing' ? ranked.slice(0, LEADERBOARD_PLAYING_LIMIT) : ranked;
     const inTop = ranked
       .slice(0, this.mode === 'playing' ? LEADERBOARD_PLAYING_LIMIT : ranked.length)
       .some((e) => e.playerId === this.playerId);
 
     top.forEach((entry, i) => {
-      const rankNum = rankOffset + i + 1;
+      const rankNum = i + 1;
       this.listEl.appendChild(
         this.createRow(
           rankNum,
@@ -236,8 +177,6 @@ export class GlobalLeaderboard {
         ),
       );
     }
-
-    this.syncTitlePager(this.mode === 'title' ? ranked.length : 0);
   }
 
   private rankedEntries(snap: LeaderboardSnapshot, liveBest: number): LeaderboardEntry[] {

@@ -1951,78 +1951,47 @@ html.has-mobile-pad .material-toast {
   animation: panel-pop 0.4s steps(6) both;
 }
 
-/* Tela inicial — 4 de cada vez, paginado */
+/* Tela inicial — 4 visíveis, o resto no scroll */
 .global-leaderboard.is-title-mode {
+  --lb-row: 1.42rem;
   position: relative;
   width: var(--title-card-w);
   max-height: none;
   min-height: 0;
-  padding: 0.55rem 0.55rem 0.45rem;
+  padding: 0.55rem 0.45rem 0.5rem 0.55rem;
   flex-shrink: 0;
   overflow: hidden;
 }
 
 .global-leaderboard.is-title-mode .leaderboard-list {
-  overflow: hidden;
   flex: 0 0 auto;
-  padding-right: 0;
+  max-height: calc(4 * var(--lb-row));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink) rgba(255, 252, 248, 0.35);
 }
 
-.leaderboard-pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  margin-top: 0.4rem;
-  padding-top: 0.35rem;
-  border-top: 2px dashed rgba(90, 97, 108, 0.22);
+.global-leaderboard.is-title-mode .leaderboard-list::-webkit-scrollbar {
+  width: 8px;
 }
 
-.leaderboard-pager.hidden {
-  display: none;
+.global-leaderboard.is-title-mode .leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(90, 97, 108, 0.12);
+  border: 2px solid var(--ink);
 }
 
-.leaderboard-page-btn {
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 3px solid var(--ink);
-  background: rgba(255, 252, 248, 0.98);
-  color: var(--ink);
-  font-size: 0.7rem;
-  line-height: 1;
-  box-shadow: 2px 2px 0 #2a343c;
-  cursor: pointer;
-  image-rendering: pixelated;
+.global-leaderboard.is-title-mode .leaderboard-list::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border: 2px solid #fffcf8;
 }
 
-.leaderboard-page-btn:hover:not(:disabled) {
-  background: var(--butter);
-}
-
-.leaderboard-page-btn:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 #2a343c;
-}
-
-.leaderboard-page-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.leaderboard-page-label {
-  min-width: 3.4rem;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.36rem;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
-  color: var(--ink-soft);
-  text-align: center;
-}
-
-.global-leaderboard.is-playing-mode .leaderboard-pager {
-  display: none !important;
+.global-leaderboard.is-title-mode .leaderboard-row {
+  min-height: var(--lb-row);
+  box-sizing: border-box;
 }
 
 @media (min-width: 900px) {
