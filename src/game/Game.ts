@@ -277,6 +277,10 @@ export class Game {
     this.onCatalogRefresh?.();
   }
 
+  /** Giroscópio — chamar no toque de Subir (iOS exige gesto). */
+  requestPlayInput(): Promise<void> {
+    return this.input.enableMotion();
+  }
   /** Callback para atualizar catálogo na tela inicial */
   onCatalogRefresh: (() => void) | null = null;
   /** Recorde ao vivo — sobe com a altura quando ela passa o recorde */
@@ -304,6 +308,7 @@ export class Game {
     this.introT = 0;
     this.introDuration = this.userSettings.reduceMotion ? 0.22 : 0.55;
     this.input.clearJump();
+    this.input.calibrateTilt();
     this.spawnGrace = this.introDuration + 0.35;
     this.runStartedAt = performance.now();
     this.state = 'intro';
@@ -318,6 +323,7 @@ export class Game {
     this.resetRun();
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
+    this.input.calibrateTilt();
     this.spawnGrace = 0.45;
     this.runStartedAt = performance.now();
     this.camera.snapTo(this.player.y, this.H * 0.18);
