@@ -1254,6 +1254,205 @@ html.has-mobile-pad .material-toast {
   color: #2f8f4e;
 }
 
+/* —— Conquistas —— */
+.achievement-toast {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  left: 50%;
+  z-index: 26;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: min(92vw, 22rem);
+  padding: 0.45rem 0.55rem 0.45rem 0.45rem;
+  border: 3px solid var(--ink);
+  background: #fff9ec;
+  box-shadow: 4px 4px 0 rgba(90, 97, 108, 0.28);
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.achievement-toast.hidden {
+  display: none !important;
+}
+
+.achievement-toast.achievement-toast-in {
+  animation: achievement-toast-in 0.38s steps(6) forwards;
+}
+
+.achievement-toast.achievement-toast-out {
+  animation: achievement-toast-out 0.32s steps(5) forwards;
+}
+
+@keyframes achievement-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -120%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes achievement-toast-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -30%);
+  }
+}
+
+.achievement-toast-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  border: 2px solid rgba(90, 97, 108, 0.2);
+  background: #fffcf8;
+}
+
+.achievement-toast-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.achievement-toast-kicker {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.32rem;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  color: #c4922c;
+  text-transform: lowercase;
+}
+
+.achievement-toast-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.achievement-toast-hint {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.achievements-kicker {
+  margin: 0 0 10px;
+  width: 100%;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.achievements-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.achievements-category {
+  margin: 0.65rem 0 0.35rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.achievements-category:first-child {
+  margin-top: 0;
+}
+
+.achievements-grid-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.2rem, 1fr));
+  gap: 8px;
+  margin-bottom: 0.35rem;
+}
+
+.achievement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.4rem;
+  border: 2px solid rgba(90, 97, 108, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+.achievement-card.is-unlocked {
+  border-color: #c4922c;
+  background: rgba(255, 249, 236, 0.92);
+  box-shadow: 0 0 0 1px rgba(196, 146, 44, 0.16);
+}
+
+.achievement-card.is-secret:not(.is-unlocked) {
+  opacity: 0.72;
+}
+
+.achievement-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(90, 97, 108, 0.16);
+  background: #fffcf8;
+}
+
+.achievement-card.is-unlocked .achievement-card-icon {
+  border-color: rgba(196, 146, 44, 0.35);
+}
+
+.achievement-card-canvas {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.achievement-card.is-secret:not(.is-unlocked) .achievement-card-canvas {
+  opacity: 0.15;
+}
+
+.achievement-card-title {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.34rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.achievement-card-hint {
+  margin: 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.achievements-status {
+  margin-top: 8px;
+  color: #c4922c;
+}
+
 @media (min-width: 900px) {
   .title-toolbar {
     padding: calc(20px + var(--safe-top)) max(20px, var(--safe-right)) calc(20px + var(--safe-bottom))
@@ -1381,6 +1580,65 @@ html.has-mobile-pad .material-toast {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
+}
+
+.title-catalog-panel .catalog-grid.catalog-grid--achievements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.achievements-category-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.catalog-grid.catalog-grid--achievements .achievements-category {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border: 2px solid rgba(90, 97, 108, 0.2);
+  background: rgba(255, 249, 236, 0.72);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  line-height: 1.5;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.achievements-category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(90, 97, 108, 0.16);
+  background: #fffcf8;
+}
+
+.achievements-category-canvas {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.achievements-category-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-grid.catalog-grid--achievements .achievements-grid-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .catalog-tabs {
@@ -4286,7 +4544,8 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
 }
 
 #app.is-title #mobile-pad,
-#fall-screen:not(.hidden) ~ #mobile-pad {
+#fall-screen:not(.hidden) ~ #mobile-pad,
+#fall-screen:not(.hidden) ~ .shop-fab {
   display: none !important;
 }
 

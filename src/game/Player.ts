@@ -75,8 +75,8 @@ export class Player {
   gear: RunGear | null = null;
   private shopJumpMul = 1;
 
-  setPotionJump(on: boolean): void {
-    this.shopJumpMul = on ? GEAR.potionJumpMul : 1;
+  setPotionJump(on: boolean, mul?: number): void {
+    this.shopJumpMul = on ? (mul ?? GEAR.potionJumpMul) : 1;
   }
 
   /** Impulso de alegria — editor de personagem / feedback */
@@ -250,7 +250,7 @@ export class Player {
 
     if (this.launchLockT > 0) this.launchLockT = Math.max(0, this.launchLockT - dt);
 
-    const fallMul = g?.hatWorn && this.vy < 0 ? GEAR.hatFallGravMul : 1;
+    const fallMul = g?.hatWorn && this.vy < 0 ? g.hatFallGravMul : 1;
     const gravMul = jetEase > 0 ? 1 - 0.95 * jetEase : fallMul;
     this.vy -= this.gravity * gravMul * dt;
     this.x += this.vx * dt;

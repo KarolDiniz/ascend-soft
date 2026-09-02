@@ -15,6 +15,9 @@ import { TitleCharacter } from './ui/TitleCharacter';
 import { TitleDailyChallenges } from './ui/TitleDailyChallenges';
 import { TitleSettings } from './ui/TitleSettings';
 import { ControlsCoach } from './ui/ControlsCoach';
+import { AchievementToast } from './ui/AchievementToast';
+import { achievementTracker } from './game/achievements/tracker';
+import { allDailyClaimedToday } from './game/dailyChallenges';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const audio = new AudioBus();
@@ -28,7 +31,13 @@ const titleDailyChallenges = new TitleDailyChallenges(
   (open) => game.setTitleOverlayOpen(open),
   audio,
 );
-titleDailyChallenges.onClaimed = () => titleShop.refresh();
+titleDailyChallenges.onClaimed = () => {
+  titleShop.refresh();
+  achievementTracker.noteDailyClaim(allDailyClaimedToday());
+};
+const achievementToast = new AchievementToast();
+achievementTracker.onUnlock = (def) => achievementToast.enqueue(def);
+achievementTracker.onRefresh = () => titleCatalog.refresh();
 const titleGearPick = new TitleGearPick((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const globalLeaderboard = new GlobalLeaderboard();
@@ -36,6 +45,7 @@ const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
 game.onShopRefresh = () => titleShop.refresh();
 game.onDailyChallengesRefresh = () => titleDailyChallenges.refresh();
+game.onAchievementsRefresh = () => titleCatalog.refresh();
 hud.onPotionDrink = () => {
   game.drinkPotion();
 };
@@ -50,6 +60,7 @@ hud.onTitleShow = () => {
   titleDailyChallenges.close();
   titleShop.refresh();
   titleDailyChallenges.refresh();
+  titleCatalog.refresh();
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onTitleShow();
 };
@@ -68,6 +79,7 @@ hud.onFallShow = () => {
   titleDailyChallenges.close();
   titleShop.refresh();
   titleDailyChallenges.refresh();
+  titleCatalog.refresh();
   controlsCoach.hide();
   globalLeaderboard.onFallShow();
 };

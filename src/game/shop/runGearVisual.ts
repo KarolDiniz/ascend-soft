@@ -10,10 +10,30 @@ export function drawJetpack(
   firing: boolean,
   animT: number,
 ): void {
-  const u = PIXEL.unit;
   const back = -facing;
   const x = back * (bw * 0.42);
-  const y = -bh * 0.02;
+  drawJetpackAt(ctx, x, -bh * 0.02, firing, animT);
+}
+
+/** Mochila centralizada — ícones de loja / torre. */
+export function drawJetpackIcon(
+  ctx: CanvasRenderingContext2D,
+  _bw: number,
+  bh: number,
+  firing: boolean,
+  animT: number,
+): void {
+  drawJetpackAt(ctx, 0, bh * 0.06, firing, animT);
+}
+
+function drawJetpackAt(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  firing: boolean,
+  animT: number,
+): void {
+  const u = PIXEL.unit;
   fillPx(ctx, x - u * 2, y - u * 3, u * 4, u * 7, '#6A7A88');
   fillPx(ctx, x - u, y - u * 2, u * 2, u * 4, '#8A9AAC');
   fillPx(ctx, x - u * 1.5, y + u * 3, u * 3, u * 2, '#5A6570');
@@ -38,8 +58,29 @@ export function drawPropHat(
   animT: number,
   _facing: number,
 ): void {
+  drawPropHatAt(ctx, bw, bh, animT, -bh * 0.52);
+}
+
+/** Chapéu centralizado no ícone — abaixo do eixo para caber a hélice. */
+export function drawPropHatIcon(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  bh: number,
+  animT: number,
+): void {
+  ctx.translate(0, bh * 0.05);
+  drawPropHatAt(ctx, bw, bh, animT, bh * 0.03, true);
+}
+
+function drawPropHatAt(
+  ctx: CanvasRenderingContext2D,
+  bw: number,
+  _bh: number,
+  animT: number,
+  top: number,
+  compact = false,
+): void {
   const u = PIXEL.unit;
-  const top = -bh * 0.52;
   const brimW = bw * 0.56;
   const crownW = bw * 0.38;
   const crownH = u * 3.4;
@@ -49,10 +90,12 @@ export function drawPropHat(
   fillPx(ctx, 0, top - crownH, crownW / 2, crownH / 2, HAT_RED);
   fillPx(ctx, -crownW / 2, top - crownH / 2, crownW / 2, crownH / 2, HAT_YELLOW);
   fillPx(ctx, 0, top - crownH / 2, crownW / 2, crownH / 2, HAT_BLUE);
-  fillPx(ctx, -u, top - u * 6.4, u * 2, u * 3.2, '#5A616C');
-  const hubY = top - u * 7.6;
+  const mastH = compact ? 2.2 : 3.2;
+  const hubDrop = compact ? 4.1 : 7.6;
+  fillPx(ctx, -u, top - u * mastH, u * 2, u * mastH, '#5A616C');
+  const hubY = top - u * hubDrop;
   const t = animT * 14;
-  const reach = px(8);
+  const reach = compact ? px(4.5) : px(8);
   const hx = Math.max(u, Math.abs(Math.cos(t)) * reach);
   const hy = Math.max(u, Math.abs(Math.sin(t)) * reach);
   fillPx(ctx, -hx, hubY - u * 0.5, hx * 2, u, PASTEL.white);
@@ -136,12 +179,46 @@ export function drawShopItemIcon(
   const s = size / 48;
   ctx.scale(s, s);
   if (id === 'jetpack') {
-    drawJetpack(ctx, 28, 24, 1, true, 0.4);
+    drawJetpackIcon(ctx, 32, 28, true, 0.4);
   } else if (id === 'propHat') {
-    drawPropHat(ctx, 34, 28, 0.35, 1);
+    ctx.translate(0, 1);
+    drawPropHatIcon(ctx, 34, 32, 0.35);
   } else {
     drawPotionFlaskIcon(ctx);
   }
+  ctx.restore();
+}
+
+/** Ícone maior na torre — preenche quase todo o quadrado. */
+export function drawTowerPickupIcon(
+  ctx: CanvasRenderingContext2D,
+  id: 'jetpack' | 'lightPotion' | 'propHat',
+  box: number,
+): void {
+  const pad = box * 0.08;
+  const inner = box - pad * 2;
+  const cx = pad + inner * 0.5;
+  const cy = pad + inner * 0.5;
+
+  ctx.save();
+
+  if (id === 'jetpack') {
+    ctx.translate(cx, cy);
+    const s = inner / 34;
+    ctx.scale(s, s);
+    drawJetpackIcon(ctx, 40, 36, true, 0.4);
+  } else if (id === 'propHat') {
+    ctx.translate(cx, cy + inner * 0.06);
+    const s = inner / 44;
+    ctx.scale(s, s);
+    drawPropHatIcon(ctx, 42, 38, 0.35);
+  } else {
+    ctx.translate(cx, cy + inner * 0.04);
+    const s = inner / 34;
+    ctx.scale(s, s);
+    drawPotionFlaskIcon(ctx);
+  }
+
   ctx.restore();
 }
 

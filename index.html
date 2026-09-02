@@ -92,6 +92,15 @@
           <div class="toast-progress" aria-hidden="true"></div>
         </div>
 
+        <div id="achievement-toast" class="achievement-toast hidden" aria-live="polite" role="status">
+          <canvas id="achievement-toast-icon" class="achievement-toast-icon" width="32" height="32"></canvas>
+          <div class="achievement-toast-copy">
+            <span class="achievement-toast-kicker">conquista!</span>
+            <strong id="achievement-toast-title" class="achievement-toast-title"></strong>
+            <span id="achievement-toast-hint" class="achievement-toast-hint"></span>
+          </div>
+        </div>
+
         <button
           id="btn-leaderboard-toggle"
           class="leaderboard-toggle hidden"
@@ -375,6 +384,16 @@
                   aria-controls="catalog-grid"
                 >
                   tesouros
+                </button>
+                <button
+                  id="catalog-tab-achievements"
+                  class="catalog-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="catalog-grid"
+                >
+                  conquistas
                 </button>
               </div>
               <p id="catalog-progress" class="catalog-progress">0 / 47 texturas</p>

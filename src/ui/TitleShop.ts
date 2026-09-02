@@ -1,6 +1,7 @@
 import { SHOP_ITEMS, type ShopItemId } from '../game/shop/catalog';
 import { drawShopItemIcon } from '../game/shop/runGearVisual';
 import { loadWallet, stockOf, tryBuy } from '../game/shop/wallet';
+import { achievementTracker } from '../game/achievements/tracker';
 import type { AudioBus } from '../audio/AudioBus';
 import { enablePixelMode } from '../theme/pixel';
 
@@ -75,6 +76,7 @@ export class TitleShop {
   private openPanel(): void {
     if (this.open) return;
     this.open = true;
+    achievementTracker.noteShopOpen();
     this.statusEl.textContent = '';
     this.root.classList.remove('hidden');
     this.root.setAttribute('aria-hidden', 'false');
@@ -111,6 +113,7 @@ export class TitleShop {
     }
     this.statusEl.textContent = 'item comprado!';
     void this.audio?.unlock().then(() => this.audio?.playShopPurchase());
+    achievementTracker.noteShopPurchase();
     this.renderList();
     this.syncWallet();
     this.onPurchased?.();

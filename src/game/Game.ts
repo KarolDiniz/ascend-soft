@@ -7,10 +7,15 @@ import { SoftPass } from './atmosphere/SoftPass';
 import { Background } from './Background';
 import { CoinSpawner } from './Coins';
 import { addCoins, loadWallet } from './shop/wallet';
-import { GEAR, RunGear, emptyGearLoadout, sanitizeLoadout, type GearLoadout } from './shop/runGear';
+import { RunGear, emptyGearLoadout, sanitizeLoadout, type GearLoadout } from './shop/runGear';
 import { CollectibleManager } from './collectibles/CollectibleManager';
 import { COLLECTIBLES } from './collectibles/definitions';
 import { addCollected, loadCollected } from './collectibles/storage';
+import { TowerPickupManager } from './towerPickups/TowerPickupManager';
+import {
+  TOWER_PICKUP_LABEL,
+  type TowerPickupKind,
+} from './towerPickups/definitions';
 import { Camera } from './Camera';
 import { Input } from './Input';
 import { Particles } from './Particles';
@@ -36,6 +41,7 @@ import { MobilePad } from '../ui/MobilePad';
 import { loadLocalBest, saveLocalBest } from './localBest';
 import { noteRunProgress } from './dailyChallenges';
 import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleDailyCard } from './returnLoop';
+import { achievementTracker } from './achievements/tracker';
 import { FiscalGnome } from './mobs/fiscalGnome';
 import { addSeenMaterial, loadSeenMaterials } from './seenMaterials';
 
@@ -91,6 +97,7 @@ export class Game {
   private pendingLoadout: GearLoadout | null = null;
   private potionWasOn = false;
   private collectibles = new CollectibleManager();
+  private towerPickups = new TowerPickupManager();
   private collected = loadCollected();
   private runCollectibles = 0;
   private runNewFindNames: string[] = [];
@@ -334,6 +341,8 @@ export class Game {
   onShopRefresh: (() => void) | null = null;
   /** Desafios diários concluídos ou resgatáveis — atualiza badge no menu. */
   onDailyChallengesRefresh: (() => void) | null = null;
+  /** Conquistas desbloqueadas — atualiza medalhas e toast. */
+  onAchievementsRefresh: (() => void) | null = null;
   /** Altura inteira da subida atual — para o ranking ao vivo. */
   onLiveHeight: ((height: number) => void) | null = null;
 
@@ -362,7 +371,9 @@ export class Game {
     this.input.clearJump();
     this.spawnGrace = this.introDuration + 0.35;
     this.runStartedAt = performance.now();
-    noteDailyPlay();
+    const playState = noteDailyPlay();
+    achievementTracker.notePlayStreak(playState.streak);
+    achievementTracker.noteSessionStart();
     this.state = 'intro';
     const pal = this.atmosphere.getPalette();
     this.hud.setAmbientColors(pal.top, pal.mid);
@@ -380,7 +391,9 @@ export class Game {
     this.input.clearJump();
     this.spawnGrace = 0.45;
     this.runStartedAt = performance.now();
-    noteDailyPlay();
+    const playState = noteDailyPlay();
+    achievementTracker.notePlayStreak(playState.streak);
+    achievementTracker.noteSessionStart();
     this.camera.snapTo(this.player.y, this.H * 0.18);
     this.state = 'playing';
     this.hud.showPlaying(this.best);
@@ -425,6 +438,7 @@ export class Game {
     this.coins.reset();
     this.gnome.reset();
     this.collectibles.reset(this.collected);
+    this.towerPickups.reset();
     this.runCollectibles = 0;
     this.runNewFindNames = [];
     this.runNewHeardNames = [];
@@ -451,6 +465,7 @@ export class Game {
     setPlatformsUnbreakable(false);
     this.gnomeShovePending = false;
     this.wasAirborne = false;
+    achievementTracker.resetRun();
   }
 
   previewShopMods(): void {
@@ -465,11 +480,12 @@ export class Game {
   drinkPotion(): boolean {
     if (this.state !== 'playing' && this.state !== 'intro') return false;
     if (!this.gear.drinkPotion()) return false;
+    achievementTracker.notePotionUsed();
     this.audio.playPotionDrink();
     this.potionWasOn = true;
-    this.player.setPotionJump(true);
+    this.player.setPotionJump(true, this.gear.potionJumpMul);
     setPlatformsUnbreakable(true);
-    this.hud.startPotionTimer(GEAR.potionS);
+    this.hud.startPotionTimer(this.gear.potionMax);
     this.hud.syncRunGear(this.gear);
     this.onShopRefresh?.();
     return true;
@@ -478,8 +494,9 @@ export class Game {
   wearHat(): boolean {
     if (this.state !== 'playing' && this.state !== 'intro') return false;
     if (!this.gear.wearHat()) return false;
+    achievementTracker.noteHelicopterUsed();
     this.audio.playHatWhir();
-    this.hud.startHatTimer(GEAR.hatS);
+    this.hud.startHatTimer(this.gear.hatMax);
     this.hud.syncRunGear(this.gear);
     this.onShopRefresh?.();
     return true;
@@ -506,8 +523,8 @@ export class Game {
     const potionOn = this.gear.potionActive;
     if (potionOn !== this.potionWasOn) {
       this.potionWasOn = potionOn;
-      this.player.setPotionJump(potionOn);
-      setPlatformsUnbreakable(potionOn);
+      this.player.setPotionJump(potionOn, potionOn ? this.gear.potionJumpMul : 1);
+      setPlatformsUnbreakable(this.gear.potionUnbreakable);
       if (!potionOn) this.hud.endPotionTimer();
     }
     if (hatExpired) {
@@ -678,10 +695,16 @@ export class Game {
         p.setPreviewSquash(0.2 + wave * 0.16 + soft);
         p.update(dt, this.time);
       }
+      if (!this.titleOverlayOpen) {
+        achievementTracker.tickTitleIdleMs(dt * 1000);
+      } else {
+        achievementTracker.resetTitleIdle();
+      }
       return;
     }
 
     if (this.state === 'intro') {
+      achievementTracker.tickPlayMs(dt * 1000);
       this.updateIntro(dt);
       this.tickRunGear(dt);
       return;
@@ -711,6 +734,7 @@ export class Game {
     const prevBottom = this.player.bottom;
     const wasGrounded = this.player.onGround;
     const jumped = this.player.update(dt, this.input);
+    achievementTracker.tickPlayMs(dt * 1000);
     this.tickRunGear(dt);
     if (jumped === 'ground' && prevPlat) {
       const mat = MATERIALS[prevPlat.material];
@@ -799,6 +823,7 @@ export class Game {
     if (gnomeEv === 'strike') {
       this.audio.playFiscalGnomeChuckle();
       this.gnomeShovePending = true;
+      achievementTracker.noteGnomeHit();
       this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
       if (!this.perfProfile().lightMode) {
         this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
@@ -929,6 +954,7 @@ export class Game {
       if (!o.collected && o.overlaps(this.player.x, this.player.y)) {
         o.collected = true;
         this.breathCount += 1;
+        achievementTracker.noteCoinCollected(this.breathCount, loadWallet().coins);
         this.audio.playCoin();
         if (!light) {
           this.particles.burst(o.x, o.y, '#E2B84A', 4, 'foam', false, '#F3E2A8');
@@ -945,6 +971,17 @@ export class Game {
     );
     if (foundId) this.handleCollectible(foundId);
 
+    this.towerPickups.syncPlatforms(plats);
+    this.towerPickups.prune(this.camera.y, this.H);
+    const towerKind = this.towerPickups.update(
+      dt,
+      this.player.x,
+      this.player.y,
+      this.camera.y,
+      this.H,
+    );
+    if (towerKind) this.handleTowerPickup(towerKind);
+
     this.particles.setWind(this.atmosphere.windX, this.atmosphere.windY);
     this.particles.update(dt);
     this.shards.update(dt);
@@ -953,12 +990,14 @@ export class Game {
     if (nextHeight !== this.height) {
       this.height = nextHeight;
       this.onLiveHeight?.(this.height);
+      achievementTracker.noteHeight(this.height);
     }
     if (this.state === 'playing') {
       let gnomeSurvived = false;
       if (this.gnomeShovePending && this.wasAirborne && this.player.onGround) {
         gnomeSurvived = true;
         this.gnomeShovePending = false;
+        achievementTracker.noteGnomeSurvive();
       }
       if (
         noteRunProgress({
@@ -1050,6 +1089,7 @@ export class Game {
     const justLanded = !wasGrounded || this.player.groundedPlatform !== p;
 
     if (justLanded) {
+      achievementTracker.noteLanding();
       const impact = Math.min(1.25, Math.abs(this.player.vy) / 360);
       const centerDist = Math.abs(this.player.x - p.x) / (p.w / 2);
       const perfect = centerDist < 0.15;
@@ -1352,6 +1392,7 @@ export class Game {
 
       if (perfect) {
         this.perfectStreak += 1;
+        achievementTracker.notePerfect(this.perfectStreak, Boolean(this.gear.potionActive));
         if (this.perfectStreak > this.runBestPerfect) this.runBestPerfect = this.perfectStreak;
         if (noteBestPerfect(this.perfectStreak)) this.runPerfectRecord = true;
         if (!this.userSettings.reduceMotion) {
@@ -1488,6 +1529,44 @@ export class Game {
     this.particles.floaterOrbit(x, y + 10, color);
   }
 
+  private handleTowerPickup(kind: TowerPickupKind): void {
+    const label = TOWER_PICKUP_LABEL[kind];
+    let applied = false;
+
+    switch (kind) {
+      case 'lightPotion':
+        applied = this.gear.applyTowerPotion();
+        if (applied) {
+          this.potionWasOn = true;
+          this.player.setPotionJump(true, this.gear.potionJumpMul);
+          setPlatformsUnbreakable(true);
+          this.hud.startPotionTimer(this.gear.potionMax);
+          this.audio.playPotionDrink();
+        }
+        break;
+      case 'propHat':
+        applied = this.gear.applyTowerHat();
+        if (applied) {
+          this.hud.startHatTimer(this.gear.hatMax);
+          this.audio.playHatWhir();
+        }
+        break;
+      case 'jetpack':
+        applied = this.gear.applyTowerJet();
+        if (applied) this.audio.playJetIgnite();
+        break;
+    }
+
+    if (!applied) return;
+
+    this.hud.syncRunGear(this.gear);
+    this.audio.playCollect();
+    if (!this.userSettings.reduceMotion) {
+      this.particles.burst(this.player.x, this.player.y + 10, '#A8D4E6', 10, 'spark', true, '#E8FAFF');
+    }
+    this.addFloater(this.player.x, this.player.y + 28, label, '#7EB0D4');
+  }
+
   private handleCollectible(id: import('./collectibles/definitions').CollectibleId): void {
     const def = COLLECTIBLES[id];
     const isNew = addCollected(this.collected, id);
@@ -1571,6 +1650,7 @@ export class Game {
     }
     this.gnome.reset();
     this.state = 'falling';
+    this.hud.hidePhaseToast();
     setPlatformsUnbreakable(false);
     this.player.setPotionJump(false);
     this.hud.hideRunGear();
@@ -1582,6 +1662,8 @@ export class Game {
     this.audio.playFall();
     if (this.breathCount > 0) addCoins(this.breathCount);
     this.onShopRefresh?.();
+    achievementTracker.noteBreathsInRun(this.breathCount);
+    achievementTracker.noteFall(this.height, this.startBest, this.runBestPerfect);
     const runMs = Math.max(1000, performance.now() - this.runStartedAt);
     this.fallSummaryPending = {
       height: this.height,
@@ -1619,6 +1701,7 @@ export class Game {
         pending.globalRank = result.globalRank;
         pending.globalMode = result.mode;
         pending.submitError = undefined;
+        achievementTracker.noteRankSubmitted(result.weeklyRank, result.globalRank);
       } else if (result.error) {
         pending.submitError = result.error;
       }
@@ -1817,6 +1900,7 @@ export class Game {
 
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     this.collectibles.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
+    this.towerPickups.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
     for (const o of this.coins.orbs) o.draw(ctx, this.toScreen, this.time);
     this.particles.draw(ctx, this.toScreen);
     this.shards.draw(ctx, this.toScreen);

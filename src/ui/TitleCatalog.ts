@@ -12,10 +12,11 @@ import { PHASE_ORDER } from '../game/ThemedPhases';
 import { todaysOpener } from '../game/returnLoop';
 import { loadSeenMaterials, totalTextures } from '../game/seenMaterials';
 import { MATERIAL_PASTEL } from '../theme/pastelPalette';
+import { renderAchievementsInto } from './achievementsCatalog';
 
-type CatalogTab = 'textures' | 'loot';
+type CatalogTab = 'textures' | 'loot' | 'achievements';
 
-/** Catálogo da tela inicial — tesouros e álbum de texturas */
+/** Catálogo da tela inicial — tesouros, texturas e conquistas */
 export class TitleCatalog {
   private root: HTMLElement;
   private btnOpen: HTMLButtonElement;
@@ -26,6 +27,7 @@ export class TitleCatalog {
   private badgeEl: HTMLElement;
   private tabTextures: HTMLButtonElement;
   private tabLoot: HTMLButtonElement;
+  private tabAchievements: HTMLButtonElement;
   private open = false;
   private tab: CatalogTab = 'textures';
 
@@ -39,12 +41,14 @@ export class TitleCatalog {
     this.badgeEl = document.getElementById('catalog-badge')!;
     this.tabTextures = document.getElementById('catalog-tab-textures') as HTMLButtonElement;
     this.tabLoot = document.getElementById('catalog-tab-loot') as HTMLButtonElement;
+    this.tabAchievements = document.getElementById('catalog-tab-achievements') as HTMLButtonElement;
 
     this.btnOpen.addEventListener('click', () => this.toggle());
     this.btnClose.addEventListener('click', () => this.close());
     this.backdrop.addEventListener('click', () => this.close());
     this.tabTextures.addEventListener('click', () => this.setTab('textures'));
     this.tabLoot.addEventListener('click', () => this.setTab('loot'));
+    this.tabAchievements.addEventListener('click', () => this.setTab('achievements'));
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape' && this.open) {
@@ -71,7 +75,7 @@ export class TitleCatalog {
     if (!this.open) this.openPanel();
   }
 
-  /** Atualiza badge e grid após coletar ou ouvir na partida */
+  /** Atualiza badge e grid após coletar, ouvir ou desbloquear conquista */
   refresh(): void {
     this.syncBadge();
     if (this.open) this.renderGrid();
@@ -85,11 +89,12 @@ export class TitleCatalog {
   }
 
   private syncTabs(): void {
-    const tex = this.tab === 'textures';
-    this.tabTextures.classList.toggle('is-active', tex);
-    this.tabLoot.classList.toggle('is-active', !tex);
-    this.tabTextures.setAttribute('aria-selected', tex ? 'true' : 'false');
-    this.tabLoot.setAttribute('aria-selected', tex ? 'false' : 'true');
+    this.tabTextures.classList.toggle('is-active', this.tab === 'textures');
+    this.tabLoot.classList.toggle('is-active', this.tab === 'loot');
+    this.tabAchievements.classList.toggle('is-active', this.tab === 'achievements');
+    this.tabTextures.setAttribute('aria-selected', this.tab === 'textures' ? 'true' : 'false');
+    this.tabLoot.setAttribute('aria-selected', this.tab === 'loot' ? 'true' : 'false');
+    this.tabAchievements.setAttribute('aria-selected', this.tab === 'achievements' ? 'true' : 'false');
   }
 
   private syncBadge(): void {
@@ -112,10 +117,12 @@ export class TitleCatalog {
 
   private renderGrid(): void {
     if (this.tab === 'textures') this.renderTextures();
-    else this.renderLoot();
+    else if (this.tab === 'loot') this.renderLoot();
+    else renderAchievementsInto(this.grid, this.progressEl);
   }
 
   private renderLoot(): void {
+    this.grid.className = 'catalog-grid';
     const collected = loadCollected();
     const total = totalCollectibles();
     this.progressEl.textContent = `${collected.size} / ${total} tesouros`;
@@ -140,6 +147,7 @@ export class TitleCatalog {
   }
 
   private renderTextures(): void {
+    this.grid.className = 'catalog-grid';
     const seen = loadSeenMaterials();
     const total = totalTextures();
     const featured = todaysOpener();

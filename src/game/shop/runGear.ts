@@ -1,5 +1,6 @@
 import { consumeCharge, stockOf } from './wallet';
 import type { ShopItemId } from './catalog';
+import { TOWER_GEAR } from '../towerPickups/definitions';
 
 export const GEAR = {
   jetFuelS: 9.5,
@@ -54,7 +55,7 @@ export function hasGearToPick(): boolean {
 /** Carga desta subida — 3 flags, sem alocação no loop. */
 export class RunGear {
   jetFuel = 0;
-  jetMax = GEAR.jetFuelS;
+  jetMax: number = GEAR.jetFuelS;
   jetArmed = false;
   jetFiring = false;
   jetSpinT = 0;
@@ -62,22 +63,38 @@ export class RunGear {
   private jetCharged = false;
   potionReady = false;
   potionT = 0;
+  potionMax: number = GEAR.potionS;
+  potionJumpMul: number = 1;
+  potionTower = false;
   hatReady = false;
   hatT = 0;
+  hatMax: number = GEAR.hatS;
+  hatFallGravMul: number = GEAR.hatFallGravMul;
   hatWorn = false;
+  hatTower = false;
+  /** Jato da torre não consome carga da loja. */
+  jetFromTower = false;
 
   reset(): void {
     this.jetFuel = 0;
+    this.jetMax = GEAR.jetFuelS;
     this.jetArmed = false;
     this.jetFiring = false;
     this.jetSpinT = 0;
     this.jetWasFiring = false;
     this.jetCharged = false;
+    this.jetFromTower = false;
     this.potionReady = false;
     this.potionT = 0;
+    this.potionMax = GEAR.potionS;
+    this.potionJumpMul = 1;
+    this.potionTower = false;
     this.hatReady = false;
     this.hatT = 0;
+    this.hatMax = GEAR.hatS;
+    this.hatFallGravMul = GEAR.hatFallGravMul;
     this.hatWorn = false;
+    this.hatTower = false;
   }
 
   /** Equipa no máximo 1 item escolhido (e ainda em estoque). */
@@ -92,9 +109,56 @@ export class RunGear {
       }
     }
     if (!picked) return;
-    if (picked === 'jetpack') this.jetFuel = GEAR.jetFuelS;
-    else if (picked === 'lightPotion') this.potionReady = true;
+    this.jetFromTower = false;
+    if (picked === 'jetpack') {
+      this.jetFuel = GEAR.jetFuelS;
+      this.jetMax = GEAR.jetFuelS;
+    } else if (picked === 'lightPotion') this.potionReady = true;
     else this.hatReady = true;
+  }
+
+  /** Poção encontrada na torre — mesma força, menos tempo. */
+  applyTowerPotion(): boolean {
+    if (this.potionT > 0 || this.potionReady) return false;
+    this.potionTower = true;
+    this.potionMax = TOWER_GEAR.potionS;
+    this.potionJumpMul = GEAR.potionJumpMul;
+    this.potionT = TOWER_GEAR.potionS;
+    return true;
+  }
+
+  /** Chapéu encontrado na torre — mesma força, menos tempo. */
+  applyTowerHat(): boolean {
+    if (this.hatWorn || this.hatReady) return false;
+    this.hatTower = true;
+    this.hatMax = TOWER_GEAR.hatS;
+    this.hatFallGravMul = GEAR.hatFallGravMul;
+    this.hatWorn = true;
+    this.hatT = TOWER_GEAR.hatS;
+    return true;
+  }
+
+  /** Combustível de jato encontrado na torre. */
+  applyTowerJet(): boolean {
+    const add = TOWER_GEAR.jetFuelS;
+    if (this.jetFuel <= 0) {
+      this.jetFuel = add;
+      this.jetMax = add;
+      this.jetFromTower = true;
+      return true;
+    }
+    if (this.jetFromTower) {
+      this.jetFuel = Math.min(this.jetFuel + add, GEAR.jetFuelS);
+      this.jetMax = Math.max(this.jetMax, this.jetFuel);
+      return true;
+    }
+    this.jetFuel = Math.min(this.jetFuel + add, GEAR.jetFuelS);
+    this.jetMax = Math.max(this.jetMax, this.jetFuel);
+    return true;
+  }
+
+  get potionUnbreakable(): boolean {
+    return this.potionActive;
   }
 
   wearHat(): boolean {
@@ -106,6 +170,9 @@ export class RunGear {
     this.hatReady = false;
     this.hatWorn = true;
     this.hatT = GEAR.hatS;
+    this.hatMax = GEAR.hatS;
+    this.hatFallGravMul = GEAR.hatFallGravMul;
+    this.hatTower = false;
     return true;
   }
 
@@ -125,7 +192,7 @@ export class RunGear {
     this.jetWasFiring = this.jetFiring;
     if (edge && !this.jetCharged) {
       this.jetCharged = true;
-      if (!consumeCharge('jetpack')) {
+      if (!this.jetFromTower && !consumeCharge('jetpack')) {
         this.jetFuel = 0;
         this.jetArmed = false;
         this.jetFiring = false;
@@ -143,6 +210,9 @@ export class RunGear {
     }
     this.potionReady = false;
     this.potionT = GEAR.potionS;
+    this.potionMax = GEAR.potionS;
+    this.potionJumpMul = GEAR.potionJumpMul;
+    this.potionTower = false;
     return true;
   }
 

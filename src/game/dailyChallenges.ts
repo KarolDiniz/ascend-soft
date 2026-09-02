@@ -237,6 +237,11 @@ export function claimableCount(): number {
   return s.picks.filter((p) => s.done.includes(p.id) && !s.claimed.includes(p.id)).length;
 }
 
+export function allDailyClaimedToday(): boolean {
+  const s = loadDailyChallenges();
+  return s.picks.length > 0 && s.picks.every((p) => s.claimed.includes(p.id));
+}
+
 function markChallengeDone(id: string): boolean {
   const s = loadDailyChallenges();
   if (s.done.includes(id)) return false;

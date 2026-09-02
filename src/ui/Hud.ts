@@ -336,14 +336,15 @@ export class Hud {
       }
     }
     if (hatRow) {
-      const left = hatOn ? gear.hatT : GEAR.hatS;
+      const max = gear.hatMax || GEAR.hatS;
+      const left = hatOn ? gear.hatT : max;
       const secs = Math.max(0, Math.ceil(left));
       if (secs !== this.lastHatSecs) {
         this.lastHatSecs = secs;
         this.hatSecs.textContent = `${secs}s`;
       }
       if (hatOn) {
-        this.hatFill.style.transform = `scaleX(${gear.hatT / GEAR.hatS})`;
+        this.hatFill.style.transform = `scaleX(${gear.hatT / max})`;
       }
     }
   }
@@ -434,6 +435,18 @@ export class Hud {
       window.setTimeout(() => this.toastEl.classList.add('hidden'), 500);
       this.toastEl.classList.remove('toast-active');
     }, this.toastDuration);
+  }
+
+  /** Encerra reflexão de fase na hora (ex.: ao cair). */
+  hidePhaseToast(): void {
+    window.clearTimeout(this.toastTimer);
+    window.clearTimeout(this.toastLiveTimer);
+    this.toastTimer = 0;
+    this.toastLiveTimer = 0;
+    this.speaker.stop();
+    this.audio?.stopSoftMurmur();
+    this.toastEl.classList.remove('toast-in', 'toast-live', 'toast-out', 'toast-active');
+    this.toastEl.classList.add('hidden');
   }
 
   setMuteLabel(muted: boolean): void {
