@@ -88,6 +88,41 @@ grant insert on public.scores to anon, authenticated;
 grant select on public.leaderboard_best to anon, authenticated;
 grant execute on function public.player_rank(integer) to anon, authenticated;
 
+-- Ranking semanal: temporada 1 a partir de 2026-09-02; depois reinicia toda segunda (SP).
+create index if not exists scores_created_at_idx on public.scores (created_at desc);
+
+create or replace view public.leaderboard_weekly as
+select distinct on (player_id)
+  player_id,
+  display_name,
+  height,
+  breaths,
+  collectibles,
+  created_at
+from public.scores
+where created_at >= greatest(
+  date_trunc('week', timezone('America/Sao_Paulo', now()))
+  at time zone 'America/Sao_Paulo',
+  timestamptz '2026-09-02 00:00:00-03'
+)
+order by player_id, height desc, created_at asc;
+
+create or replace function public.player_rank_weekly(p_height integer)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select count(*)::integer + 1 from public.leaderboard_weekly where height > p_height),
+    1
+  );
+$$;
+
+grant select on public.leaderboard_weekly to anon, authenticated;
+grant execute on function public.player_rank_weekly(integer) to anon, authenticated;
+
 -- Realtime: INSERT em scores atualiza o ranking no cliente (capa + partida).
 do $$
 begin

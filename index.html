@@ -455,14 +455,37 @@
             </div>
             </div>
 
-            <aside id="global-leaderboard" class="global-leaderboard hidden" aria-label="Ranking global">
+            <aside id="global-leaderboard" class="global-leaderboard hidden" aria-label="Ranking">
               <div class="leaderboard-head">
-                <h2 class="leaderboard-title">Ranking</h2>
+                <div class="leaderboard-tabs" role="tablist" aria-label="Período do ranking">
+                  <button
+                    type="button"
+                    id="leaderboard-tab-weekly"
+                    class="leaderboard-tab is-active"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="leaderboard-list"
+                  >
+                    Semanal
+                  </button>
+                  <button
+                    type="button"
+                    id="leaderboard-tab-global"
+                    class="leaderboard-tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="leaderboard-list"
+                  >
+                    Global
+                  </button>
+                </div>
+                <span id="leaderboard-playing-scope" class="leaderboard-playing-scope" aria-hidden="true">SEM</span>
                 <span id="leaderboard-status" class="leaderboard-status">…</span>
               </div>
 
               <div class="leaderboard-scroll">
                 <ol id="leaderboard-list" class="leaderboard-list" aria-live="polite"></ol>
+                <div id="leaderboard-you-pin" class="leaderboard-you-pin hidden" aria-hidden="true"></div>
                 <div class="leaderboard-scroll-hint" aria-hidden="true">
                   <span class="leaderboard-scroll-chevron"></span>
                   <span class="leaderboard-scroll-caption">rolar</span>

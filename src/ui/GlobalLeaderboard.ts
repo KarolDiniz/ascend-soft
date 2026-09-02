@@ -1,12 +1,15 @@
 import { loadLocalBest } from '../game/localBest';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
 import { playingWindow } from '../leaderboard/playingWindow';
-import type { LeaderboardEntry, LeaderboardSnapshot } from '../leaderboard/types';
+import type { LeaderboardEntry, LeaderboardScope, LeaderboardSnapshot } from '../leaderboard/types';
 
 export class GlobalLeaderboard {
   private panel: HTMLElement;
   private listEl: HTMLElement;
   private statusEl: HTMLElement;
+  private tabWeekly: HTMLButtonElement;
+  private tabGlobal: HTMLButtonElement;
+  private playingScopeEl: HTMLElement;
   private mobileToggle: HTMLElement | null;
   private titleAnchor: HTMLElement;
   private uiRoot: HTMLElement;
@@ -17,6 +20,7 @@ export class GlobalLeaderboard {
   private chaseBoard: LeaderboardEntry[] = [];
   private windowKey = '';
   private youScoreEl: HTMLElement | null = null;
+  private youPinEl: HTMLElement;
   private lastEntriesRef: LeaderboardEntry[] | null = null;
   private mode: 'hidden' | 'title' | 'playing' = 'hidden';
   onPlayingRankToggle: ((show: boolean) => void) | null = null;
@@ -25,6 +29,10 @@ export class GlobalLeaderboard {
     this.panel = document.getElementById('global-leaderboard')!;
     this.listEl = document.getElementById('leaderboard-list')!;
     this.statusEl = document.getElementById('leaderboard-status')!;
+    this.tabWeekly = document.getElementById('leaderboard-tab-weekly') as HTMLButtonElement;
+    this.tabGlobal = document.getElementById('leaderboard-tab-global') as HTMLButtonElement;
+    this.playingScopeEl = document.getElementById('leaderboard-playing-scope')!;
+    this.youPinEl = document.getElementById('leaderboard-you-pin')!;
     this.mobileToggle = document.getElementById('btn-leaderboard-toggle');
     this.titleAnchor = document.querySelector('.title-center')!;
     this.uiRoot = document.getElementById('ui')!;
@@ -40,7 +48,29 @@ export class GlobalLeaderboard {
     });
 
     this.unsubscribe = leaderboardService.subscribe((snap) => this.render(snap));
-    this.listEl.addEventListener('scroll', () => this.syncScrollHint(), { passive: true });
+    this.listEl.addEventListener('scroll', () => {
+      this.syncScrollHint();
+      this.syncYouPin();
+    }, { passive: true });
+
+    this.tabWeekly.addEventListener('click', () => this.selectScope('weekly'));
+    this.tabGlobal.addEventListener('click', () => this.selectScope('global'));
+  }
+
+  private selectScope(scope: LeaderboardScope): void {
+    if (leaderboardService.getScope() === scope) return;
+    leaderboardService.setScope(scope);
+    this.syncTabs(scope);
+    this.lastEntriesRef = null;
+    this.render(leaderboardService.getSnapshot(), true);
+  }
+
+  private syncTabs(scope: LeaderboardScope): void {
+    this.tabWeekly.classList.toggle('is-active', scope === 'weekly');
+    this.tabGlobal.classList.toggle('is-active', scope === 'global');
+    this.tabWeekly.setAttribute('aria-selected', scope === 'weekly' ? 'true' : 'false');
+    this.tabGlobal.setAttribute('aria-selected', scope === 'global' ? 'true' : 'false');
+    this.playingScopeEl.textContent = scope === 'weekly' ? 'SEM' : 'GLO';
   }
 
   setLocalBest(best: number): void {
@@ -75,6 +105,7 @@ export class GlobalLeaderboard {
     this.mobileToggle?.setAttribute('aria-pressed', 'true');
     this.panel.classList.remove('is-open');
     leaderboardService.onTitleShow();
+    this.syncTabs(leaderboardService.getScope());
     this.render(leaderboardService.getSnapshot());
   }
 
@@ -89,7 +120,9 @@ export class GlobalLeaderboard {
     this.mountForPlaying();
     this.panel.classList.remove('hidden', 'is-title-mode');
     this.panel.classList.add('is-playing-mode');
+    this.hideYouPin();
     leaderboardService.onPlayingShow();
+    this.syncTabs(leaderboardService.getScope());
     this.render(leaderboardService.getSnapshot());
 
     this.panel.classList.remove('is-open');
@@ -147,6 +180,7 @@ export class GlobalLeaderboard {
       this.chaseBoard = snap.entries.filter((e) => e.playerId !== this.playerId);
     }
 
+    this.syncTabs(snap.scope);
     this.statusEl.textContent = this.statusLabel(snap.mode);
 
     if (this.mode === 'playing') {
@@ -165,7 +199,8 @@ export class GlobalLeaderboard {
 
     this.listEl.replaceChildren();
     if (ranked.length === 0) {
-      this.listEl.appendChild(this.createEmpty(snap.mode));
+      this.listEl.appendChild(this.createEmpty(snap));
+      this.hideYouPin();
       this.syncScrollHint();
       return;
     }
@@ -179,7 +214,73 @@ export class GlobalLeaderboard {
     });
     this.listEl.appendChild(frag);
     this.listEl.scrollTop = scrollTop;
-    this.syncScrollHint();
+
+    const youIdx = ranked.findIndex((e) => e.playerId === this.playerId);
+    if (youIdx >= 0) {
+      const you = ranked[youIdx]!;
+      this.renderYouPin(youIdx + 1, you.displayName, you.height);
+    } else {
+      this.hideYouPin();
+    }
+
+    window.requestAnimationFrame(() => {
+      this.syncYouPin();
+      this.syncScrollHint();
+    });
+  }
+
+  private renderYouPin(rank: number, name: string, score: number): void {
+    this.youPinEl.replaceChildren();
+    this.youPinEl.appendChild(this.createRow(rank, name, score, true, rank <= 3 ? rank : null, 'div'));
+    this.youPinEl.setAttribute('aria-label', `Sua posição: ${rank}º com ${score}`);
+  }
+
+  private hideYouPin(): void {
+    this.youPinEl.classList.add('hidden');
+    this.youPinEl.classList.remove('is-visible', 'is-below', 'is-above');
+    this.youPinEl.setAttribute('aria-hidden', 'true');
+    this.panel.classList.remove('has-you-pin-below', 'has-you-pin-above');
+    this.listEl.classList.remove('has-you-padding-below', 'has-you-padding-above');
+  }
+
+  /** Pin fixo quando a linha "você" sai da área visível do scroll. */
+  private syncYouPin(): void {
+    if (this.mode !== 'title') {
+      this.hideYouPin();
+      return;
+    }
+
+    const row = this.listEl.querySelector('.leaderboard-row.is-you');
+    if (!row || this.youPinEl.childElementCount === 0) {
+      this.hideYouPin();
+      return;
+    }
+
+    const rowTop = (row as HTMLElement).offsetTop;
+    const rowBottom = rowTop + (row as HTMLElement).offsetHeight;
+    const viewTop = this.listEl.scrollTop;
+    const viewBottom = viewTop + this.listEl.clientHeight;
+    const visible = rowBottom > viewTop + 1 && rowTop < viewBottom - 1;
+
+    if (visible) {
+      this.youPinEl.classList.add('hidden');
+      this.youPinEl.classList.remove('is-visible', 'is-below', 'is-above');
+      this.youPinEl.setAttribute('aria-hidden', 'true');
+      this.panel.classList.remove('has-you-pin-below', 'has-you-pin-above');
+      this.listEl.classList.remove('has-you-padding-below', 'has-you-padding-above');
+      return;
+    }
+
+    const below = rowTop >= viewBottom - 1;
+    this.youPinEl.classList.remove('hidden');
+    this.youPinEl.classList.add('is-visible');
+    this.youPinEl.classList.toggle('is-below', below);
+    this.youPinEl.classList.toggle('is-above', !below);
+    this.youPinEl.setAttribute('aria-hidden', 'false');
+    this.panel.classList.toggle('has-you-pin-below', below);
+    this.panel.classList.toggle('has-you-pin-above', !below);
+    this.listEl.classList.toggle('has-you-padding-below', below);
+    this.listEl.classList.toggle('has-you-padding-above', !below);
   }
 
   private renderPlaying(snap: LeaderboardSnapshot, fromSnapshot: boolean): void {
@@ -187,7 +288,7 @@ export class GlobalLeaderboard {
       this.windowKey = '';
       this.youScoreEl = null;
       this.listEl.replaceChildren();
-      this.listEl.appendChild(this.createEmpty(snap.mode));
+      this.listEl.appendChild(this.createEmpty(snap));
       this.syncScrollHint();
       return;
     }
@@ -212,7 +313,7 @@ export class GlobalLeaderboard {
 
     if (rows.length === 0) {
       this.youScoreEl = null;
-      this.listEl.appendChild(this.createEmpty(snap.mode));
+      this.listEl.appendChild(this.createEmpty(snap));
       this.syncScrollHint();
       return;
     }
@@ -238,10 +339,16 @@ export class GlobalLeaderboard {
     this.syncScrollHint();
   }
 
-  private createEmpty(mode: LeaderboardSnapshot['mode']): HTMLLIElement {
+  private createEmpty(snap: LeaderboardSnapshot): HTMLLIElement {
     const empty = document.createElement('li');
     empty.className = 'leaderboard-empty';
-    empty.textContent = mode === 'loading' ? 'carregando…' : 'seja o primeiro a subir!';
+    if (snap.mode === 'loading') {
+      empty.textContent = 'carregando…';
+    } else if (snap.scope === 'weekly') {
+      empty.textContent = 'ninguém ainda — seja o primeiro!';
+    } else {
+      empty.textContent = 'seja o primeiro a subir!';
+    }
     return empty;
   }
 
@@ -286,11 +393,12 @@ export class GlobalLeaderboard {
     score: number,
     isYou: boolean,
     medalRank: number | null,
-  ): HTMLLIElement {
-    const li = document.createElement('li');
-    li.className = 'leaderboard-row';
-    if (isYou) li.classList.add('is-you');
-    if (medalRank != null && medalRank <= 3) li.classList.add(`is-top-${medalRank}`);
+    tag: 'li' | 'div' = 'li',
+  ): HTMLElement {
+    const el = document.createElement(tag);
+    el.className = 'leaderboard-row';
+    if (isYou) el.classList.add('is-you');
+    if (medalRank != null && medalRank <= 3) el.classList.add(`is-top-${medalRank}`);
 
     const rankEl = document.createElement('span');
     rankEl.className = 'leaderboard-rank';
@@ -305,8 +413,8 @@ export class GlobalLeaderboard {
     scoreEl.className = 'leaderboard-score';
     scoreEl.textContent = String(score);
 
-    li.append(rankEl, nameEl, scoreEl);
-    return li;
+    el.append(rankEl, nameEl, scoreEl);
+    return el;
   }
 
   private statusLabel(mode: LeaderboardSnapshot['mode']): string {

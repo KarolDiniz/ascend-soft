@@ -1615,6 +1615,7 @@ export class Game {
       );
       if (this.fallSummaryPending !== pending) return;
       if (result.ok) {
+        pending.weeklyRank = result.weeklyRank;
         pending.globalRank = result.globalRank;
         pending.globalMode = result.mode;
         pending.submitError = undefined;

@@ -11,15 +11,26 @@ import { LeaderboardClient } from './LeaderboardClient';
 import { checkDisplayName, namesCollide, type NameRejectReason } from './namePolicy';
 import { getDisplayName, getPlayerId, saveDisplayName } from './playerIdentity';
 import { getSupabase } from './supabaseClient';
-import type { LeaderboardEntry, LeaderboardSnapshot, ScoreSubmitPayload, SubmitResult } from './types';
+import type {
+  LeaderboardEntry,
+  LeaderboardScope,
+  LeaderboardSnapshot,
+  ScoreSubmitPayload,
+  SubmitResult,
+} from './types';
+import { isInCurrentWeekLocal } from './weekBounds';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 type SnapshotListener = (snap: LeaderboardSnapshot) => void;
 
 export class LeaderboardService {
   private client = new LeaderboardClient();
+  private scope: LeaderboardScope = 'weekly';
+  private weeklyEntries: LeaderboardEntry[] = [];
+  private globalEntries: LeaderboardEntry[] = [];
   private snapshot: LeaderboardSnapshot = {
     entries: [],
+    scope: 'weekly',
     mode: 'loading',
     updatedAt: 0,
     playerRank: null,
@@ -45,6 +56,21 @@ export class LeaderboardService {
     return this.live;
   }
 
+  getScope(): LeaderboardScope {
+    return this.scope;
+  }
+
+  setScope(scope: LeaderboardScope): void {
+    if (this.scope === scope) return;
+    this.scope = scope;
+    this.rebuildSnapshot();
+    this.emit();
+    const cached = scope === 'weekly' ? this.weeklyEntries : this.globalEntries;
+    if (cached.length === 0 && (this.titleVisible || this.playingVisible)) {
+      void this.refresh();
+    }
+  }
+
   getSnapshot(): LeaderboardSnapshot {
     return this.snapshot;
   }
@@ -62,6 +88,19 @@ export class LeaderboardService {
 
   private emit(): void {
     for (const fn of this.listeners) fn(this.snapshot);
+  }
+
+  private rebuildSnapshot(): void {
+    const entries = this.scope === 'weekly' ? this.weeklyEntries : this.globalEntries;
+    const playerId = getPlayerId();
+    const mine = entries.find((e) => e.playerId === playerId);
+    this.snapshot = {
+      ...this.snapshot,
+      scope: this.scope,
+      entries,
+      playerRank: rankOf(entries, playerId),
+      playerBest: mine?.height ?? this.snapshot.playerBest,
+    };
   }
 
   setDisplayName(raw: string): string {
@@ -224,26 +263,34 @@ export class LeaderboardService {
 
   private applyLiveEntries(batch: LeaderboardEntry[]): void {
     if (batch.length === 0) return;
-    let entries = this.snapshot.entries;
+    let weekly = this.weeklyEntries;
+    let global = this.globalEntries;
     let changed = false;
+
     for (const row of batch) {
-      const next = upsertBest(entries, row);
-      if (next !== entries) {
-        entries = next;
+      const nextGlobal = upsertBest(global, row);
+      if (nextGlobal !== global) {
+        global = nextGlobal;
         changed = true;
       }
+      if (isInCurrentWeekLocal(row.createdAt)) {
+        const nextWeekly = upsertBest(weekly, row);
+        if (nextWeekly !== weekly) {
+          weekly = nextWeekly;
+          changed = true;
+        }
+      }
     }
+
     if (!changed) return;
 
-    const playerId = getPlayerId();
-    const mine = entries.find((e) => e.playerId === playerId);
+    this.weeklyEntries = weekly;
+    this.globalEntries = global;
+    this.rebuildSnapshot();
     this.snapshot = {
       ...this.snapshot,
-      entries,
       mode: this.client.isGlobal() ? 'global' : this.snapshot.mode,
       updatedAt: Date.now(),
-      playerRank: rankOf(entries, playerId),
-      playerBest: mine?.height ?? this.snapshot.playerBest,
     };
     this.emit();
   }
@@ -251,29 +298,66 @@ export class LeaderboardService {
   async refresh(): Promise<void> {
     const playerId = getPlayerId();
     const seq = ++this.refreshSeq;
-    try {
-      const result = await this.client.fetchTop(playerId);
-      if (seq !== this.refreshSeq) return;
-      let entries = result.entries;
-      for (const row of this.snapshot.entries) {
-        entries = upsertBest(entries, row);
+
+    const [weeklyResult, globalResult] = await Promise.allSettled([
+      this.client.fetchTop(playerId, 'weekly'),
+      this.client.fetchTop(playerId, 'global'),
+    ]);
+    if (seq !== this.refreshSeq) return;
+
+    const weeklyOk = weeklyResult.status === 'fulfilled';
+    const globalOk = globalResult.status === 'fulfilled';
+
+    if (weeklyOk) {
+      let weeklyEntries = weeklyResult.value.entries;
+      for (const row of this.weeklyEntries) {
+        weeklyEntries = upsertBest(weeklyEntries, row);
       }
-      const mine = entries.find((e) => e.playerId === playerId);
-      this.snapshot = {
-        entries,
-        mode: result.mode,
-        updatedAt: Date.now(),
-        playerRank: rankOf(entries, playerId) ?? result.playerRank,
-        playerBest: mine?.height ?? result.playerBest,
-      };
-    } catch {
-      if (seq !== this.refreshSeq) return;
+      this.weeklyEntries = weeklyEntries;
+    }
+
+    if (globalOk) {
+      let globalEntries = globalResult.value.entries;
+      for (const row of this.globalEntries) {
+        globalEntries = upsertBest(globalEntries, row);
+      }
+      this.globalEntries = globalEntries;
+    }
+
+    if (!weeklyOk && !globalOk) {
       this.snapshot = {
         ...this.snapshot,
         mode: this.client.isGlobal() ? 'offline' : 'local',
         updatedAt: Date.now(),
       };
+      this.emit();
+      return;
     }
+
+    const activeMeta =
+      this.scope === 'weekly'
+        ? weeklyOk
+          ? weeklyResult.value
+          : globalOk
+            ? globalResult.value
+            : null
+        : globalOk
+          ? globalResult.value
+          : weeklyOk
+            ? weeklyResult.value
+            : null;
+
+    const entries = this.scope === 'weekly' ? this.weeklyEntries : this.globalEntries;
+    const mine = entries.find((e) => e.playerId === playerId);
+
+    this.snapshot = {
+      entries,
+      scope: this.scope,
+      mode: activeMeta?.mode ?? (this.client.isGlobal() ? 'global' : 'local'),
+      updatedAt: Date.now(),
+      playerRank: rankOf(entries, playerId) ?? activeMeta?.playerRank ?? null,
+      playerBest: mine?.height ?? activeMeta?.playerBest ?? 0,
+    };
     this.emit();
   }
 
@@ -284,13 +368,19 @@ export class LeaderboardService {
     runMs: number,
   ): Promise<SubmitResult> {
     if (height < MIN_SUBMIT_HEIGHT || height > MAX_SUBMIT_HEIGHT) {
-      return { ok: false, globalRank: null, mode: this.client.isGlobal() ? 'global' : 'local' };
+      return {
+        ok: false,
+        weeklyRank: null,
+        globalRank: null,
+        mode: this.client.isGlobal() ? 'global' : 'local',
+      };
     }
 
     const safeMs = Math.max(1000, runMs);
     if (!scoreLooksPlausible(height, breaths, collectibles, safeMs)) {
       return {
         ok: false,
+        weeklyRank: null,
         globalRank: null,
         mode: this.client.isGlobal() ? 'global' : 'local',
         error: 'rejected',
@@ -308,7 +398,7 @@ export class LeaderboardService {
 
     const result = await this.client.submit(payload);
     if (result.ok) {
-      this.lastSubmitRank = result.globalRank;
+      this.lastSubmitRank = result.weeklyRank;
       this.applyLiveEntries([
         {
           playerId: payload.playerId,

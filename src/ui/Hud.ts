@@ -277,9 +277,15 @@ export class Hud {
   }
 
   private applyFallRank(summary: FallSummary): void {
-    if (summary.globalRank != null && summary.globalRank > 0) {
-      const scope = summary.globalMode === 'local' ? 'local' : 'global';
-      this.fallRank.textContent = `#${summary.globalRank} no ranking ${scope}`;
+    const rank = summary.weeklyRank ?? summary.globalRank;
+    if (rank != null && rank > 0) {
+      const scope =
+        summary.weeklyRank != null && summary.weeklyRank > 0
+          ? 'semanal'
+          : summary.globalMode === 'local'
+            ? 'local'
+            : 'global';
+      this.fallRank.textContent = `#${rank} no ranking ${scope}`;
       this.fallRank.classList.remove('hidden', 'fall-rank--error');
       return;
     }

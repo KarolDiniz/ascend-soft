@@ -1,3 +1,5 @@
+export type LeaderboardScope = 'weekly' | 'global';
+
 export interface LeaderboardEntry {
   playerId: string;
   displayName: string;
@@ -18,6 +20,7 @@ export interface ScoreSubmitPayload {
 
 export interface SubmitResult {
   ok: boolean;
+  weeklyRank: number | null;
   globalRank: number | null;
   mode: 'global' | 'local';
   error?: 'blocked' | 'taken' | 'invalid' | 'network' | 'rejected';
@@ -25,6 +28,7 @@ export interface SubmitResult {
 
 export interface LeaderboardSnapshot {
   entries: LeaderboardEntry[];
+  scope: LeaderboardScope;
   mode: 'global' | 'local' | 'loading' | 'offline';
   updatedAt: number;
   playerRank: number | null;

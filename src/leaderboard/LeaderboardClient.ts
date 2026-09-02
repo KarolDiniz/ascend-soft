@@ -7,7 +7,13 @@ import {
   supabaseUrl,
 } from './config';
 import { checkDisplayName, namesCollide } from './namePolicy';
-import type { LeaderboardEntry, ScoreSubmitPayload, SubmitResult } from './types';
+import type {
+  LeaderboardEntry,
+  LeaderboardScope,
+  ScoreSubmitPayload,
+  SubmitResult,
+} from './types';
+import { weeklyEligibleStartMs } from './weekBounds';
 
 const LOCAL_SCORES_KEY = 'ascend-soft-local-scores';
 
@@ -68,6 +74,14 @@ function localBestPerPlayer(rows: LocalScoreRow[]): LeaderboardEntry[] {
     .map(mapLocalRow);
 }
 
+function localWeeklyRows(rows: LocalScoreRow[]): LocalScoreRow[] {
+  const cutoff = weeklyEligibleStartMs();
+  return rows.filter((row) => {
+    const t = Date.parse(row.created_at);
+    return Number.isFinite(t) && t >= cutoff;
+  });
+}
+
 function localRank(rows: LocalScoreRow[], playerId: string, height: number): number {
   const best = localBestPerPlayer(rows);
   const idx = best.findIndex((e) => e.playerId === playerId);
@@ -81,7 +95,10 @@ export class LeaderboardClient {
     return isSupabaseConfigured();
   }
 
-  async fetchTop(playerId: string): Promise<{
+  async fetchTop(
+    playerId: string,
+    scope: LeaderboardScope,
+  ): Promise<{
     entries: LeaderboardEntry[];
     mode: 'global' | 'local';
     playerRank: number | null;
@@ -89,7 +106,8 @@ export class LeaderboardClient {
   }> {
     if (!this.isGlobal()) {
       const rows = loadLocalScores();
-      const entries = localBestPerPlayer(rows);
+      const scoped = scope === 'weekly' ? localWeeklyRows(rows) : rows;
+      const entries = localBestPerPlayer(scoped);
       const mine = entries.find((e) => e.playerId === playerId);
       return {
         entries,
@@ -99,14 +117,15 @@ export class LeaderboardClient {
       };
     }
 
-    const entries = await this.fetchAllGlobal();
+    const entries =
+      scope === 'weekly' ? await this.fetchAllWeekly() : await this.fetchAllGlobal();
     const mine = entries.find((e) => e.playerId === playerId);
 
     let playerRank = mine ? entries.indexOf(mine) + 1 : null;
     let playerBest = mine?.height ?? 0;
 
     if (!mine) {
-      const rankRes = await this.fetchGlobalRank(playerId);
+      const rankRes = await this.fetchPlayerRank(playerId, scope);
       playerRank = rankRes.rank;
       playerBest = rankRes.best;
     }
@@ -115,6 +134,17 @@ export class LeaderboardClient {
   }
 
   private async fetchAllGlobal(): Promise<LeaderboardEntry[]> {
+    return this.fetchAllFromView('leaderboard_best');
+  }
+
+  private async fetchAllWeekly(): Promise<LeaderboardEntry[]> {
+    return this.fetchAllFromView('leaderboard_weekly', { optional: true });
+  }
+
+  private async fetchAllFromView(
+    view: 'leaderboard_best' | 'leaderboard_weekly',
+    options?: { optional?: boolean },
+  ): Promise<LeaderboardEntry[]> {
     const base = supabaseUrl().replace(/\/$/, '');
     const select =
       'player_id,display_name,height,breaths,collectibles,created_at';
@@ -123,11 +153,14 @@ export class LeaderboardClient {
 
     while (offset < LEADERBOARD_MAX_ROWS) {
       const url =
-        `${base}/rest/v1/leaderboard_best?select=${select}` +
+        `${base}/rest/v1/${view}?select=${select}` +
         `&order=height.desc,display_name.asc` +
         `&limit=${LEADERBOARD_PAGE_SIZE}&offset=${offset}`;
       const res = await fetch(url, { headers: supabaseHeaders() });
-      if (!res.ok) throw new Error(`leaderboard fetch ${res.status}`);
+      if (!res.ok) {
+        if (options?.optional) return [];
+        throw new Error(`leaderboard fetch ${res.status}`);
+      }
 
       const data = (await res.json()) as Record<string, unknown>[];
       for (const row of data) {
@@ -141,13 +174,15 @@ export class LeaderboardClient {
     return entries;
   }
 
-  private async fetchGlobalRank(
+  private async fetchPlayerRank(
     playerId: string,
+    scope: LeaderboardScope,
   ): Promise<{ rank: number | null; best: number }> {
+    const view = scope === 'weekly' ? 'leaderboard_weekly' : 'leaderboard_best';
     const base = supabaseUrl().replace(/\/$/, '');
 
     const mineUrl =
-      `${base}/rest/v1/leaderboard_best?select=height&player_id=eq.${encodeURIComponent(playerId)}&limit=1`;
+      `${base}/rest/v1/${view}?select=height&player_id=eq.${encodeURIComponent(playerId)}&limit=1`;
     const mineRes = await fetch(mineUrl, { headers: supabaseHeaders() });
     if (!mineRes.ok) return { rank: null, best: 0 };
 
@@ -155,7 +190,7 @@ export class LeaderboardClient {
     if (!mineData.length) return { rank: null, best: 0 };
 
     const best = mineData[0]!.height;
-    const rank = await this.rankForHeight(best);
+    const rank = await this.rankForHeight(best, scope);
     return { rank, best };
   }
 
@@ -207,9 +242,10 @@ export class LeaderboardClient {
     if (!local.ok) {
       return {
         ok: false,
+        weeklyRank: null,
         globalRank: null,
         mode: this.isGlobal() ? 'global' : 'local',
-    error: local.reason === 'blocked' ? 'blocked' : 'invalid',
+        error: local.reason === 'blocked' ? 'blocked' : 'invalid',
       };
     }
 
@@ -219,7 +255,7 @@ export class LeaderboardClient {
         (row) => namesCollide(row.display_name, local.name) && row.player_id !== payload.playerId,
       );
       if (taken) {
-        return { ok: false, globalRank: null, mode: 'local', error: 'taken' };
+        return { ok: false, weeklyRank: null, globalRank: null, mode: 'local', error: 'taken' };
       }
       rows.push({
         player_id: payload.playerId,
@@ -230,8 +266,10 @@ export class LeaderboardClient {
         created_at: new Date().toISOString(),
       });
       saveLocalScores(rows);
+      const weeklyRows = localWeeklyRows(rows);
       return {
         ok: true,
+        weeklyRank: localRank(weeklyRows, payload.playerId, payload.height),
         globalRank: localRank(rows, payload.playerId, payload.height),
         mode: 'local',
       };
@@ -261,16 +299,20 @@ export class LeaderboardClient {
       else if (/name_invalid/i.test(body)) error = 'invalid';
       else if (/name_taken/i.test(body)) error = 'taken';
       else if (/score_implausible|rate_limit_exceeded/i.test(body)) error = 'rejected';
-      return { ok: false, globalRank: null, mode: 'global', error };
+      return { ok: false, weeklyRank: null, globalRank: null, mode: 'global', error };
     }
 
-    const rank = await this.rankForHeight(payload.height);
-    return { ok: true, globalRank: rank, mode: 'global' };
+    const [weeklyRank, globalRank] = await Promise.all([
+      this.rankForHeight(payload.height, 'weekly'),
+      this.rankForHeight(payload.height, 'global'),
+    ]);
+    return { ok: true, weeklyRank, globalRank, mode: 'global' };
   }
 
-  private async rankForHeight(height: number): Promise<number | null> {
+  async rankForHeight(height: number, scope: LeaderboardScope): Promise<number | null> {
     const base = supabaseUrl().replace(/\/$/, '');
-    const rankRes = await fetch(`${base}/rest/v1/rpc/player_rank`, {
+    const rpc = scope === 'weekly' ? 'player_rank_weekly' : 'player_rank';
+    const rankRes = await fetch(`${base}/rest/v1/rpc/${rpc}`, {
       method: 'POST',
       headers: supabaseHeaders(),
       body: JSON.stringify({ p_height: height }),
