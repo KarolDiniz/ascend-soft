@@ -5,6 +5,8 @@ export interface FallSummary {
   collectibles: number;
   startBest: number;
   runBestBroken: boolean;
+  /** Moedas persistentes no bolso após creditar a subida */
+  pocketCoins?: number;
   /** Motivo para voltar — tesouro novo, combo, material de amanhã */
   returnHook?: string;
   globalRank?: number | null;
@@ -65,7 +67,7 @@ export function getFallCopy(s: FallSummary): FallCopy {
     return {
       eyebrow: 'fim da subida',
       title: 'quase…',
-      subtitle: `${s.breaths} respiros coletados — boa calma`,
+      subtitle: `${s.breaths} moedas nesta subida — boa calma`,
     };
   }
 

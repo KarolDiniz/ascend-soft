@@ -600,19 +600,84 @@ export class AudioBus {
     });
   }
 
-  playBreath(): void {
+  playCoin(): void {
     this.withCtx((ctx, sfx) => {
-      const t = ctx.currentTime + 0.07;
+      const t = ctx.currentTime;
       const dest = ctx.createGain();
-      dest.gain.value = 1.05;
+      dest.gain.value = 0.78;
       dest.connect(sfx);
-      const p = 0.98 + Math.random() * 0.05;
-      this.softNoise(ctx, dest, 0.18, 1100 * p, 0.12, t, 'bandpass', 0.7);
-      this.tone(ctx, dest, 'sine', 659 * p, 784 * p, 0.22, 0.14, t);
-      this.tone(ctx, dest, 'triangle', 784 * p, 988 * p, 0.2, 0.1, t + 0.05);
-      this.tone(ctx, dest, 'sine', 1175 * p, 1319 * p, 0.16, 0.07, t + 0.1);
+      const p = 0.99 + Math.random() * 0.025;
+      this.tone(ctx, dest, 'sine', 1318 * p, 1568 * p, 0.11, 0.065, t);
+      this.tone(ctx, dest, 'triangle', 1760 * p, 2093 * p, 0.08, 0.045, t + 0.038);
     });
-    this.duckAmbient(160, 0.32);
+  }
+
+  /** Compra na loja — moedas + clique de caixa. */
+  playShopPurchase(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const dest = ctx.createGain();
+      dest.gain.value = 0.86;
+      dest.connect(sfx);
+      const p = 0.99 + Math.random() * 0.02;
+      this.tone(ctx, dest, 'sine', 988 * p, 740 * p, 0.13, 0.075, t);
+      this.tone(ctx, dest, 'triangle', 1318 * p, 988 * p, 0.1, 0.055, t + 0.03);
+      this.tone(ctx, dest, 'sine', 1568 * p, 1318 * p, 0.09, 0.042, t + 0.09);
+      this.tone(ctx, dest, 'triangle', 2093 * p, 1760 * p, 0.07, 0.035, t + 0.13);
+      this.softNoise(ctx, dest, 0.1, 2200, 0.035, t + 0.06, 'highpass', 0.75);
+      this.tone(ctx, dest, 'square', 140, 95, 0.05, 0.022, t + 0.07);
+    });
+  }
+
+  playBreath(): void {
+    this.playCoin();
+  }
+
+  playJetIgnite(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const dest = ctx.createGain();
+      dest.gain.value = 0.7;
+      dest.connect(sfx);
+      this.softNoise(ctx, dest, 0.22, 480, 0.14, t, 'bandpass', 0.85);
+      this.tone(ctx, dest, 'sawtooth', 90, 140, 0.16, 0.05, t);
+      this.tone(ctx, dest, 'triangle', 240, 180, 0.12, 0.035, t + 0.04);
+    });
+  }
+
+  playPotionDrink(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const dest = ctx.createGain();
+      dest.gain.value = 0.82;
+      dest.connect(sfx);
+      this.softNoise(ctx, dest, 0.08, 2400, 0.1, t, 'bandpass', 1.4);
+      this.tone(ctx, dest, 'sine', 220, 140, 0.14, 0.07, t + 0.04);
+      this.tone(ctx, dest, 'sine', 180, 110, 0.12, 0.055, t + 0.14);
+      this.tone(ctx, dest, 'triangle', 980, 620, 0.07, 0.03, t);
+    });
+  }
+
+  playHatWhir(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const dest = ctx.createGain();
+      dest.gain.value = 0.55;
+      dest.connect(sfx);
+      this.softNoise(ctx, dest, 0.28, 900, 0.08, t, 'bandpass', 0.9);
+      this.tone(ctx, dest, 'triangle', 620, 880, 0.2, 0.04, t);
+    });
+  }
+
+  playHatGone(): void {
+    this.withCtx((ctx, sfx) => {
+      const t = ctx.currentTime;
+      const dest = ctx.createGain();
+      dest.gain.value = 0.6;
+      dest.connect(sfx);
+      this.tone(ctx, dest, 'sine', 740, 420, 0.16, 0.045, t);
+      this.softNoise(ctx, dest, 0.1, 1400, 0.06, t + 0.02, 'highpass', 0.8);
+    });
   }
 
   playCollect(): void {

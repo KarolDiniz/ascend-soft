@@ -4,6 +4,8 @@ import type { MaterialId } from '../audio/materials';
 import { isSoapBarMaterial } from './platform/soapColors';
 import { PHYS } from './physics';
 import { TRAMPOLINE } from './platform/trampoline';
+import { GEAR, type RunGear } from './shop/runGear';
+import { drawJetpack, drawPotionAura, drawPotionSparkles, drawPropHat } from './shop/runGearVisual';
 import { PLAYER_PASTEL, rgba } from '../theme/pastelPalette';
 import { PIXEL, enablePixelMode, fillPx, px, snapPt } from '../theme/pixel';
 import {
@@ -44,7 +46,7 @@ export class Player {
   jumpBoost = 1;
 
   private coyote = 0;
-  private airJumpsLeft = PHYS.maxAirJumps;
+  private airJumpsLeft: number = PHYS.maxAirJumps;
   private squash = 1;
   private stretch = 1;
   private trail: TrailPoint[] = [];
@@ -65,9 +67,17 @@ export class Player {
   groundedPlatform: Platform | null = null;
   private launchLockT = 0;
   private shoveT = 0;
+  private shoveIgnorePlatform: Platform | null = null;
+  private shoveIgnoreT = 0;
   trampolineWindup = false;
   /** Sem rastro de pixels — modo leve. */
   liteFx = false;
+  gear: RunGear | null = null;
+  private shopJumpMul = 1;
+
+  setPotionJump(on: boolean): void {
+    this.shopJumpMul = on ? GEAR.potionJumpMul : 1;
+  }
 
   /** Impulso de alegria — editor de personagem / feedback */
   nudgeHappy(): void {
@@ -104,6 +114,14 @@ export class Player {
     return this.y - this.h / 2;
   }
 
+  get shoving(): boolean {
+    return this.shoveT > 0;
+  }
+
+  canLandOnPlatform(p: Platform): boolean {
+    return !(this.shoveIgnoreT > 0 && this.shoveIgnorePlatform === p);
+  }
+
   reset(x: number, y: number): void {
     this.x = x;
     this.y = y;
@@ -129,6 +147,8 @@ export class Player {
     this.jumpBoost = 1;
     this.launchLockT = 0;
     this.shoveT = 0;
+    this.shoveIgnorePlatform = null;
+    this.shoveIgnoreT = 0;
     this.trampolineWindup = false;
   }
 
@@ -138,6 +158,7 @@ export class Player {
     if (Math.abs(axis) > 0.08) this.facing = Math.sign(axis);
 
     if (this.shoveT > 0) this.shoveT = Math.max(0, this.shoveT - dt);
+    if (this.shoveIgnoreT > 0) this.shoveIgnoreT = Math.max(0, this.shoveIgnoreT - dt);
 
     if (this.trampolineWindup) {
       this.vx = 0;
@@ -159,6 +180,8 @@ export class Player {
     if (this.onGround) this.coyote = 0.11;
     else this.coyote = Math.max(0, this.coyote - dt);
 
+    if (this.onGround) this.gear?.disarmJet();
+
     const groundedJump = !this.trampolineWindup && (this.onGround || this.coyote > 0);
     const tapJump = this.trampolineWindup ? false : input.consumeJump();
     const autoGroundJump =
@@ -167,7 +190,7 @@ export class Player {
       if (groundedJump) {
         const leaving = this.groundedPlatform;
         const boost = this.jumpBoost;
-        this.vy = this.jumpVel * boost;
+        this.vy = this.jumpVel * boost * this.shopJumpMul;
         this.jumpBoost = 1;
         this.onGround = false;
         this.coyote = 0;
@@ -178,7 +201,7 @@ export class Player {
         impulseAccessoryHop(this.motion, this.vy);
         if (leaving) leaving.notePlayerOff(true);
       } else if (tapJump && this.airJumpsLeft > 0) {
-        this.vy = this.jumpVel * PHYS.airJumpMul;
+        this.vy = this.jumpVel * PHYS.airJumpMul * this.shopJumpMul;
         this.onGround = false;
         this.coyote = 0;
         this.groundedPlatform = null;
@@ -187,16 +210,49 @@ export class Player {
         this.squash = 0.62;
         this.airJumpFlashT = this.airJumpFlashMax;
         jumped = 'air';
+        this.gear?.armJet();
       }
     }
 
-    if (!input.jumpHeld && this.vy > 90 && this.launchLockT <= 0 && this.shoveT <= 0) {
+    const g = this.gear;
+    if (g) g.jetFiring = false;
+    let jetEase = 0;
+    const jetting =
+      !!g &&
+      g.jetArmed &&
+      g.jetFuel > 0 &&
+      !this.onGround &&
+      !this.trampolineWindup &&
+      input.jumpHeld;
+    if (jetting && g) {
+      g.jetFiring = true;
+      g.jetFuel = Math.max(0, g.jetFuel - dt);
+      g.jetSpinT += dt;
+      const u = Math.min(1, g.jetSpinT / GEAR.jetSpinS);
+      jetEase = u * u * (3 - 2 * u);
+      this.vy += GEAR.jetAccel * jetEase * dt;
+      const cap = this.jumpVel + (GEAR.jetMaxVy - this.jumpVel) * jetEase;
+      if (this.vy > cap) this.vy = cap;
+      this.stretch = Math.max(this.stretch, 1 + jetEase * 0.22);
+      if (g.jetFuel <= 0) {
+        g.jetArmed = false;
+        g.jetFiring = false;
+        g.jetSpinT = 0;
+        jetEase = 0;
+      }
+    } else if (g) {
+      g.jetSpinT = 0;
+    }
+
+    if (!input.jumpHeld && this.vy > 90 && this.launchLockT <= 0 && this.shoveT <= 0 && !jetting) {
       this.vy *= 0.9;
     }
 
     if (this.launchLockT > 0) this.launchLockT = Math.max(0, this.launchLockT - dt);
 
-    this.vy -= this.gravity * dt;
+    const fallMul = g?.hatWorn && this.vy < 0 ? GEAR.hatFallGravMul : 1;
+    const gravMul = jetEase > 0 ? 1 - 0.95 * jetEase : fallMul;
+    this.vy -= this.gravity * gravMul * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
@@ -323,6 +379,7 @@ export class Player {
     this.onGround = true;
     this.airJumpsLeft = PHYS.maxAirJumps;
     this.groundedPlatform = platform;
+    this.gear?.disarmJet();
     this.squash = 1.42;
     this.stretch = 0.68;
     this.landImpactT = 0.26;
@@ -391,7 +448,19 @@ export class Player {
     this.stretch = 1.32;
     this.landFace = 'ooh';
     this.landFaceT = 0.38;
-    this.shoveT = 0.22;
+    this.shoveT = 0.32;
+    this.shoveIgnorePlatform = leaving;
+    this.shoveIgnoreT = 0.48;
+    if (leaving) {
+      const clear = 12;
+      if (sign < 0) {
+        const maxX = leaving.left - this.w / 2 - clear;
+        if (this.x > maxX) this.x = maxX;
+      } else {
+        const minX = leaving.right + this.w / 2 + clear;
+        if (this.x < minX) this.x = minX;
+      }
+    }
     impulseAccessoryHop(this.motion, this.vy);
     leaving?.notePlayerOff(false);
   }
@@ -473,8 +542,13 @@ export class Player {
 
     drawPlayerPixelShadow(ctx, bw, bh, 1, m.speedNorm);
 
+    const g = this.gear;
     if (airFlash > 0) {
       drawPlayerAirJumpAura(ctx, bw, bh, this.airJumpFlashT, this.airJumpFlashMax);
+    }
+
+    if (g?.potionActive) {
+      drawPotionAura(ctx, bw, bh, this.animT);
     }
 
     // Body — stepped oval (cute pixel slime)
@@ -488,6 +562,10 @@ export class Player {
       speedNorm: m.speedNorm,
       walkPhase: m.walkPhase,
     });
+
+    if (g && g.jetFuel > 0) {
+      drawJetpack(ctx, bw, bh, this.facing, g.jetFiring, this.animT);
+    }
 
     const itemScale = titleBoost ? 1 : accessoryInGameScale(bw, accessory);
     const headOff = accessoryHeadOffset(this.motion, this.facing, bh);
@@ -551,6 +629,14 @@ export class Player {
           headOff.y,
         );
       }
+    }
+
+    if (g?.hatWorn) {
+      drawPropHat(ctx, bw, bh, this.animT, this.facing);
+    }
+
+    if (g?.potionActive) {
+      drawPotionSparkles(ctx, bw, bh, this.animT);
     }
 
     ctx.restore();

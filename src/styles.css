@@ -83,7 +83,9 @@ html.light-mode #game {
 .ui button,
 .ui input,
 .ui .leaderboard-toggle,
-.ui .pad-btn {
+.ui .pad-btn,
+.ui .title-shop,
+.ui .shop-fab {
   pointer-events: auto;
 }
 
@@ -161,6 +163,112 @@ html.light-mode #game {
 
 .hud-value--sm {
   font-size: 0.72rem;
+}
+
+.run-gear {
+  position: absolute;
+  top: calc(14px + var(--safe-top) + 4.35rem);
+  left: 14px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#app:not(.is-playing) .run-gear {
+  display: none !important;
+}
+
+.gear-bar {
+  min-width: 7.2rem;
+}
+
+.gear-label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.36rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  text-shadow: 1px 1px 0 rgba(255, 252, 248, 0.7);
+}
+
+.gear-track {
+  height: 8px;
+  border: 2px solid var(--ink);
+  background: rgba(255, 252, 248, 0.55);
+  overflow: hidden;
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.18);
+}
+
+.gear-fill {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(1);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.gear-fill--jet {
+  background: #E2B84A;
+}
+
+.gear-fill--potion {
+  background: #6AD8FF;
+}
+
+.gear-fill--hat {
+  background: #fffcf8;
+}
+
+@keyframes gear-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.reduce-motion .gear-fill--potion {
+  animation: none !important;
+}
+
+.potion-btn {
+  pointer-events: auto;
+  padding: 0.42rem 0.55rem;
+  border: 2px solid var(--ink);
+  background: #C9E4DE;
+  color: var(--ink);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.22);
+}
+
+.hat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hat-btn {
+  background: #fffcf8;
+}
+
+.gear-secs {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  text-shadow: 1px 1px 0 rgba(255, 252, 248, 0.7);
+}
+
+html.has-mobile-pad .run-gear {
+  top: calc(10px + var(--safe-top) + 4.1rem);
 }
 
 .hud-streak {
@@ -738,6 +846,249 @@ html.has-mobile-pad .material-toast {
 
 .catalog-badge.hidden {
   display: none;
+}
+
+/* Loja — canto inferior direito, só capa e queda */
+.shop-fab {
+  position: absolute;
+  z-index: 7;
+  right: max(12px, var(--safe-right));
+  bottom: max(16px, var(--safe-bottom));
+}
+
+#app.is-playing .shop-fab,
+#app.is-playing .title-shop {
+  display: none !important;
+}
+
+.title-shop {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) 14px calc(16px + var(--safe-bottom));
+}
+
+.title-shop.hidden {
+  display: none;
+}
+
+.title-gear-pick {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) 14px calc(16px + var(--safe-bottom));
+}
+
+.title-gear-pick.hidden {
+  display: none;
+}
+
+.gear-pick-panel {
+  align-items: stretch;
+  max-width: 22rem;
+  width: min(100%, 22rem);
+}
+
+.gear-pick-hint {
+  margin: 0 0 10px;
+  font-family: Nunito, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.gear-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gear-pick-card {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid rgba(90, 97, 108, 0.2);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(90, 97, 108, 0.12);
+}
+
+.gear-pick-card.is-on {
+  border-color: var(--ink);
+  background: rgba(255, 252, 248, 0.88);
+  box-shadow: 3px 3px 0 rgba(90, 97, 108, 0.18);
+}
+
+.gear-pick-card.is-locked {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.gear-pick-icon {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  background: rgba(255, 252, 248, 0.55);
+  border: 2px solid rgba(90, 97, 108, 0.14);
+}
+
+.gear-pick-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  line-height: 1.45;
+}
+
+.gear-pick-mark {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: #5BB85A;
+  min-width: 1rem;
+  text-align: center;
+}
+
+.gear-pick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gear-pick-actions .btn {
+  width: 100%;
+}
+
+.title-shop .title-catalog-panel {
+  align-items: stretch;
+}
+
+.shop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shop-head {
+  display: grid;
+  grid-template-columns: 2rem 1fr 2rem;
+  align-items: center;
+}
+
+.shop-title {
+  grid-column: 2;
+  text-align: center;
+}
+
+.shop-head .btn-settings-close {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.shop-wallet {
+  margin: 0 0 10px;
+  padding: 0;
+  width: 100%;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.48rem;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: left;
+}
+
+.shop-wallet #shop-wallet-count {
+  color: #C4922C;
+}
+
+.shop-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 8px;
+  border: 2px solid rgba(90, 97, 108, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  text-align: left;
+}
+
+.shop-row.is-owned {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(90, 97, 108, 0.28);
+}
+
+.shop-row-icon {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+  background: rgba(255, 252, 248, 0.55);
+  border: 2px solid rgba(90, 97, 108, 0.14);
+  flex-shrink: 0;
+}
+
+.shop-row-copy {
+  min-width: 0;
+}
+
+.shop-row-name {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.shop-row-hint {
+  margin: 4px 0 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+.shop-buy {
+  flex-shrink: 0;
+  min-width: 3.4rem;
+  padding: 0.42rem 0.5rem;
+  border: 2px solid #8A6A1C;
+  background: #E2B84A;
+  color: #3d3420;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(138, 106, 28, 0.45);
+}
+
+.shop-buy:disabled {
+  cursor: default;
+  background: #E8D48A;
+  color: rgba(61, 52, 32, 0.45);
+  border-color: rgba(138, 106, 28, 0.35);
+  box-shadow: none;
+}
+
+.shop-status {
+  min-height: 1.1em;
+  margin: 8px 0 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
 }
 
 @media (min-width: 900px) {
@@ -2813,6 +3164,14 @@ html.hide-playing-rank .global-leaderboard.is-playing-mode {
   font-size: 0.72rem;
   color: var(--ink);
   line-height: 1.4;
+}
+
+.fall-wallet {
+  margin: 0 0 10px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
 }
 
 .fall-gap {

@@ -2,8 +2,8 @@ import { PHYS } from '../physics';
 
 /** Desvio opcional — não entra na cadeia principal nem no catálogo de materiais. */
 export const TRAMPOLINE = {
-  /** vs jumpVel: ~26 gaps (~1620u). Compromisso alto. */
-  launchMul: 4.28,
+  /** vs jumpVel: impulso bem alto (~maior alcance vertical). */
+  launchMul: 5.55,
   width: 48,
   minY: 200,
   minSpacing: 42,
@@ -12,7 +12,7 @@ export const TRAMPOLINE = {
   sideGapMax: 74,
   yOffset: -10,
   /** Cobre a subida para o corte de pulo não comer a altura. */
-  launchLockS: 2.1,
+  launchLockS: 2.45,
   /** Tempo da mola comprimindo — lento, molengo. */
   compressS: 0.38,
   /** Queda da plataforma (unidades) enquanto a mola comprime. */
@@ -21,6 +21,8 @@ export const TRAMPOLINE = {
   recoilVel: -11,
   jiggleK: 62,
   jiggleDamp: 2.8,
+  /** Tempo mínimo de recoil antes de poder usar de novo. */
+  recoverS: 0.55,
 } as const;
 
 export function trampolineApexHeight(): number {

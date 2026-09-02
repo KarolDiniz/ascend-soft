@@ -5,7 +5,9 @@ import { Atmosphere } from './atmosphere/Atmosphere';
 import { SceneryLayer } from './atmosphere/SceneryLayer';
 import { SoftPass } from './atmosphere/SoftPass';
 import { Background } from './Background';
-import { BreathSpawner } from './Breaths';
+import { CoinSpawner } from './Coins';
+import { addCoins, loadWallet } from './shop/wallet';
+import { GEAR, RunGear, emptyGearLoadout, sanitizeLoadout, type GearLoadout } from './shop/runGear';
 import { CollectibleManager } from './collectibles/CollectibleManager';
 import { COLLECTIBLES } from './collectibles/definitions';
 import { addCollected, loadCollected } from './collectibles/storage';
@@ -23,6 +25,7 @@ import type { FallSummary } from '../ui/fallCopy';
 import type { Hud } from '../ui/Hud';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
 import type { PlatformEvent } from './Platform';
+import { setPlatformsUnbreakable } from './Platform';
 import { getPerfProfile, loadSettings, saveSettings, type UserSettings } from './GameSettings';
 import { setPlatformLiteDecor } from './platform/PixelPlatformRenderer';
 import { loadPlayerAppearance, savePlayerAppearance, type PlayerAppearance } from './playerAppearance';
@@ -81,8 +84,11 @@ export class Game {
   /** Low-res upscale soft-focus for scenery (cheap fake blur). */
   private softScenery = new SoftPass(0.38);
   private shards = new ShardField();
-  private breaths = new BreathSpawner();
+  private coins = new CoinSpawner();
   private gnome = new FiscalGnome();
+  private gear = new RunGear();
+  private pendingLoadout: GearLoadout | null = null;
+  private potionWasOn = false;
   private collectibles = new CollectibleManager();
   private collected = loadCollected();
   private runCollectibles = 0;
@@ -145,6 +151,7 @@ export class Game {
     this.ctx = ctx;
     this.audio = audio;
     this.hud = hud;
+    this.player.gear = this.gear;
     this.best = loadLocalBest();
     this.debug = new URLSearchParams(location.search).has('debug');
     this.applyUserSettings(this.userSettings);
@@ -313,10 +320,13 @@ export class Game {
     this.hud.showTitle(this.best, titleDailyCard());
     this.syncMobileControls();
     this.onCatalogRefresh?.();
+    this.onShopRefresh?.();
   }
 
   /** Callback para atualizar catálogo na tela inicial */
   onCatalogRefresh: (() => void) | null = null;
+  /** Atualiza FAB/lista da loja após creditar o bolso */
+  onShopRefresh: (() => void) | null = null;
   /** Altura inteira da subida atual — para o ranking ao vivo. */
   onLiveHeight: ((height: number) => void) | null = null;
 
@@ -351,12 +361,14 @@ export class Game {
     this.hud.setAmbientColors(pal.top, pal.mid);
     this.hud.preparePlaying(this.best);
     this.syncMobileControls();
+    this.startRunGear();
   }
 
   beginPlay(): void {
     this.audio.stopSoftMurmur();
     this.titleMurmurActive = false;
     this.resetRun();
+    this.startRunGear();
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
     this.spawnGrace = 0.45;
@@ -403,7 +415,7 @@ export class Game {
     this.particles.clear();
     this.ambient.clear();
     this.shards.clear();
-    this.breaths.reset();
+    this.coins.reset();
     this.gnome.reset();
     this.collectibles.reset(this.collected);
     this.runCollectibles = 0;
@@ -426,6 +438,75 @@ export class Game {
     this.fallRevealTimer = 0;
     this.fallSummaryPending = null;
     this.fallHudRevealed = false;
+    this.gear.reset();
+    this.potionWasOn = false;
+    this.player.setPotionJump(false);
+    setPlatformsUnbreakable(false);
+  }
+
+  previewShopMods(): void {
+    /* itens da loja são carga da subida, não buff da capa */
+  }
+
+  /** Define o que entra na próxima subida (seletor de itens). */
+  setRunLoadout(loadout: GearLoadout | null): void {
+    this.pendingLoadout = loadout ? sanitizeLoadout(loadout) : emptyGearLoadout();
+  }
+
+  drinkPotion(): boolean {
+    if (this.state !== 'playing' && this.state !== 'intro') return false;
+    if (!this.gear.drinkPotion()) return false;
+    this.audio.playPotionDrink();
+    this.potionWasOn = true;
+    this.player.setPotionJump(true);
+    setPlatformsUnbreakable(true);
+    this.hud.startPotionTimer(GEAR.potionS);
+    this.hud.syncRunGear(this.gear);
+    this.onShopRefresh?.();
+    return true;
+  }
+
+  wearHat(): boolean {
+    if (this.state !== 'playing' && this.state !== 'intro') return false;
+    if (!this.gear.wearHat()) return false;
+    this.audio.playHatWhir();
+    this.hud.startHatTimer(GEAR.hatS);
+    this.hud.syncRunGear(this.gear);
+    this.onShopRefresh?.();
+    return true;
+  }
+
+  private startRunGear(): void {
+    const load = this.pendingLoadout ?? emptyGearLoadout();
+    this.pendingLoadout = null;
+    this.gear.equipForRun(load);
+    this.player.gear = this.gear;
+    this.player.setPotionJump(false);
+    this.potionWasOn = false;
+    setPlatformsUnbreakable(false);
+    this.hud.syncRunGear(this.gear);
+    this.onShopRefresh?.();
+  }
+
+  private tickRunGear(dt: number): void {
+    const { hatExpired } = this.gear.tickTimers(dt);
+    if (this.gear.consumeJetIgnite()) {
+      this.audio.playJetIgnite();
+      this.onShopRefresh?.();
+    }
+    const potionOn = this.gear.potionActive;
+    if (potionOn !== this.potionWasOn) {
+      this.potionWasOn = potionOn;
+      this.player.setPotionJump(potionOn);
+      setPlatformsUnbreakable(potionOn);
+      if (!potionOn) this.hud.endPotionTimer();
+    }
+    if (hatExpired) {
+      this.audio.playHatGone();
+      this.hud.endHatTimer();
+      this.player.nudgeHappy();
+    }
+    this.hud.syncRunGear(this.gear);
   }
 
   /** Exibe banner de reflexão conforme preferência do jogador */
@@ -593,6 +674,7 @@ export class Game {
 
     if (this.state === 'intro') {
       this.updateIntro(dt);
+      this.tickRunGear(dt);
       return;
     }
 
@@ -620,6 +702,7 @@ export class Game {
     const prevBottom = this.player.bottom;
     const wasGrounded = this.player.onGround;
     const jumped = this.player.update(dt, this.input);
+    this.tickRunGear(dt);
     if (jumped === 'ground' && prevPlat) {
       const mat = MATERIALS[prevPlat.material];
       this.particles.releasePuff(
@@ -679,17 +762,50 @@ export class Game {
     const wall = this.worldHalfW + 20;
     if (this.player.x < -wall) {
       this.player.x = -wall;
-      this.player.vx *= -0.3;
+      if (this.player.shoving && this.player.vx < 0) this.player.vx = 0;
+      else this.player.vx *= -0.3;
     }
     if (this.player.x > wall) {
       this.player.x = wall;
-      this.player.vx *= -0.3;
+      if (this.player.shoving && this.player.vx > 0) this.player.vx = 0;
+      else this.player.vx *= -0.3;
     }
 
     this.spawner.update(this.player.y, this.camera.y, this.H);
     this.collectibles.syncPlatforms(this.spawner.platforms);
     this.collectibles.prune(this.camera.y, this.H);
     for (const p of this.spawner.platforms) p.update(dt, this.time);
+
+    const gnomeEv = this.gnome.update(
+      dt,
+      this.player,
+      true,
+      this.W * 0.5,
+      this.debug,
+      this.userSettings.reduceMotion,
+    );
+    if (gnomeEv === 'approach') {
+      this.audio.playFiscalGnomeLaugh();
+    }
+    if (gnomeEv === 'strike') {
+      this.audio.playFiscalGnomeChuckle();
+      this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
+      if (!this.perfProfile().lightMode) {
+        this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
+      }
+      if (!this.userSettings.reduceMotion) {
+        this.screenPunch = Math.max(this.screenPunch, 0.28);
+      }
+    }
+
+    if (this.player.x < -wall) {
+      this.player.x = -wall;
+      if (this.player.shoving && this.player.vx < 0) this.player.vx = 0;
+    }
+    if (this.player.x > wall) {
+      this.player.x = wall;
+      if (this.player.shoving && this.player.vx > 0) this.player.vx = 0;
+    }
 
     this.resolveCollisions(prevBottom);
 
@@ -794,38 +910,19 @@ export class Game {
       }
     }
 
-    const gnomeEv = this.gnome.update(
-      dt,
-      this.player,
-      true,
-      this.W * 0.5,
-      this.debug,
-      this.userSettings.reduceMotion,
-    );
-    if (gnomeEv === 'approach') {
-      this.audio.playFiscalGnomeLaugh();
-    }
-    if (gnomeEv === 'strike') {
-      this.audio.playFiscalGnomeChuckle();
-      this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
-      if (!this.perfProfile().lightMode) {
-        this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
-      }
-      if (!this.userSettings.reduceMotion) {
-        this.screenPunch = Math.max(this.screenPunch, 0.28);
-      }
-    }
-
     const plats = this.spawner.platforms;
-    this.breaths.update(plats, this.camera.y, this.H);
-    for (const o of this.breaths.orbs) {
-      o.update(dt, this.player.x, this.player.y);
+    this.coins.update(plats, this.camera.y, this.H);
+    this.coins.tickMagnet(dt, this.player.x, this.player.y);
+    const light = this.perfProfile().lightMode;
+    for (let i = 0; i < this.coins.orbs.length; i++) {
+      const o = this.coins.orbs[i]!;
       if (!o.collected && o.overlaps(this.player.x, this.player.y)) {
         o.collected = true;
         this.breathCount += 1;
-        this.audio.playBreath();
-        this.particles.burst(o.x, o.y, '#e8a090', 8, 'foam', true, this.atmosphere.getAccent());
-        this.particles.inhale(o.x, o.y, this.atmosphere.getAccent());
+        this.audio.playCoin();
+        if (!light) {
+          this.particles.burst(o.x, o.y, '#E2B84A', 4, 'foam', false, '#F3E2A8');
+        }
       }
     }
 
@@ -863,8 +960,17 @@ export class Game {
     }
     this.hud.update(this.height, this.best, this.breathCount, this.perfectStreak);
 
-    this.camera.follow(this.player.y + this.player.upwardLead, this.H * 0.18);
-    this.camera.update(dt);
+    if (this.player.gear?.jetFiring) {
+      this.camera.ride(
+        this.player.y + this.player.upwardLead,
+        this.H * 0.18,
+        this.player.vy,
+        dt,
+      );
+    } else {
+      this.camera.follow(this.player.y + this.player.upwardLead, this.H * 0.18);
+      this.camera.update(dt);
+    }
 
     if (this.spawnGrace > 0) this.spawnGrace -= dt;
 
@@ -888,6 +994,7 @@ export class Game {
 
     for (const p of this.spawner.platforms) {
       if (!p.alive || !p.solid || p.opacity < 0.25) continue;
+      if (!this.player.canLandOnPlatform(p)) continue;
       const withinX = this.player.right > p.left + 4 && this.player.left < p.right - 4;
       if (!withinX) continue;
 
@@ -1437,12 +1544,17 @@ export class Game {
     }
     this.gnome.reset();
     this.state = 'falling';
+    setPlatformsUnbreakable(false);
+    this.player.setPotionJump(false);
+    this.hud.hideRunGear();
     this.input.clearJump();
     this.syncMobileControls();
     this.fallTimer = 0;
     this.perfectStreak = 0;
     this.particles.exhale(this.player.x, this.player.y, this.atmosphere.getAccent());
     this.audio.playFall();
+    if (this.breathCount > 0) addCoins(this.breathCount);
+    this.onShopRefresh?.();
     const runMs = Math.max(1000, performance.now() - this.runStartedAt);
     this.fallSummaryPending = {
       height: this.height,
@@ -1451,6 +1563,7 @@ export class Game {
       collectibles: this.runCollectibles,
       startBest: this.startBest,
       runBestBroken: this.runBestBroken,
+      pocketCoins: loadWallet().coins,
       returnHook: fallReturnHook({
         newFindNames: this.runNewFindNames,
         newHeardNames: this.runNewHeardNames,
@@ -1676,7 +1789,7 @@ export class Game {
 
     for (const p of this.spawner.platforms) p.draw(ctx, this.toScreen, this.time);
     this.collectibles.draw(ctx, this.toScreen, this.time, this.camera.y, this.H);
-    for (const o of this.breaths.orbs) o.draw(ctx, this.toScreen, this.time);
+    for (const o of this.coins.orbs) o.draw(ctx, this.toScreen, this.time);
     this.particles.draw(ctx, this.toScreen);
     this.shards.draw(ctx, this.toScreen);
     this.ambient.drawNear(ctx, this.toScreen);

@@ -3,6 +3,8 @@ import { FallTearsOverlay } from './FallTearsOverlay';
 import { getFallCopy, getFallGapLabel, getFallSubmitMessage, type FallSummary } from './fallCopy';
 import { ToastSpeaker } from './ToastSpeaker';
 import { PHASE_TOAST_MS } from './toastConfig';
+import { isTextEntryTarget } from '../game/Input';
+import { GEAR, type RunGear } from '../game/shop/runGear';
 import type { AudioBus } from '../audio/AudioBus';
 
 export class Hud {
@@ -26,6 +28,7 @@ export class Hud {
   private titleDailyName: HTMLElement | null;
   private titleDailyStreak: HTMLElement | null;
   private fallReturnHook: HTMLElement | null;
+  private fallWallet: HTMLElement | null;
   private muteBtn: HTMLElement;
   private toastEl: HTMLElement;
   private toastPhaseEl: HTMLElement;
@@ -40,6 +43,21 @@ export class Hud {
   private readonly toastDuration = PHASE_TOAST_MS;
   private readonly titleLeaveMs = 550;
   private readonly titleLeaveMsReduced = 220;
+  private runGearEl: HTMLElement;
+  private jetBar: HTMLElement;
+  private jetFill: HTMLElement;
+  private potionBtn: HTMLButtonElement;
+  private potionTimer: HTMLElement;
+  private potionFill: HTMLElement;
+  private hatRow: HTMLElement;
+  private hatBtn: HTMLButtonElement;
+  private hatSecs: HTMLElement;
+  private hatTimer: HTMLElement;
+  private hatFill: HTMLElement;
+  private lastJetRatio = -1;
+  private lastHatSecs = -1;
+  onPotionDrink: (() => void) | null = null;
+  onHatWear: (() => void) | null = null;
 
   constructor(audio?: AudioBus) {
     this.root = document.getElementById('hud')!;
@@ -62,6 +80,7 @@ export class Hud {
     this.titleDailyName = document.getElementById('title-daily-name');
     this.titleDailyStreak = document.getElementById('title-daily-streak');
     this.fallReturnHook = document.getElementById('fall-return-hook');
+    this.fallWallet = document.getElementById('fall-wallet');
     this.muteBtn = document.getElementById('btn-mute')!;
     this.toastEl = document.getElementById('material-toast')!;
     this.toastPhaseEl = document.getElementById('toast-phase')!;
@@ -71,6 +90,38 @@ export class Hud {
     this.fallTears = new FallTearsOverlay(this.fallMascot);
     this.audio = audio ?? null;
     this.toastEl.style.setProperty('--toast-duration', `${PHASE_TOAST_MS}ms`);
+    this.runGearEl = document.getElementById('run-gear')!;
+    this.jetBar = document.getElementById('jet-bar')!;
+    this.jetFill = document.getElementById('jet-fill')!;
+    this.potionBtn = document.getElementById('btn-potion') as HTMLButtonElement;
+    this.potionTimer = document.getElementById('potion-timer')!;
+    this.potionFill = document.getElementById('potion-fill')!;
+    this.hatRow = document.getElementById('hat-row')!;
+    this.hatBtn = document.getElementById('btn-hat') as HTMLButtonElement;
+    this.hatSecs = document.getElementById('hat-secs')!;
+    this.hatTimer = document.getElementById('hat-timer')!;
+    this.hatFill = document.getElementById('hat-fill')!;
+    this.potionBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.onPotionDrink?.();
+    });
+    this.hatBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.onHatWear?.();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (isTextEntryTarget(e.target)) return;
+      if (this.root.classList.contains('hidden')) return;
+      if (e.code === 'KeyE' || e.code === 'KeyQ') {
+        e.preventDefault();
+        this.onPotionDrink?.();
+        return;
+      }
+      if (e.code === 'KeyR') {
+        e.preventDefault();
+        this.onHatWear?.();
+      }
+    });
   }
 
   /** Callback quando a tela inicial aparece */
@@ -104,6 +155,8 @@ export class Hud {
     this.fallScreen.classList.add('hidden');
     this.root.classList.add('hidden');
     document.getElementById('app')?.classList.add('is-title');
+    document.getElementById('app')?.classList.remove('is-playing');
+    this.hideRunGear();
     this.onTitleShow?.();
   }
 
@@ -132,6 +185,7 @@ export class Hud {
     this.fallMascot.stop();
     this.fallTears.stop();
     document.getElementById('app')?.classList.remove('is-title');
+    document.getElementById('app')?.classList.add('is-playing');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
     this.root.classList.remove('is-entering');
@@ -160,6 +214,7 @@ export class Hud {
     this.titleScreen.classList.add('hidden');
     this.titleScreen.classList.remove('is-leaving');
     document.getElementById('app')?.classList.remove('is-title');
+    document.getElementById('app')?.classList.add('is-playing');
     this.fallScreen.classList.add('hidden');
     this.root.classList.remove('hidden');
     this.heightEl.textContent = '0';
@@ -178,6 +233,9 @@ export class Hud {
     this.fallStatBreaths.textContent = String(summary.breaths);
     this.fallStatCollectibles.textContent = String(summary.collectibles);
     this.fallStatBest.textContent = String(summary.best);
+    if (this.fallWallet) {
+      this.fallWallet.textContent = `bolso ${summary.pocketCoins ?? 0}`;
+    }
 
     const gapLabel = getFallGapLabel(summary);
     if (gapLabel) {
@@ -198,6 +256,8 @@ export class Hud {
 
     this.fallScreen.classList.remove('hidden');
     this.fallScreen.classList.add('is-entering');
+    document.getElementById('app')?.classList.remove('is-playing');
+    this.hideRunGear();
     this.onFallShow?.();
     window.setTimeout(() => this.fallScreen.classList.remove('is-entering'), 500);
     this.fallMascot.start(summary.height);
@@ -231,6 +291,86 @@ export class Hud {
     }
     this.fallRank.classList.add('hidden');
     this.fallRank.classList.remove('fall-rank--error');
+  }
+
+  hideRunGear(): void {
+    this.runGearEl.classList.add('hidden');
+    this.jetBar.classList.add('hidden');
+    this.potionBtn.classList.add('hidden');
+    this.potionTimer.classList.add('hidden');
+    this.hatRow.classList.add('hidden');
+    this.hatBtn.classList.add('hidden');
+    this.hatTimer.classList.add('hidden');
+    this.lastJetRatio = -1;
+    this.lastHatSecs = -1;
+    this.potionFill.style.animation = 'none';
+    this.hatFill.style.transform = 'scaleX(1)';
+  }
+
+  syncRunGear(gear: RunGear): void {
+    const jet = gear.jetFuel > 0;
+    const potionBtn = gear.potionReady && !gear.potionActive;
+    const potionT = gear.potionActive;
+    const hatBtn = gear.hatReady && !gear.hatWorn;
+    const hatOn = gear.hatWorn;
+    const hatRow = hatBtn || hatOn;
+    const any = jet || potionBtn || potionT || hatRow;
+    this.runGearEl.classList.toggle('hidden', !any);
+    this.jetBar.classList.toggle('hidden', !jet);
+    this.potionBtn.classList.toggle('hidden', !potionBtn);
+    this.potionTimer.classList.toggle('hidden', !potionT);
+    this.hatRow.classList.toggle('hidden', !hatRow);
+    this.hatBtn.classList.toggle('hidden', !hatBtn);
+    this.hatTimer.classList.toggle('hidden', !hatOn);
+    if (jet) {
+      const ratio = gear.jetFuel / gear.jetMax;
+      if (Math.abs(ratio - this.lastJetRatio) >= 0.02) {
+        this.lastJetRatio = ratio;
+        this.jetFill.style.transform = `scaleX(${ratio})`;
+      }
+    }
+    if (hatRow) {
+      const left = hatOn ? gear.hatT : GEAR.hatS;
+      const secs = Math.max(0, Math.ceil(left));
+      if (secs !== this.lastHatSecs) {
+        this.lastHatSecs = secs;
+        this.hatSecs.textContent = `${secs}s`;
+      }
+      if (hatOn) {
+        this.hatFill.style.transform = `scaleX(${gear.hatT / GEAR.hatS})`;
+      }
+    }
+  }
+
+  startPotionTimer(seconds: number): void {
+    this.potionBtn.classList.add('hidden');
+    this.potionTimer.classList.remove('hidden');
+    this.runGearEl.classList.remove('hidden');
+    this.potionFill.style.animation = 'none';
+    void this.potionFill.offsetWidth;
+    this.potionFill.style.animation = `gear-drain ${seconds}s linear forwards`;
+  }
+
+  endPotionTimer(): void {
+    this.potionTimer.classList.add('hidden');
+    this.potionFill.style.animation = 'none';
+  }
+
+  startHatTimer(seconds: number): void {
+    void seconds;
+    this.hatBtn.classList.add('hidden');
+    this.hatRow.classList.remove('hidden');
+    this.hatTimer.classList.remove('hidden');
+    this.runGearEl.classList.remove('hidden');
+    this.lastHatSecs = -1;
+    this.hatFill.style.transform = 'scaleX(1)';
+  }
+
+  endHatTimer(): void {
+    this.hatRow.classList.add('hidden');
+    this.hatTimer.classList.add('hidden');
+    this.lastHatSecs = -1;
+    this.hatFill.style.transform = 'scaleX(1)';
   }
 
   update(height: number, _best: number, breaths: number, streak = 0): void {

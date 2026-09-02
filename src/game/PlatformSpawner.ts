@@ -63,6 +63,11 @@ export class PlatformSpawner {
   private lastDir = 1;
   private lastPath: Platform | null = null;
   private spawnsSinceTrampoline = 0;
+  private trampChance: number = TRAMPOLINE.chance;
+
+  setTrampolineChance(chance: number): void {
+    this.trampChance = chance;
+  }
 
   constructor(seed = Date.now()) {
     this.rand = mulberry32(seed);
@@ -288,7 +293,7 @@ export class PlatformSpawner {
     this.spawnsSinceTrampoline += 1;
     if (path.y < TRAMPOLINE.minY) return;
     if (this.spawnsSinceTrampoline < TRAMPOLINE.minSpacing) return;
-    if (this.rand() > TRAMPOLINE.chance) return;
+    if (this.rand() > this.trampChance) return;
 
     const w = TRAMPOLINE.width;
     const gap =

@@ -11,6 +11,21 @@ export class Camera {
     this.targetY = worldY - lookAhead;
   }
 
+  /**
+   * Acompanha a subida no mesmo ritmo do personagem.
+   * A correção de enquadramento é limitada — sem teleporte.
+   */
+  ride(focusY: number, lookAhead: number, riseVy: number, dt: number): void {
+    this.targetY = focusY - lookAhead;
+    const err = this.targetY - this.y;
+    const maxCatch = 360;
+    let catchVy = err * 2.1;
+    if (catchVy > maxCatch) catchVy = maxCatch;
+    else if (catchVy < -maxCatch) catchVy = -maxCatch;
+    this.vy = riseVy + catchVy;
+    this.y += this.vy * dt;
+  }
+
   update(dt: number): void {
     const dy = this.targetY - this.y;
     const accel = dy * this.stiffness - this.vy * this.damping;

@@ -39,10 +39,40 @@
           </div>
           <div class="hud-block hud-block--center">
             <span id="hud-streak" class="hud-streak hidden"></span>
-            <span class="hud-label">respiros</span>
+            <span class="hud-label">moedas</span>
             <span id="hud-breaths" class="hud-value">0</span>
           </div>
         </header>
+
+        <div id="run-gear" class="run-gear hidden" aria-live="polite">
+          <div id="jet-bar" class="gear-bar hidden">
+            <span class="gear-label">jato</span>
+            <div class="gear-track" aria-hidden="true">
+              <div id="jet-fill" class="gear-fill gear-fill--jet"></div>
+            </div>
+          </div>
+          <button id="btn-potion" class="potion-btn hidden" type="button" aria-label="Beber peso leve">
+            beber
+          </button>
+          <div id="potion-timer" class="gear-bar hidden">
+            <span class="gear-label">leve</span>
+            <div class="gear-track" aria-hidden="true">
+              <div id="potion-fill" class="gear-fill gear-fill--potion"></div>
+            </div>
+          </div>
+          <div id="hat-row" class="hat-row hidden">
+            <button id="btn-hat" class="potion-btn hat-btn" type="button" aria-label="Usar chapéu-hélice">
+              usar
+            </button>
+            <span id="hat-secs" class="gear-secs" aria-live="polite">60s</span>
+          </div>
+          <div id="hat-timer" class="gear-bar hidden">
+            <span class="gear-label">chapéu hélice</span>
+            <div class="gear-track" aria-hidden="true">
+              <div id="hat-fill" class="gear-fill gear-fill--hat"></div>
+            </div>
+          </div>
+        </div>
 
         <div id="material-toast" class="material-toast hidden" aria-live="polite" role="status">
           <div id="toast-speaker-panel" class="toast-speaker-panel" aria-hidden="true">
@@ -479,7 +509,7 @@
                   <span id="fall-stat-height" class="fall-stat-value">0</span>
                 </div>
                 <div class="fall-stat">
-                  <span class="fall-stat-label">respiros</span>
+                  <span class="fall-stat-label">moedas</span>
                   <span id="fall-stat-breaths" class="fall-stat-value">0</span>
                 </div>
                 <div class="fall-stat">
@@ -491,6 +521,7 @@
                   <span id="fall-stat-best" class="fall-stat-value">0</span>
                 </div>
               </div>
+              <p id="fall-wallet" class="fall-wallet"></p>
               <p id="fall-gap" class="fall-gap hidden"></p>
               <p id="fall-rank" class="fall-rank hidden" aria-live="polite"></p>
               <p id="fall-return-hook" class="fall-return-hook hidden"></p>
@@ -509,6 +540,82 @@
             </div>
           </div>
         </section>
+
+        <button
+          id="btn-shop"
+          class="title-tool-btn shop-fab"
+          type="button"
+          aria-label="Loja"
+          aria-expanded="false"
+          aria-controls="title-shop"
+        >
+          <span class="title-tool-face">
+            <svg class="title-tool-icon shop-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <rect x="5" y="2" width="6" height="12" fill="#E2B84A" />
+              <rect x="4" y="3" width="8" height="10" fill="#E2B84A" />
+              <rect x="6" y="4" width="4" height="2" fill="#F3E2A8" />
+              <rect x="7" y="7" width="2" height="2" fill="#C4922C" />
+            </svg>
+          </span>
+          <span class="title-tool-label">loja</span>
+          <span id="shop-fab-count" class="catalog-badge hidden" aria-hidden="true">0</span>
+        </button>
+
+        <div id="title-shop" class="title-shop hidden" aria-hidden="true">
+          <button
+            id="title-shop-backdrop"
+            class="title-catalog-backdrop"
+            type="button"
+            aria-label="Fechar loja"
+            tabindex="-1"
+          ></button>
+          <div
+            id="title-shop-panel"
+            class="title-catalog-panel title-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shop-title"
+          >
+            <div class="title-catalog-head shop-head">
+              <h2 id="shop-title" class="settings-title shop-title">Loja</h2>
+              <button id="btn-shop-close" class="btn-settings-close" type="button" aria-label="Fechar">
+                ×
+              </button>
+            </div>
+            <p id="shop-wallet" class="shop-wallet" aria-live="polite">
+              Moedas: <span id="shop-wallet-count">0</span>
+            </p>
+            <div id="shop-list" class="shop-list"></div>
+            <p id="shop-status" class="shop-status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div id="title-gear-pick" class="title-gear-pick hidden" aria-hidden="true">
+          <button
+            id="title-gear-pick-backdrop"
+            class="title-catalog-backdrop"
+            type="button"
+            aria-label="Cancelar"
+            tabindex="-1"
+          ></button>
+          <div
+            id="title-gear-pick-panel"
+            class="title-catalog-panel title-panel gear-pick-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gear-pick-title"
+          >
+            <div class="title-catalog-head shop-head">
+              <h2 id="gear-pick-title" class="settings-title shop-title">Levar na subida</h2>
+            </div>
+            <p class="gear-pick-hint">só 1 item · desmarque para trocar</p>
+            <div id="gear-pick-list" class="gear-pick-list" role="group" aria-label="Itens da partida"></div>
+            <div class="gear-pick-actions">
+              <button id="btn-gear-pick-go" class="btn btn-primary btn-soap" type="button">Subir</button>
+              <button id="btn-gear-pick-skip" class="btn btn-ghost" type="button">voltar</button>
+            </div>
+          </div>
+        </div>
 
         <div id="mobile-pad" class="mobile-pad hidden" aria-hidden="true">
           <div class="mobile-pad-move">

@@ -23,6 +23,13 @@ import { PIXEL } from '../theme/pixel';
 const SINK_MAX = 7.8;
 const PRESS_MIN = 0.28;
 
+/** Poção de peso leve — plataformas não quebram/derretem nesta janela. */
+let platformsUnbreakable = false;
+
+export function setPlatformsUnbreakable(on: boolean): void {
+  platformsUnbreakable = on;
+}
+
 /** Events emitted once for Game to juice (particles/audio/floaters). */
 export type PlatformEvent =
   | { type: 'meltDrip' }
@@ -71,6 +78,7 @@ export class Platform {
   trampolineCompress = 0;
   trampolineVel = 0;
   trampolineWindT = 0;
+  trampolineRecoverT = 0;
 
   pressTarget = 0;
   pressAmount = 0;
@@ -294,7 +302,7 @@ export class Platform {
         this.honeyBeeScatterY = 0;
         this.emit({ type: 'honeyBeeBuzz' });
       }
-      if (this.fading) {
+      if (this.fading && !platformsUnbreakable) {
         this.fadeArmed = true;
         this.fadeLife = Math.min(this.fadeLife, 1.8);
       }
@@ -329,6 +337,7 @@ export class Platform {
   }
 
   private onLandBehavior(impact: number): void {
+    if (platformsUnbreakable) return;
     const def = this.behaviorDef;
     if (this.behavior === 'shatter' || (this.behavior === 'melt' && this.material === 'chocolate')) {
       if (impact >= def.shatterImpact) {
@@ -444,10 +453,12 @@ export class Platform {
       if (t >= 1) {
         this.trampolineSpent = true;
         this.trampolineArmed = false;
+        this.trampolineRecoverT = 0;
         this.trampolineVel = TRAMPOLINE.recoilVel;
         this.emit({ type: 'trampolineLaunch' });
       }
     } else if (this.isTrampoline && this.trampolineSpent) {
+      this.trampolineRecoverT += dt;
       const force =
         (0 - this.trampolineCompress) * TRAMPOLINE.jiggleK - this.trampolineVel * TRAMPOLINE.jiggleDamp;
       this.trampolineVel += force * dt;
@@ -459,6 +470,16 @@ export class Platform {
       if (this.trampolineCompress < -0.55) {
         this.trampolineCompress = -0.55;
         this.trampolineVel *= -0.35;
+      }
+      const settled =
+        this.trampolineRecoverT >= TRAMPOLINE.recoverS &&
+        Math.abs(this.trampolineCompress) < 0.12 &&
+        Math.abs(this.trampolineVel) < 1.2;
+      if (settled || this.trampolineRecoverT >= TRAMPOLINE.recoverS * 2.4) {
+        this.trampolineSpent = false;
+        this.trampolineRecoverT = 0;
+        this.trampolineCompress = 0;
+        this.trampolineVel = 0;
       }
     } else if (this.isTrampoline) {
       this.trampolineCompress =
@@ -505,7 +526,7 @@ export class Platform {
     }
 
     // Fade / vanish
-    if (this.fading && (this.landedOnce || this.fadeArmed || this.phase === 'payoff')) {
+    if (this.fading && !platformsUnbreakable && (this.landedOnce || this.fadeArmed || this.phase === 'payoff')) {
       this.fadeLife -= dt;
       if (this.fadeLife < 0.5) this.opacity = Math.max(0, this.fadeLife / 0.5);
       if (this.fadeLife <= 0) {
@@ -546,6 +567,7 @@ export class Platform {
   }
 
   private updateBehaviorWhilePressed(dt: number): void {
+    if (platformsUnbreakable) return;
     const def = this.behaviorDef;
     switch (this.behavior) {
       case 'melt': {

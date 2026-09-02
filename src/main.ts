@@ -3,11 +3,14 @@ import { spriteAtlas } from './assets/platforms/SpriteAtlas';
 import { ALL_SPRITE_MATERIALS } from './assets/platforms/spriteConfig';
 import { Game } from './game/Game';
 import { isTextEntryTarget } from './game/Input';
+import { emptyGearLoadout, hasGearToPick } from './game/shop/runGear';
 import { nameRejectMessage } from './leaderboard/namePolicy';
 import { leaderboardService } from './leaderboard/LeaderboardService';
 import { GlobalLeaderboard } from './ui/GlobalLeaderboard';
 import { Hud } from './ui/Hud';
 import { TitleCatalog } from './ui/TitleCatalog';
+import { TitleShop } from './ui/TitleShop';
+import { TitleGearPick } from './ui/TitleGearPick';
 import { TitleCharacter } from './ui/TitleCharacter';
 import { TitleSettings } from './ui/TitleSettings';
 import { ControlsCoach } from './ui/ControlsCoach';
@@ -18,23 +21,41 @@ const hud = new Hud(audio);
 const game = new Game(canvas, audio, hud);
 const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
+const titleShop = new TitleShop((open) => game.setTitleOverlayOpen(open), audio);
+titleShop.onPurchased = () => game.previewShopMods();
+const titleGearPick = new TitleGearPick((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const globalLeaderboard = new GlobalLeaderboard();
 const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
+game.onShopRefresh = () => titleShop.refresh();
+hud.onPotionDrink = () => {
+  game.drinkPotion();
+};
+hud.onHatWear = () => {
+  game.wearHat();
+};
 globalLeaderboard.onPlayingRankToggle = (show) => titleSettings.setShowPlayingRank(show);
 
 hud.onTitleShow = () => {
+  titleGearPick.close();
+  titleShop.close();
+  titleShop.refresh();
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onTitleShow();
 };
 hud.onPlayingShow = () => {
+  titleGearPick.close();
+  titleShop.close();
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onPlayingShow();
   controlsCoach.showIfNeeded();
 };
 game.onLiveHeight = (height) => globalLeaderboard.setLiveHeight(height);
 hud.onFallShow = () => {
+  titleGearPick.close();
+  titleShop.close();
+  titleShop.refresh();
   controlsCoach.hide();
   globalLeaderboard.onFallShow();
 };
@@ -82,8 +103,18 @@ const btnStart = document.getElementById('btn-start')!;
 const btnRetry = document.getElementById('btn-retry')!;
 const btnHome = document.getElementById('btn-home')!;
 
+function anyOverlayOpen(): boolean {
+  return (
+    titleSettings.isOpen() ||
+    titleCatalog.isOpen() ||
+    titleCharacter.isOpen() ||
+    titleShop.isOpen() ||
+    titleGearPick.isOpen()
+  );
+}
+
 async function unlockAndPlay(): Promise<void> {
-  if (titleSettings.isOpen() || titleCatalog.isOpen() || titleCharacter.isOpen()) return;
+  if (anyOverlayOpen()) return;
   if (!hud.isTitleVisible() || document.getElementById('title-screen')!.classList.contains('is-leaving')) {
     return;
   }
@@ -100,14 +131,42 @@ async function unlockAndPlay(): Promise<void> {
   await audio.unlock();
   audio.setVolume(titleSettings.getVolume() / 100);
   await game.prepareMobileInput();
-  hud.leaveTitle(() => game.beginIntro());
+
+  const start = () => {
+    hud.leaveTitle(() => game.beginIntro());
+  };
+
+  if (hasGearToPick()) {
+    titleGearPick.prompt((loadout) => {
+      game.setRunLoadout(loadout);
+      start();
+    });
+    return;
+  }
+
+  game.setRunLoadout(emptyGearLoadout());
+  start();
 }
 
 async function unlockAndRetry(): Promise<void> {
-  if (!hud.isFallVisible()) return;
+  if (!hud.isFallVisible() || titleGearPick.isOpen()) return;
   await audio.unlock();
   await game.prepareMobileInput();
-  game.retry();
+
+  const go = () => {
+    game.retry();
+  };
+
+  if (hasGearToPick()) {
+    titleGearPick.prompt((loadout) => {
+      game.setRunLoadout(loadout);
+      go();
+    });
+    return;
+  }
+
+  game.setRunLoadout(emptyGearLoadout());
+  go();
 }
 
 btnStart.addEventListener('click', () => {
@@ -119,11 +178,12 @@ btnRetry.addEventListener('click', () => {
 });
 
 btnHome.addEventListener('click', () => {
+  titleGearPick.close();
   game.goToTitle();
 });
 
 window.addEventListener('keydown', (e) => {
-  if (titleSettings.isOpen() || titleCatalog.isOpen() || titleCharacter.isOpen()) return;
+  if (anyOverlayOpen()) return;
   if (isTextEntryTarget(e.target)) {
     if (e.code === 'Enter' && hud.isTitleVisible()) {
       e.preventDefault();
