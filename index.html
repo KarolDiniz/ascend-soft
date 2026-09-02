@@ -241,71 +241,93 @@
                   </select>
                 </label>
                 <div class="setting-block setting-block--controls">
-                  <div class="setting-label">
-                    <span class="setting-title">Controles no celular</span>
-                    <span id="mobile-controls-hint" class="setting-hint"
-                      >setas à esquerda · pulo à direita</span
+                  <div id="mobile-controls-block" class="mobile-controls-block">
+                    <div class="setting-label">
+                      <span class="setting-title">Controles no celular</span>
+                      <span id="mobile-controls-hint" class="setting-hint"
+                        >setas à esquerda · pulo à direita</span
+                      >
+                    </div>
+                    <div
+                      id="mobile-controls"
+                      class="control-mode-grid"
+                      role="radiogroup"
+                      aria-label="Controles no celular"
                     >
-                  </div>
-                  <div
-                    id="mobile-controls"
-                    class="control-mode-grid"
-                    role="radiogroup"
-                    aria-label="Controles no celular"
-                  >
-                    <button
-                      type="button"
-                      class="control-mode-card"
-                      role="radio"
-                      data-control-mode="zones"
-                      aria-checked="false"
-                    >
-                      <span class="control-mode-preview control-mode-preview--zones" aria-hidden="true">
-                        <span class="cmp-phone">
-                          <span class="cmp-zone cmp-zone--l"></span>
-                          <span class="cmp-zone cmp-zone--j"></span>
-                          <span class="cmp-zone cmp-zone--r"></span>
-                        </span>
-                      </span>
-                      <span class="control-mode-name">Toque</span>
-                      <span class="control-mode-desc">3 zonas na tela</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="control-mode-card is-on"
-                      role="radio"
-                      data-control-mode="pad"
-                      aria-checked="true"
-                    >
-                      <span class="control-mode-preview control-mode-preview--pad" aria-hidden="true">
-                        <span class="cmp-phone">
-                          <span class="cmp-pad-row">
-                            <span class="cmp-pad-btn">‹</span>
-                            <span class="cmp-pad-btn">›</span>
+                      <button
+                        type="button"
+                        class="control-mode-card"
+                        role="radio"
+                        data-control-mode="zones"
+                        aria-checked="false"
+                      >
+                        <span class="control-mode-preview control-mode-preview--zones" aria-hidden="true">
+                          <span class="cmp-phone">
+                            <span class="cmp-zone cmp-zone--l"></span>
+                            <span class="cmp-zone cmp-zone--j"></span>
+                            <span class="cmp-zone cmp-zone--r"></span>
                           </span>
-                          <span class="cmp-pad-jump">▲</span>
                         </span>
-                      </span>
-                      <span class="control-mode-name">Setas</span>
-                      <span class="control-mode-desc">direção + pulo</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="control-mode-card"
-                      role="radio"
-                      data-control-mode="tilt"
-                      aria-checked="false"
-                    >
-                      <span class="control-mode-preview control-mode-preview--tilt" aria-hidden="true">
-                        <span class="cmp-phone cmp-phone--tilt">
-                          <span class="cmp-tilt-arrow cmp-tilt-arrow--l">↶</span>
-                          <span class="cmp-tilt-dot"></span>
-                          <span class="cmp-tilt-arrow cmp-tilt-arrow--r">↷</span>
+                        <span class="control-mode-name">Toque</span>
+                        <span class="control-mode-desc">3 zonas na tela</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="control-mode-card is-on"
+                        role="radio"
+                        data-control-mode="pad"
+                        aria-checked="true"
+                      >
+                        <span class="control-mode-preview control-mode-preview--pad" aria-hidden="true">
+                          <span class="cmp-phone">
+                            <span class="cmp-pad-row">
+                              <span class="cmp-pad-btn">‹</span>
+                              <span class="cmp-pad-btn">›</span>
+                            </span>
+                            <span class="cmp-pad-jump">▲</span>
+                          </span>
                         </span>
-                      </span>
-                      <span class="control-mode-name">Inclinar</span>
-                      <span class="control-mode-desc">pulo sozinho</span>
-                    </button>
+                        <span class="control-mode-name">Setas</span>
+                        <span class="control-mode-desc">direção + pulo</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="control-mode-card"
+                        role="radio"
+                        data-control-mode="tilt"
+                        aria-checked="false"
+                      >
+                        <span class="control-mode-preview control-mode-preview--tilt" aria-hidden="true">
+                          <span class="cmp-phone cmp-phone--tilt">
+                            <span class="cmp-tilt-arrow cmp-tilt-arrow--l">↶</span>
+                            <span class="cmp-tilt-dot"></span>
+                            <span class="cmp-tilt-arrow cmp-tilt-arrow--r">↷</span>
+                          </span>
+                        </span>
+                        <span class="control-mode-name">Inclinar</span>
+                        <span class="control-mode-desc">pulo sozinho</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="control-sens-row">
+                    <div class="control-sens-head">
+                      <span id="control-sens-title" class="control-sens-title">Sensibilidade do pulo</span>
+                      <span id="control-sens-value" class="control-sens-value" aria-live="polite">5</span>
+                    </div>
+                    <input
+                      id="control-sensitivity"
+                      class="control-sens-range"
+                      type="range"
+                      min="1"
+                      max="10"
+                      step="1"
+                      value="5"
+                      aria-labelledby="control-sens-title"
+                    />
+                    <div class="control-sens-ends" aria-hidden="true">
+                      <span>baixa</span>
+                      <span>alta</span>
+                    </div>
                   </div>
                 </div>
               </div>

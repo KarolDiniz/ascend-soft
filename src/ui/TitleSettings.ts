@@ -8,6 +8,7 @@ import {
   type MobileControlMode,
   type UserSettings,
 } from '../game/GameSettings';
+import { isTouchUi } from '../game/Input';
 import type { Hud } from './Hud';
 
 /** Painel de configurações na tela inicial */
@@ -22,12 +23,18 @@ export class TitleSettings {
   private voiceEnabled: HTMLInputElement;
   private landIntensity: HTMLSelectElement;
   private bannerMode: HTMLSelectElement;
+  private controlsBlock: HTMLElement;
+  private mobileControlsBlock: HTMLElement;
   private mobileControls: HTMLElement;
   private mobileControlsHint: HTMLElement;
+  private controlSens: HTMLInputElement;
+  private controlSensTitle: HTMLElement;
+  private controlSensValue: HTMLElement;
   private reduceMotion: HTMLInputElement;
   private showPlayingRank: HTMLInputElement;
   private settings: UserSettings;
   private open = false;
+  private touchMq: MediaQueryList | null = null;
 
   constructor(
     private game: Game,
@@ -44,8 +51,13 @@ export class TitleSettings {
     this.voiceEnabled = document.getElementById('voice-enabled') as HTMLInputElement;
     this.landIntensity = document.getElementById('land-intensity') as HTMLSelectElement;
     this.bannerMode = document.getElementById('banner-mode') as HTMLSelectElement;
+    this.controlsBlock = document.querySelector('.setting-block--controls') as HTMLElement;
+    this.mobileControlsBlock = document.getElementById('mobile-controls-block')!;
     this.mobileControls = document.getElementById('mobile-controls')!;
     this.mobileControlsHint = document.getElementById('mobile-controls-hint')!;
+    this.controlSens = document.getElementById('control-sensitivity') as HTMLInputElement;
+    this.controlSensTitle = document.getElementById('control-sens-title')!;
+    this.controlSensValue = document.getElementById('control-sens-value')!;
     this.reduceMotion = document.getElementById('reduce-motion') as HTMLInputElement;
     this.showPlayingRank = document.getElementById('show-playing-rank') as HTMLInputElement;
 
@@ -89,6 +101,7 @@ export class TitleSettings {
     });
 
     this.mobileControls.addEventListener('click', (e) => {
+      if (!isTouchUi()) return;
       const btn = (e.target as HTMLElement).closest('[data-control-mode]') as HTMLElement | null;
       if (!btn) return;
       const mode = btn.getAttribute('data-control-mode') as MobileControlMode | null;
@@ -98,6 +111,15 @@ export class TitleSettings {
         void this.game.requestTiltPermission().then((ok) => this.setTiltHint(ok));
       } else {
         this.setTiltHint(true);
+      }
+    });
+
+    this.controlSens.addEventListener('input', () => {
+      const v = Math.max(1, Math.min(10, Math.round(Number(this.controlSens.value) || 5)));
+      if (isTouchUi() && this.settings.mobileControls === 'tilt') {
+        this.patch({ tiltSensitivity: v });
+      } else {
+        this.patch({ jumpSensitivity: v });
       }
     });
 
@@ -119,6 +141,13 @@ export class TitleSettings {
         this.close();
       }
     });
+
+    try {
+      this.touchMq = window.matchMedia('(pointer: coarse), (hover: none)');
+      this.touchMq.addEventListener('change', () => this.syncDeviceControlsUi());
+    } catch {
+      /* ignore */
+    }
   }
 
   getVolume(): number {
@@ -158,7 +187,16 @@ export class TitleSettings {
     document.documentElement.classList.toggle('reduce-motion', s.reduceMotion);
     document.documentElement.classList.toggle('hide-playing-rank', !s.showPlayingRank);
     this.syncControlModeCards(s.mobileControls);
+    this.syncDeviceControlsUi();
     this.setTiltHint(true);
+  }
+
+  private syncDeviceControlsUi(): void {
+    const mobile = isTouchUi();
+    this.mobileControlsBlock.classList.toggle('hidden', !mobile);
+    this.mobileControlsBlock.setAttribute('aria-hidden', mobile ? 'false' : 'true');
+    this.controlsBlock.classList.toggle('is-desktop', !mobile);
+    this.syncSensitivitySlider();
   }
 
   private syncControlModeCards(mode: MobileControlMode): void {
@@ -170,7 +208,26 @@ export class TitleSettings {
     }
   }
 
+  private syncSensitivitySlider(): void {
+    const mobile = isTouchUi();
+    const tilt = mobile && this.settings.mobileControls === 'tilt';
+    const v = tilt ? this.settings.tiltSensitivity : this.settings.jumpSensitivity;
+    this.controlSens.value = String(v);
+    this.controlSensValue.textContent = String(v);
+    if (!mobile) {
+      this.controlSensTitle.textContent = 'Sensibilidade do pulo';
+      this.controlSens.setAttribute('aria-label', 'Sensibilidade do pulo no teclado');
+      return;
+    }
+    this.controlSensTitle.textContent = tilt ? 'Sensibilidade lateral' : 'Sensibilidade do pulo';
+    this.controlSens.setAttribute(
+      'aria-label',
+      tilt ? 'Sensibilidade dos movimentos laterais' : 'Sensibilidade do pulo',
+    );
+  }
+
   private setTiltHint(permissionOk: boolean): void {
+    if (!isTouchUi()) return;
     const mode = this.settings.mobileControls;
     this.mobileControlsHint.classList.remove('is-warn');
     if (mode === 'pad') {
@@ -191,6 +248,7 @@ export class TitleSettings {
 
   private openPanel(): void {
     this.open = true;
+    this.syncDeviceControlsUi();
     this.root.classList.remove('hidden');
     this.root.setAttribute('aria-hidden', 'false');
     this.btnOpen.classList.add('is-open');

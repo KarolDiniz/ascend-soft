@@ -15,6 +15,10 @@ export interface UserSettings {
   reduceMotion: boolean;
   showPlayingRank: boolean;
   mobileControls: MobileControlMode;
+  /** Sensibilidade do pulo (setas / toque) — 1..10 */
+  jumpSensitivity: number;
+  /** Sensibilidade lateral (inclinar) — 1..10 */
+  tiltSensitivity: number;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -27,6 +31,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   reduceMotion: false,
   showPlayingRank: true,
   mobileControls: 'pad',
+  jumpSensitivity: 5,
+  tiltSensitivity: 5,
 };
 
 function osPrefersReducedMotion(): boolean {
@@ -80,6 +86,12 @@ function sanitize(p: Partial<UserSettings>): Partial<UserSettings> {
   if (typeof p.showPlayingRank === 'boolean') out.showPlayingRank = p.showPlayingRank;
   if (p.mobileControls === 'zones' || p.mobileControls === 'pad' || p.mobileControls === 'tilt') {
     out.mobileControls = p.mobileControls;
+  }
+  if (typeof p.jumpSensitivity === 'number') {
+    out.jumpSensitivity = clamp(Math.round(p.jumpSensitivity), 1, 10);
+  }
+  if (typeof p.tiltSensitivity === 'number') {
+    out.tiltSensitivity = clamp(Math.round(p.tiltSensitivity), 1, 10);
   }
   return out;
 }

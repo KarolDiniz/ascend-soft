@@ -1,8 +1,6 @@
 import type { MobileControlMode } from './GameSettings';
 
 const TOUCH_QUERY = '(pointer: coarse), (hover: none)';
-const TILT_DEAD = 8;
-const TILT_MAX = 32;
 const TILT_SMOOTH = 14;
 
 export function isTouchUi(): boolean {
@@ -20,6 +18,15 @@ export function isTextEntryTarget(target: EventTarget | null): boolean {
 type DeviceOrientationCtor = {
   requestPermission?: () => Promise<PermissionState | 'granted' | 'denied' | 'default'>;
 };
+
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
+}
+
+/** Converte 1..10 em fator 0..1 */
+function sensT(level: number): number {
+  return clamp01((Math.max(1, Math.min(10, level)) - 1) / 9);
+}
 
 export class Input {
   left = false;
@@ -49,6 +56,8 @@ export class Input {
   private gameplayActive = false;
   private bound = false;
   private tiltListening = false;
+  private jumpSens = 5;
+  private tiltSens = 5;
   private onDeviceOrientation: ((e: DeviceOrientationEvent) => void) | null = null;
   private onVisibility: (() => void) | null = null;
 
@@ -65,7 +74,7 @@ export class Input {
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         if (!e.repeat) {
           this.jumpPressed = true;
-          this.jumpBuffer = 0.12;
+          this.jumpBuffer = this.jumpBufferDuration();
         }
         this.jumpHeld = true;
       }
@@ -105,7 +114,7 @@ export class Input {
       this.touchJump = centerTouch;
       if (centerTouch && e.type === 'touchstart') {
         this.jumpPressed = true;
-        this.jumpBuffer = 0.12;
+        this.jumpBuffer = this.jumpBufferDuration();
       }
       this.syncJumpHeld();
       this.syncMove();
@@ -154,6 +163,12 @@ export class Input {
     this.syncMove();
   }
 
+  /** Sensibilidades 1..10 vindas dos ajustes. */
+  setSensitivities(jump: number, tilt: number): void {
+    this.jumpSens = Math.max(1, Math.min(10, Math.round(jump)));
+    this.tiltSens = Math.max(1, Math.min(10, Math.round(tilt)));
+  }
+
   setGameplayActive(active: boolean): void {
     this.gameplayActive = active;
     if (!active) {
@@ -183,7 +198,7 @@ export class Input {
   setPadJump(held: boolean): void {
     if (held && !this.padJump) {
       this.jumpPressed = true;
-      this.jumpBuffer = 0.12;
+      this.jumpBuffer = this.jumpBufferDuration();
     }
     this.padJump = held;
     this.syncJumpHeld();
@@ -218,13 +233,19 @@ export class Input {
     this.syncMove();
   }
 
-  private attachTilt(): void {
-    if (this.tiltListening) return;
-    this.tiltListening = true;
-    this.onDeviceOrientation = (e: DeviceOrientationEvent) => {
-      this.tiltTarget = axisFromOrientation(e);
+  private jumpBufferDuration(): number {
+    // 1 → 0.05s · 5 → 0.12s · 10 → 0.24s
+    const t = sensT(this.jumpSens);
+    return 0.05 + t * 0.19;
+  }
+
+  private tiltDeadMax(): { dead: number; max: number } {
+    // Alta sensibilidade = zona morta menor e alcance pleno com menos inclinação
+    const t = sensT(this.tiltSens);
+    return {
+      dead: 18 - t * 14,
+      max: 48 - t * 30,
     };
-    window.addEventListener('deviceorientation', this.onDeviceOrientation, true);
   }
 
   private keyJumpHeld(): boolean {
@@ -306,6 +327,34 @@ export class Input {
     this.jumpPressed = false;
     this.jumpBuffer = 0;
   }
+
+  private attachTilt(): void {
+    if (this.tiltListening) return;
+    this.tiltListening = true;
+    this.onDeviceOrientation = (e: DeviceOrientationEvent) => {
+      this.tiltTarget = this.axisFromOrientation(e);
+    };
+    window.addEventListener('deviceorientation', this.onDeviceOrientation, true);
+  }
+
+  private axisFromOrientation(e: DeviceOrientationEvent): number {
+    const gamma = e.gamma;
+    const beta = e.beta;
+    if (gamma == null && beta == null) return 0;
+
+    const angle = ((getScreenAngle() % 360) + 360) % 360;
+    let raw = 0;
+    if (angle === 90) raw = beta ?? 0;
+    else if (angle === 270) raw = -(beta ?? 0);
+    else if (angle === 180) raw = -(gamma ?? 0);
+    else raw = gamma ?? 0;
+
+    const { dead, max } = this.tiltDeadMax();
+    if (Math.abs(raw) < dead) return 0;
+    const signed = Math.sign(raw);
+    const mag = Math.min(1, (Math.abs(raw) - dead) / Math.max(1, max - dead));
+    return signed * mag;
+  }
 }
 
 function getScreenAngle(): number {
@@ -313,22 +362,4 @@ function getScreenAngle(): number {
   if (o && typeof o.angle === 'number') return o.angle;
   const legacy = (window as Window & { orientation?: number }).orientation;
   return typeof legacy === 'number' ? legacy : 0;
-}
-
-function axisFromOrientation(e: DeviceOrientationEvent): number {
-  const gamma = e.gamma;
-  const beta = e.beta;
-  if (gamma == null && beta == null) return 0;
-
-  const angle = ((getScreenAngle() % 360) + 360) % 360;
-  let raw = 0;
-  if (angle === 90) raw = beta ?? 0;
-  else if (angle === 270) raw = -(beta ?? 0);
-  else if (angle === 180) raw = -(gamma ?? 0);
-  else raw = gamma ?? 0;
-
-  if (Math.abs(raw) < TILT_DEAD) return 0;
-  const signed = Math.sign(raw);
-  const mag = Math.min(1, (Math.abs(raw) - TILT_DEAD) / (TILT_MAX - TILT_DEAD));
-  return signed * mag;
 }

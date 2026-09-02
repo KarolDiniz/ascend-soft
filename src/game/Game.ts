@@ -226,6 +226,7 @@ export class Game {
     this.audio.setLandIntensity(settings.landIntensity);
     this.hud.setMuteLabel(settings.muted || settings.volume === 0);
     this.input.setMobileMode(settings.mobileControls);
+    this.input.setSensitivities(settings.jumpSensitivity, settings.tiltSensitivity);
     document.documentElement.dataset.mobileControls = settings.mobileControls;
     this.syncMobileControls();
   }

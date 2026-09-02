@@ -1787,6 +1787,22 @@ html.has-mobile-pad .material-toast {
   background: rgba(255, 255, 255, 0.38);
 }
 
+.mobile-controls-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-controls-block.hidden {
+  display: none;
+}
+
+.setting-block--controls.is-desktop .control-sens-row {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .setting-block--controls .setting-label {
   display: flex;
   flex-direction: column;
@@ -1947,6 +1963,50 @@ html.has-mobile-pad .material-toast {
 
 .reduce-motion .control-mode-card {
   transition: none;
+}
+
+.control-sens-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 2px solid rgba(90, 97, 108, 0.12);
+}
+
+.control-sens-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.control-sens-title {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.control-sens-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.4rem;
+  color: var(--ink-soft);
+}
+
+.control-sens-range {
+  width: 100%;
+  accent-color: var(--coral);
+  cursor: pointer;
+}
+
+.control-sens-ends {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 
 @media (max-width: 380px) {
