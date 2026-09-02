@@ -64,6 +64,10 @@ export class TitleCharacter {
     else this.openPanel();
   }
 
+  show(): void {
+    if (!this.open) this.openPanel();
+  }
+
   private buildColorGrid(): void {
     const frag = document.createDocumentFragment();
     for (const opt of BODY_COLOR_OPTIONS) {

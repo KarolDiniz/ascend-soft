@@ -34,6 +34,7 @@ import { PASTEL } from '../theme/pastelPalette';
 import { MobilePad } from '../ui/MobilePad';
 
 import { loadLocalBest, saveLocalBest } from './localBest';
+import { noteRunProgress } from './dailyChallenges';
 import { fallReturnHook, noteBestPerfect, noteDailyPlay, titleDailyCard } from './returnLoop';
 import { FiscalGnome } from './mobs/fiscalGnome';
 import { addSeenMaterial, loadSeenMaterials } from './seenMaterials';
@@ -138,6 +139,9 @@ export class Game {
   private titleOverlayOpen = false;
   /** Evita queda/game over nos primeiros instantes após iniciar a partida. */
   private spawnGrace = 0;
+  /** Fiscal empurrou — aguarda pouso seguro para desafio diário. */
+  private gnomeShovePending = false;
+  private wasAirborne = false;
   private introT = 0;
   private introDuration = 0.55;
   private introFromX = 0;
@@ -328,6 +332,8 @@ export class Game {
   onCatalogRefresh: (() => void) | null = null;
   /** Atualiza FAB/lista da loja após creditar o bolso */
   onShopRefresh: (() => void) | null = null;
+  /** Desafios diários concluídos ou resgatáveis — atualiza badge no menu. */
+  onDailyChallengesRefresh: (() => void) | null = null;
   /** Altura inteira da subida atual — para o ranking ao vivo. */
   onLiveHeight: ((height: number) => void) | null = null;
 
@@ -443,6 +449,8 @@ export class Game {
     this.potionWasOn = false;
     this.player.setPotionJump(false);
     setPlatformsUnbreakable(false);
+    this.gnomeShovePending = false;
+    this.wasAirborne = false;
   }
 
   previewShopMods(): void {
@@ -790,6 +798,7 @@ export class Game {
     }
     if (gnomeEv === 'strike') {
       this.audio.playFiscalGnomeChuckle();
+      this.gnomeShovePending = true;
       this.addFloater(this.player.x, this.player.y + 22, 'hihi!', PASTEL.coral);
       if (!this.perfProfile().lightMode) {
         this.particles.burst(this.player.x, this.player.y, PASTEL.seafoam, 8, 'foam', false);
@@ -944,6 +953,23 @@ export class Game {
     if (nextHeight !== this.height) {
       this.height = nextHeight;
       this.onLiveHeight?.(this.height);
+    }
+    if (this.state === 'playing') {
+      let gnomeSurvived = false;
+      if (this.gnomeShovePending && this.wasAirborne && this.player.onGround) {
+        gnomeSurvived = true;
+        this.gnomeShovePending = false;
+      }
+      if (
+        noteRunProgress({
+          height: this.height,
+          runMs: performance.now() - this.runStartedAt,
+          gnomeSurvived,
+        })
+      ) {
+        this.onDailyChallengesRefresh?.();
+      }
+      this.wasAirborne = !this.player.onGround;
     }
     if (this.height > this.best) {
       this.best = this.height;

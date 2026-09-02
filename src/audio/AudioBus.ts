@@ -645,16 +645,33 @@ export class AudioBus {
     });
   }
 
+  /** Poção peso leve — gole com glug e final mágico. */
   playPotionDrink(): void {
     this.withCtx((ctx, sfx) => {
       const t = ctx.currentTime;
       const dest = ctx.createGain();
-      dest.gain.value = 0.82;
+      dest.gain.value = 0.92;
       dest.connect(sfx);
-      this.softNoise(ctx, dest, 0.08, 2400, 0.1, t, 'bandpass', 1.4);
-      this.tone(ctx, dest, 'sine', 220, 140, 0.14, 0.07, t + 0.04);
-      this.tone(ctx, dest, 'sine', 180, 110, 0.12, 0.055, t + 0.14);
-      this.tone(ctx, dest, 'triangle', 980, 620, 0.07, 0.03, t);
+
+      // Frasco inclinando — slosh leve
+      this.softNoise(ctx, dest, 0.05, 2100, 0.055, t, 'highpass', 0.85);
+
+      // Glug 1
+      this.softNoise(ctx, dest, 0.11, 560, 0.15, t + 0.02, 'bandpass', 2.1);
+      this.tone(ctx, dest, 'sine', 300, 165, 0.12, 0.085, t + 0.02);
+
+      // Glug 2
+      this.softNoise(ctx, dest, 0.1, 460, 0.13, t + 0.13, 'bandpass', 1.9);
+      this.tone(ctx, dest, 'sine', 250, 135, 0.11, 0.075, t + 0.13);
+
+      // Engolida
+      this.tone(ctx, dest, 'sine', 195, 88, 0.15, 0.095, t + 0.24);
+      this.softNoise(ctx, dest, 0.06, 280, 0.065, t + 0.26, 'lowpass');
+
+      // Bolhas / refresco da poção
+      this.tone(ctx, dest, 'triangle', 920, 1280, 0.13, 0.055, t + 0.34);
+      this.softNoise(ctx, dest, 0.07, 3400, 0.042, t + 0.36, 'highpass', 0.8);
+      this.tone(ctx, dest, 'sine', 1640, 1180, 0.09, 0.038, t + 0.4);
     });
   }
 

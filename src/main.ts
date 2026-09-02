@@ -12,6 +12,7 @@ import { TitleCatalog } from './ui/TitleCatalog';
 import { TitleShop } from './ui/TitleShop';
 import { TitleGearPick } from './ui/TitleGearPick';
 import { TitleCharacter } from './ui/TitleCharacter';
+import { TitleDailyChallenges } from './ui/TitleDailyChallenges';
 import { TitleSettings } from './ui/TitleSettings';
 import { ControlsCoach } from './ui/ControlsCoach';
 
@@ -23,12 +24,18 @@ const titleSettings = new TitleSettings(game, audio, hud);
 const titleCatalog = new TitleCatalog((open) => game.setTitleOverlayOpen(open));
 const titleShop = new TitleShop((open) => game.setTitleOverlayOpen(open), audio);
 titleShop.onPurchased = () => game.previewShopMods();
+const titleDailyChallenges = new TitleDailyChallenges(
+  (open) => game.setTitleOverlayOpen(open),
+  audio,
+);
+titleDailyChallenges.onClaimed = () => titleShop.refresh();
 const titleGearPick = new TitleGearPick((open) => game.setTitleOverlayOpen(open));
 const titleCharacter = new TitleCharacter(game, audio);
 const globalLeaderboard = new GlobalLeaderboard();
 const controlsCoach = new ControlsCoach();
 game.onCatalogRefresh = () => titleCatalog.refresh();
 game.onShopRefresh = () => titleShop.refresh();
+game.onDailyChallengesRefresh = () => titleDailyChallenges.refresh();
 hud.onPotionDrink = () => {
   game.drinkPotion();
 };
@@ -40,13 +47,16 @@ globalLeaderboard.onPlayingRankToggle = (show) => titleSettings.setShowPlayingRa
 hud.onTitleShow = () => {
   titleGearPick.close();
   titleShop.close();
+  titleDailyChallenges.close();
   titleShop.refresh();
+  titleDailyChallenges.refresh();
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onTitleShow();
 };
 hud.onPlayingShow = () => {
   titleGearPick.close();
   titleShop.close();
+  titleDailyChallenges.close();
   globalLeaderboard.setLocalBest(game.best);
   globalLeaderboard.onPlayingShow();
   controlsCoach.showIfNeeded();
@@ -55,7 +65,9 @@ game.onLiveHeight = (height) => globalLeaderboard.setLiveHeight(height);
 hud.onFallShow = () => {
   titleGearPick.close();
   titleShop.close();
+  titleDailyChallenges.close();
   titleShop.refresh();
+  titleDailyChallenges.refresh();
   controlsCoach.hide();
   globalLeaderboard.onFallShow();
 };
@@ -109,6 +121,7 @@ function anyOverlayOpen(): boolean {
     titleCatalog.isOpen() ||
     titleCharacter.isOpen() ||
     titleShop.isOpen() ||
+    titleDailyChallenges.isOpen() ||
     titleGearPick.isOpen()
   );
 }

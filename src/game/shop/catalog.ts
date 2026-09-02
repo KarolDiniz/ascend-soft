@@ -27,7 +27,7 @@ export const SHOP_ITEMS: readonly ShopItemDef[] = [
     id: 'propHat',
     name: 'chapéu-hélice',
     hint: 'ponha na subida · queda bem lenta · 1 min',
-    price: 95,
+    price: 50,
     kind: 'consumable',
   },
 ];

@@ -85,7 +85,8 @@ html.light-mode #game {
 .ui .leaderboard-toggle,
 .ui .pad-btn,
 .ui .title-shop,
-.ui .shop-fab {
+.ui .shop-fab,
+.ui .title-daily-challenges {
   pointer-events: auto;
 }
 
@@ -647,6 +648,7 @@ html.has-mobile-pad .material-toast {
 
 .title-rail--right {
   justify-content: flex-start;
+  gap: 0.65rem;
 }
 
 .title-tool-btn {
@@ -848,6 +850,18 @@ html.has-mobile-pad .material-toast {
   display: none;
 }
 
+.title-daily-challenges-btn {
+  animation-delay: 0.36s;
+}
+
+.title-daily-challenges-btn .title-tool-face {
+  background: #dff5e4;
+}
+
+.title-daily-challenges-btn.is-open .title-tool-face {
+  background: #bfe8c8;
+}
+
 /* Loja — canto inferior direito, só capa e queda */
 .shop-fab {
   position: absolute;
@@ -857,7 +871,8 @@ html.has-mobile-pad .material-toast {
 }
 
 #app.is-playing .shop-fab,
-#app.is-playing .title-shop {
+#app.is-playing .title-shop,
+#app.is-playing .title-daily-challenges {
   display: none !important;
 }
 
@@ -1089,6 +1104,154 @@ html.has-mobile-pad .material-toast {
   font-size: 0.38rem;
   line-height: 1.5;
   color: var(--ink-soft);
+}
+
+.title-daily-challenges {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(12px + var(--safe-top)) 12px calc(12px + var(--safe-bottom));
+}
+
+.title-daily-challenges.hidden {
+  display: none !important;
+}
+
+.title-daily-challenges-btn .title-tool-face {
+  background: #dff5e4;
+}
+
+.title-daily-challenges-btn.is-open .title-tool-face {
+  background: #bfe8c8;
+  box-shadow: inset 0 0 0 2px rgba(90, 97, 108, 0.18);
+}
+
+.daily-challenges-kicker {
+  margin: 0 0 10px;
+  width: 100%;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.daily-challenges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.daily-challenge-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid rgba(90, 97, 108, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  text-align: left;
+}
+
+.daily-challenge-row.is-ready {
+  border-color: #4caf6a;
+  background: rgba(214, 245, 221, 0.72);
+  box-shadow: 0 0 0 1px rgba(76, 175, 106, 0.18);
+}
+
+.daily-challenge-row.is-claimed {
+  opacity: 0.72;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.daily-challenge-name {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.daily-challenge-hint {
+  margin: 4px 0 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+.daily-challenge-meta {
+  margin: 4px 0 0;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(90, 97, 108, 0.72);
+}
+
+.daily-challenge-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 4.6rem;
+}
+
+.daily-challenge-reward {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.42rem;
+  line-height: 1.3;
+  color: #C4922C;
+}
+
+.daily-challenge-row.is-ready .daily-challenge-reward {
+  color: #2f8f4e;
+}
+
+.daily-challenge-claim {
+  min-width: 4.6rem;
+  padding: 0.42rem 0.5rem;
+  border: 2px solid #2f8f4e;
+  background: #6bcb77;
+  color: #fffcf8;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.38rem;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(47, 143, 78, 0.45);
+}
+
+.daily-challenge-claim:hover,
+.daily-challenge-claim:focus-visible {
+  background: #58b864;
+}
+
+.daily-challenge-pending {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.34rem;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.daily-challenge-done {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.34rem;
+  line-height: 1.3;
+  color: #4caf6a;
+  text-align: center;
+}
+
+.daily-challenges-status {
+  color: #2f8f4e;
 }
 
 @media (min-width: 900px) {

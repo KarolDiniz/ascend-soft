@@ -67,6 +67,10 @@ export class TitleCatalog {
     else this.openPanel();
   }
 
+  show(): void {
+    if (!this.open) this.openPanel();
+  }
+
   /** Atualiza badge e grid após coletar ou ouvir na partida */
   refresh(): void {
     this.syncBadge();

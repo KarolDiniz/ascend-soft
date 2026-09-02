@@ -546,6 +546,29 @@
                 </span>
                 <span class="title-tool-label">ajustes</span>
               </button>
+
+              <button
+                id="btn-daily-challenges"
+                class="title-tool-btn title-daily-challenges-btn"
+                type="button"
+                aria-label="Desafios diários"
+                aria-expanded="false"
+                aria-controls="title-daily-challenges"
+              >
+                <span class="title-tool-face">
+                  <svg class="title-tool-icon daily-challenges-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <rect x="3" y="2" width="10" height="12" fill="currentColor" />
+                    <rect x="4" y="3" width="8" height="10" fill="#fffcf8" />
+                    <rect x="5" y="4" width="6" height="2" fill="currentColor" />
+                    <rect x="5" y="7" width="4" height="1" fill="currentColor" />
+                    <rect x="5" y="9" width="5" height="1" fill="currentColor" />
+                    <rect x="10" y="1" width="4" height="4" fill="#6BCB77" />
+                    <rect x="11" y="2" width="2" height="2" fill="#fffcf8" />
+                  </svg>
+                </span>
+                <span class="title-tool-label">desafios</span>
+                <span id="daily-challenges-badge" class="catalog-badge hidden" aria-hidden="true">0</span>
+              </button>
             </div>
           </nav>
 
@@ -660,6 +683,33 @@
             </p>
             <div id="shop-list" class="shop-list"></div>
             <p id="shop-status" class="shop-status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div id="title-daily-challenges" class="title-daily-challenges hidden" aria-hidden="true">
+          <button
+            id="title-daily-challenges-backdrop"
+            class="title-catalog-backdrop"
+            type="button"
+            aria-label="Fechar desafios"
+            tabindex="-1"
+          ></button>
+          <div
+            id="title-daily-challenges-panel"
+            class="title-catalog-panel title-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="daily-challenges-title"
+          >
+            <div class="title-catalog-head shop-head">
+              <h2 id="daily-challenges-title" class="settings-title shop-title">Desafios diários</h2>
+              <button id="btn-daily-challenges-close" class="btn-settings-close" type="button" aria-label="Fechar">
+                ×
+              </button>
+            </div>
+            <p class="daily-challenges-kicker">altura · tempo · fiscal · metas sorteadas · renova todo dia</p>
+            <div id="daily-challenges-list" class="daily-challenges-list"></div>
+            <p id="daily-challenges-status" class="shop-status daily-challenges-status" aria-live="polite"></p>
           </div>
         </div>
 

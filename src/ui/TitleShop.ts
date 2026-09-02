@@ -54,6 +54,10 @@ export class TitleShop {
     else this.openPanel();
   }
 
+  show(): void {
+    if (!this.open) this.openPanel();
+  }
+
   refresh(): void {
     this.syncWallet();
     if (this.open) this.renderList();
