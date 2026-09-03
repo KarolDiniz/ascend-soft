@@ -224,19 +224,6 @@ html.light-mode #game {
   background: #fffcf8;
 }
 
-@keyframes gear-drain {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
-.reduce-motion .gear-fill--potion {
-  animation: none !important;
-}
-
 .potion-btn {
   pointer-events: auto;
   padding: 0.42rem 0.55rem;

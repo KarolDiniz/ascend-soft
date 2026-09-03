@@ -309,7 +309,7 @@ export class Hud {
     this.hatTimer.classList.add('hidden');
     this.lastJetRatio = -1;
     this.lastHatSecs = -1;
-    this.potionFill.style.animation = 'none';
+    this.potionFill.style.transform = 'scaleX(1)';
     this.hatFill.style.transform = 'scaleX(1)';
   }
 
@@ -335,6 +335,10 @@ export class Hud {
         this.jetFill.style.transform = `scaleX(${ratio})`;
       }
     }
+    if (potionT) {
+      const max = gear.potionMax || GEAR.potionS;
+      this.potionFill.style.transform = `scaleX(${Math.max(0, gear.potionT / max)})`;
+    }
     if (hatRow) {
       const max = gear.hatMax || GEAR.hatS;
       const left = hatOn ? gear.hatT : max;
@@ -349,18 +353,16 @@ export class Hud {
     }
   }
 
-  startPotionTimer(seconds: number): void {
+  startPotionTimer(_seconds: number): void {
     this.potionBtn.classList.add('hidden');
     this.potionTimer.classList.remove('hidden');
     this.runGearEl.classList.remove('hidden');
-    this.potionFill.style.animation = 'none';
-    void this.potionFill.offsetWidth;
-    this.potionFill.style.animation = `gear-drain ${seconds}s linear forwards`;
+    this.potionFill.style.transform = 'scaleX(1)';
   }
 
   endPotionTimer(): void {
     this.potionTimer.classList.add('hidden');
-    this.potionFill.style.animation = 'none';
+    this.potionFill.style.transform = 'scaleX(1)';
   }
 
   startHatTimer(seconds: number): void {
