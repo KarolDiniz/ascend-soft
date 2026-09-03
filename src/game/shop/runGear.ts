@@ -3,10 +3,10 @@ import type { ShopItemId } from './catalog';
 import { TOWER_GEAR } from '../towerPickups/definitions';
 
 export const GEAR = {
-  jetFuelS: 9.5,
-  jetSpinS: 1.65,
-  jetAccel: 2400,
-  jetMaxVy: 2700,
+  jetFuelS: 9.4,
+  jetSpinS: 0.75,
+  jetAccel: 4200,
+  jetMaxVy: 4700,
   potionS: 60,
   potionJumpMul: 1.36,
   hatS: 60,
@@ -74,6 +74,21 @@ export class RunGear {
   hatTower = false;
   /** Jato da torre não consome carga da loja. */
   jetFromTower = false;
+
+  jetTuning(): { spinS: number; accel: number; maxVy: number } {
+    if (this.jetFromTower) {
+      return {
+        spinS: TOWER_GEAR.jetSpinS,
+        accel: TOWER_GEAR.jetAccel,
+        maxVy: TOWER_GEAR.jetMaxVy,
+      };
+    }
+    return {
+      spinS: GEAR.jetSpinS,
+      accel: GEAR.jetAccel,
+      maxVy: GEAR.jetMaxVy,
+    };
+  }
 
   reset(): void {
     this.jetFuel = 0;

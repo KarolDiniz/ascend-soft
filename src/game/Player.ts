@@ -228,10 +228,11 @@ export class Player {
       g.jetFiring = true;
       g.jetFuel = Math.max(0, g.jetFuel - dt);
       g.jetSpinT += dt;
-      const u = Math.min(1, g.jetSpinT / GEAR.jetSpinS);
+      const jet = g.jetTuning();
+      const u = Math.min(1, g.jetSpinT / jet.spinS);
       jetEase = u * u * (3 - 2 * u);
-      this.vy += GEAR.jetAccel * jetEase * dt;
-      const cap = this.jumpVel + (GEAR.jetMaxVy - this.jumpVel) * jetEase;
+      this.vy += jet.accel * jetEase * dt;
+      const cap = this.jumpVel + (jet.maxVy - this.jumpVel) * jetEase;
       if (this.vy > cap) this.vy = cap;
       this.stretch = Math.max(this.stretch, 1 + jetEase * 0.22);
       if (g.jetFuel <= 0) {

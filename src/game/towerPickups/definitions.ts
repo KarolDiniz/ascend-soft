@@ -2,9 +2,12 @@ import type { ShopItemId } from '../shop/catalog';
 
 export type TowerPickupKind = ShopItemId;
 
-/** Versão da torre — mesma potência da loja, menos tempo. */
+/** Versão da torre — mesma potência da loja, menos tempo; jato um pouco mais forte que antes. */
 export const TOWER_GEAR = {
-  jetFuelS: 4.5,
+  jetFuelS: 4.2,
+  jetSpinS: 1.15,
+  jetAccel: 3100,
+  jetMaxVy: 3350,
   potionS: 25,
   hatS: 25,
 } as const;
@@ -25,17 +28,23 @@ export const TOWER_PICKUP_GAP_SLACK = 3_000;
 export const TOWER_PICKUP_CHANCE = 0.38;
 
 function mixSeed(seed: number, salt: number): number {
-  return ((seed * 1103515245 + salt * 12345) >>> 0) / 0xffffffff;
+  // Multiplicadores bem distintos — salts próximos (ex.: 71 e 82) não podem
+  // correlacionar spawn e tipo (antes todo pickup virava chapéu).
+  let x = (Math.imul(seed ^ salt, 0x9e3779b1) >>> 0) ^ (salt * 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 16), 0x7feb352d) >>> 0;
+  x = Math.imul(x ^ (x >>> 15), 0x846ca68b) >>> 0;
+  return (x >>> 0) / 0xffffffff;
 }
 
 function rollKind(platformSeed: number): TowerPickupKind {
-  const r = mixSeed(platformSeed, 82);
+  const r = mixSeed(platformSeed, 0xc0ffee);
+  // Chapéu e poção com a mesma chance; jato mais raro.
   if (r < 0.42) return 'propHat';
   if (r < 0.84) return 'lightPotion';
   return 'jetpack';
 }
 
 export function rollTowerPickup(platformSeed: number, force = false): TowerPickupKind | null {
-  if (!force && mixSeed(platformSeed, 71) > TOWER_PICKUP_CHANCE) return null;
+  if (!force && mixSeed(platformSeed, 0xa11ce) > TOWER_PICKUP_CHANCE) return null;
   return rollKind(platformSeed);
 }
