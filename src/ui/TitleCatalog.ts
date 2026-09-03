@@ -7,7 +7,8 @@ import {
   loadCollected,
   totalCollectibles,
 } from '../game/collectibles/storage';
-import { MATERIALS } from '../audio/materials';
+import { MATERIALS, type MaterialId } from '../audio/materials';
+import type { AudioBus } from '../audio/AudioBus';
 import { PHASE_ORDER } from '../game/ThemedPhases';
 import { todaysOpener } from '../game/returnLoop';
 import { loadSeenMaterials, totalTextures } from '../game/seenMaterials';
@@ -31,7 +32,10 @@ export class TitleCatalog {
   private open = false;
   private tab: CatalogTab = 'textures';
 
-  constructor(private onOverlayChange?: (open: boolean) => void) {
+  constructor(
+    private onOverlayChange?: (open: boolean) => void,
+    private audio?: AudioBus,
+  ) {
     this.root = document.getElementById('title-catalog')!;
     this.btnOpen = document.getElementById('btn-catalog') as HTMLButtonElement;
     this.btnClose = document.getElementById('btn-catalog-close') as HTMLButtonElement;
@@ -49,6 +53,8 @@ export class TitleCatalog {
     this.tabTextures.addEventListener('click', () => this.setTab('textures'));
     this.tabLoot.addEventListener('click', () => this.setTab('loot'));
     this.tabAchievements.addEventListener('click', () => this.setTab('achievements'));
+    this.grid.addEventListener('click', (e) => this.onGridClick(e));
+    this.grid.addEventListener('keydown', (e) => this.onGridKeydown(e));
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape' && this.open) {
@@ -157,14 +163,24 @@ export class TitleCatalog {
     for (const id of PHASE_ORDER) {
       const heard = seen.has(id);
       const isToday = id === featured;
+      const playable = heard || isToday;
       const mat = MATERIALS[id];
       const pastel = MATERIAL_PASTEL[id];
-      const fill = heard || isToday ? (pastel?.fill ?? '#c8c4bc') : '#d4cfc6';
+      const fill = playable ? (pastel?.fill ?? '#c8c4bc') : '#d4cfc6';
       const card = document.createElement('article');
-      card.className = `catalog-card${heard ? ' is-owned' : ''}${isToday ? ' is-today' : ''}`;
-      card.setAttribute('role', 'listitem');
-      const name = heard || isToday ? mat.name : '???';
-      const hint = isToday ? 'torre de hoje' : heard ? 'ouvida' : 'ainda não ouvida';
+      card.className = `catalog-card${heard ? ' is-owned' : ''}${isToday ? ' is-today' : ''}${playable ? ' is-playable' : ''}`;
+      card.setAttribute('role', playable ? 'button' : 'listitem');
+      if (playable) {
+        card.dataset.material = id;
+        card.tabIndex = 0;
+        card.setAttribute('aria-label', `Ouvir textura ${mat.name}`);
+      }
+      const name = playable ? mat.name : '???';
+      const hint = playable
+        ? heard
+          ? 'toque para ouvir'
+          : 'torre de hoje · toque para ouvir'
+        : 'ainda não ouvida';
       card.innerHTML = `
         <div class="catalog-icon catalog-icon--swatch" style="--swatch:${fill}" aria-hidden="true">
           <span class="catalog-swatch"></span>
@@ -175,6 +191,29 @@ export class TitleCatalog {
       frag.appendChild(card);
     }
     this.grid.replaceChildren(frag);
+  }
+
+  private onGridClick(e: MouseEvent): void {
+    if (this.tab !== 'textures') return;
+    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-material]');
+    if (!card?.dataset.material) return;
+    this.playTexture(card.dataset.material as MaterialId);
+  }
+
+  private onGridKeydown(e: KeyboardEvent): void {
+    if (this.tab !== 'textures') return;
+    if (e.code !== 'Enter' && e.code !== 'Space') return;
+    const card = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-material]');
+    if (!card?.dataset.material) return;
+    e.preventDefault();
+    this.playTexture(card.dataset.material as MaterialId);
+  }
+
+  private playTexture(id: MaterialId): void {
+    if (!this.audio || !MATERIALS[id]) return;
+    void this.audio.unlock().then(() => {
+      this.audio?.playLand(id, false, 0, 1);
+    });
   }
 
   private openPanel(): void {

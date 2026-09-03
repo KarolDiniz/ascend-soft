@@ -38,9 +38,9 @@ function mixSeed(seed: number, salt: number): number {
 
 function rollKind(platformSeed: number): TowerPickupKind {
   const r = mixSeed(platformSeed, 0xc0ffee);
-  // Chapéu e poção com a mesma chance; jato mais raro.
-  if (r < 0.42) return 'propHat';
-  if (r < 0.84) return 'lightPotion';
+  // Chapéu e poção iguais; foguete 25%.
+  if (r < 0.375) return 'propHat';
+  if (r < 0.75) return 'lightPotion';
   return 'jetpack';
 }
 
