@@ -45,6 +45,11 @@ export class AudioBus {
   private readonly landSamples = new LandSampleBank();
   private gnomeLaughBuf: AudioBuffer | null = null;
   private gnomeLaughSrc: AudioBufferSourceNode | null = null;
+  private jetThrustActive = false;
+  private jetThrustGain: GainNode | null = null;
+  private jetThrustOsc: OscillatorNode | null = null;
+  private jetThrustNoise: AudioBufferSourceNode | null = null;
+  private jetThrustHiss: AudioBufferSourceNode | null = null;
 
   get isMuted(): boolean {
     return this.muted;
@@ -643,6 +648,130 @@ export class AudioBus {
       this.tone(ctx, dest, 'sawtooth', 90, 140, 0.16, 0.05, t);
       this.tone(ctx, dest, 'triangle', 240, 180, 0.12, 0.035, t + 0.04);
     });
+  }
+
+  /** Loop suave do jato enquanto o combustível está queimando. */
+  startJetThrust(): void {
+    if (this.jetThrustActive) return;
+    this.withCtx((ctx, sfx) => {
+      if (this.jetThrustActive) return;
+      this.jetThrustActive = true;
+
+      const master = ctx.createGain();
+      master.gain.value = 0.0001;
+      master.connect(sfx);
+      this.jetThrustGain = master;
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 68;
+      const oscFilter = ctx.createBiquadFilter();
+      oscFilter.type = 'lowpass';
+      oscFilter.frequency.value = 160;
+      const oscGain = ctx.createGain();
+      oscGain.gain.value = 0.07;
+      osc.connect(oscFilter);
+      oscFilter.connect(oscGain);
+      oscGain.connect(master);
+      osc.start();
+      this.jetThrustOsc = osc;
+
+      const rumble = ctx.createBufferSource();
+      rumble.buffer = this.noiseBuffer(ctx, 1.4, true);
+      rumble.loop = true;
+      const rumbleBp = ctx.createBiquadFilter();
+      rumbleBp.type = 'bandpass';
+      rumbleBp.frequency.value = 420;
+      rumbleBp.Q.value = 0.65;
+      const rumbleGain = ctx.createGain();
+      rumbleGain.gain.value = 0.14;
+      rumble.connect(rumbleBp);
+      rumbleBp.connect(rumbleGain);
+      rumbleGain.connect(master);
+      rumble.start();
+      this.jetThrustNoise = rumble;
+
+      const hiss = ctx.createBufferSource();
+      hiss.buffer = this.noiseBuffer(ctx, 0.9, false);
+      hiss.loop = true;
+      const hissHp = ctx.createBiquadFilter();
+      hissHp.type = 'highpass';
+      hissHp.frequency.value = 1800;
+      const hissGain = ctx.createGain();
+      hissGain.gain.value = 0.03;
+      hiss.connect(hissHp);
+      hissHp.connect(hissGain);
+      hissGain.connect(master);
+      hiss.start();
+      this.jetThrustHiss = hiss;
+
+      const t = ctx.currentTime;
+      master.gain.exponentialRampToValueAtTime(0.32, t + 0.09);
+    });
+  }
+
+  stopJetThrust(): void {
+    if (!this.jetThrustActive && !this.jetThrustGain) return;
+    const ctx = this.ctx;
+    const gain = this.jetThrustGain;
+    const osc = this.jetThrustOsc;
+    const noise = this.jetThrustNoise;
+    const hiss = this.jetThrustHiss;
+    this.jetThrustActive = false;
+    this.jetThrustGain = null;
+    this.jetThrustOsc = null;
+    this.jetThrustNoise = null;
+    this.jetThrustHiss = null;
+
+    if (ctx && gain) {
+      const t = ctx.currentTime;
+      try {
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      } catch {
+        /* ignore */
+      }
+      window.setTimeout(() => {
+        try {
+          osc?.stop();
+        } catch {
+          /* already stopped */
+        }
+        try {
+          noise?.stop();
+        } catch {
+          /* already stopped */
+        }
+        try {
+          hiss?.stop();
+        } catch {
+          /* already stopped */
+        }
+        try {
+          gain.disconnect();
+        } catch {
+          /* ignore */
+        }
+      }, 140);
+      return;
+    }
+
+    try {
+      osc?.stop();
+    } catch {
+      /* ignore */
+    }
+    try {
+      noise?.stop();
+    } catch {
+      /* ignore */
+    }
+    try {
+      hiss?.stop();
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Poção peso leve — gole com glug e final mágico. */

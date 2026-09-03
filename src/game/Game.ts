@@ -460,6 +460,7 @@ export class Game {
     this.fallSummaryPending = null;
     this.fallHudRevealed = false;
     this.gear.reset();
+    this.audio.stopJetThrust();
     this.potionWasOn = false;
     this.player.setPotionJump(false);
     setPlatformsUnbreakable(false);
@@ -530,6 +531,8 @@ export class Game {
       this.audio.playJetIgnite();
       this.onShopRefresh?.();
     }
+    if (this.gear.jetFiring) this.audio.startJetThrust();
+    else this.audio.stopJetThrust();
     const potionOn = this.gear.potionActive;
     if (potionOn !== this.potionWasOn) {
       this.potionWasOn = potionOn;
@@ -1663,6 +1666,7 @@ export class Game {
     this.hud.hidePhaseToast();
     setPlatformsUnbreakable(false);
     this.player.setPotionJump(false);
+    this.audio.stopJetThrust();
     this.hud.hideRunGear();
     this.input.clearJump();
     this.syncMobileControls();
