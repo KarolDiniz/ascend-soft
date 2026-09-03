@@ -19,14 +19,14 @@ export const SHOP_ITEMS: readonly ShopItemDef[] = [
   {
     id: 'lightPotion',
     name: 'peso leve',
-    hint: 'beba na subida · pulo bem maior e nada quebra · 1 min',
+    hint: 'ativo ao começar · pulo bem maior e nada quebra · 1 min',
     price: 170,
     kind: 'consumable',
   },
   {
     id: 'propHat',
     name: 'chapéu-hélice',
-    hint: 'ponha na subida · queda bem lenta · 1 min',
+    hint: 'ativo ao começar · queda bem lenta · 1 min',
     price: 50,
     kind: 'consumable',
   },

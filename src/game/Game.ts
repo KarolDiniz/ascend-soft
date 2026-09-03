@@ -386,6 +386,7 @@ export class Game {
     this.audio.stopSoftMurmur();
     this.titleMurmurActive = false;
     this.resetRun();
+    this.state = 'playing';
     this.startRunGear();
     this.snapPlayerToStartPlatform();
     this.input.clearJump();
@@ -395,7 +396,6 @@ export class Game {
     achievementTracker.notePlayStreak(playState.streak);
     achievementTracker.noteSessionStart();
     this.camera.snapTo(this.player.y, this.H * 0.18);
-    this.state = 'playing';
     this.hud.showPlaying(this.best);
     this.startPlayingAmbience();
     this.syncMobileControls();
@@ -510,8 +510,18 @@ export class Game {
     this.player.setPotionJump(false);
     this.potionWasOn = false;
     setPlatformsUnbreakable(false);
+    this.activateShopGearAtRunStart();
     this.hud.syncRunGear(this.gear);
     this.onShopRefresh?.();
+  }
+
+  /** Itens comprados entram ativos — sem botão de usar. */
+  private activateShopGearAtRunStart(): void {
+    if (this.gear.potionReady) {
+      this.drinkPotion();
+    } else if (this.gear.hatReady) {
+      this.wearHat();
+    }
   }
 
   private tickRunGear(dt: number): void {

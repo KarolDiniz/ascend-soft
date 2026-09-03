@@ -51,6 +51,13 @@ export class TitleGearPick {
     this.onConfirm = onConfirm;
     this.onCancel = onCancel ?? null;
     this.picked = null;
+    const owned = stockLoadout();
+    for (const item of SHOP_ITEMS) {
+      if (owned[item.id]) {
+        this.picked = item.id;
+        break;
+      }
+    }
     this.btnConfirm.textContent = 'jogar';
     this.titleEl.textContent = 'Escolha 1 item';
     this.render();
